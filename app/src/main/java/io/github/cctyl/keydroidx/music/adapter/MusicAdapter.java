@@ -14,6 +14,9 @@ import java.util.List;
 
 import io.github.cctyl.keydroidx.music.R;
 import io.github.cctyl.keydroidx.music.model.MusicItem;
+import io.github.cctyl.nokia.keycore.NokiaClient;
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager;
+import io.github.cctyl.nokia.keycore.ui.NokiaTheme;
 
 /**
  * 适用于按键机的音乐列表适配器（支持高亮选中光标跟随）
@@ -82,9 +85,13 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         holder.tvArtist.setText(item.getArtist());
 
         boolean isSelected = (position == selectedPosition);
+        String themeId = NokiaClient.get(holder.itemView.getContext()).getCurrentThemeId();
+        NokiaTheme.ThemeDef theme = NokiaTheme.getTheme(themeId);
+        int focusColor = (theme != null) ? theme.focusColor : 0xFF0055AA;
+
         if (isSelected) {
-            // 复古高亮风格
-            holder.itemView.setBackgroundColor(0xFF0055AA);
+            // 复古高亮风格（跟随生态主题色）
+            holder.itemView.setBackgroundColor(focusColor);
             holder.tvTitle.setTextColor(Color.WHITE);
             holder.tvArtist.setTextColor(0xFFE0E0E0);
         } else {
@@ -92,6 +99,9 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             holder.tvTitle.setTextColor(0xFF1A1A1A);
             holder.tvArtist.setTextColor(0xFF666666);
         }
+
+        // 动态确保 RecyclerView 异步绑定的条目也继承当前字体与大小
+        NokiaFontManager.applyToViewTree(holder.itemView);
 
         holder.itemView.setOnClickListener(v -> {
             int prev = selectedPosition;
