@@ -42,6 +42,12 @@ public class MusicPlayerActivity extends NokiaBaseActivity {
         tvTotalTime = findViewById(R.id.tv_total_time);
         progressBar = findViewById(R.id.progress_music);
 
+        TextView ivCover = findViewById(R.id.iv_player_cover);
+        if (ivCover != null) {
+            ivCover.setTypeface(io.github.cctyl.nokia.keycore.ui.NokiaIcons.getTypeface(this));
+            ivCover.setText(io.github.cctyl.nokia.keycore.ui.NokiaIcons.ICON_MUSIC_NOTE);
+        }
+
         MusicItem item = (MusicItem) getIntent().getSerializableExtra("music_item");
         if (item != null) {
             if (tvSongTitle != null) tvSongTitle.setText(item.getTitle());

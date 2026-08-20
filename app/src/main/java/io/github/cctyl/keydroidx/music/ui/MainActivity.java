@@ -3,9 +3,7 @@ package io.github.cctyl.keydroidx.music.ui;
 import android.content.Intent;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog;
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -15,16 +13,19 @@ import java.util.List;
 import io.github.cctyl.keydroidx.music.R;
 import io.github.cctyl.keydroidx.music.adapter.MusicAdapter;
 import io.github.cctyl.keydroidx.music.model.MusicItem;
+import io.github.cctyl.nokia.keycore.NokiaClient;
 import io.github.cctyl.nokia.keycore.NokiaKeyClient;
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction;
 import io.github.cctyl.nokia.keycore.model.NokiaKeyBinding;
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity;
 import io.github.cctyl.nokia.keycore.ui.NokiaKeyWizardActivity;
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog;
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog;
 
 /**
  * 音乐列表主界面（纯按键导航、复古 240dp 风格）。
  */
-public class MainActivity extends NokiaBaseActivity implements NokiaKeyClient.OnKeyBindingChangedListener {
+public class MainActivity extends NokiaBaseActivity {
 
     private RecyclerView rvMusic;
     private TextView tvEmptyHint;
@@ -75,8 +76,8 @@ public class MainActivity extends NokiaBaseActivity implements NokiaKeyClient.On
     }
 
     @Override
-    public void onKeyBindingChanged(NokiaKeyBinding binding, boolean fromDesktop) {
-        updateKeyStatus(fromDesktop);
+    public void onKeysChanged(@NonNull NokiaKeyBinding binding, @NonNull NokiaClient.ConfigSource source) {
+        updateKeyStatus(NokiaClient.get(this).isFromDesktop());
     }
 
     @Override
