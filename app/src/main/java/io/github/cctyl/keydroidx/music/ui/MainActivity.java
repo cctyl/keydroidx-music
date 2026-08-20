@@ -4,7 +4,8 @@ import android.content.Intent;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog;
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -118,16 +119,12 @@ public class MainActivity extends NokiaBaseActivity implements NokiaKeyClient.On
     }
 
     private void showOptionsMenu() {
-        String[] options = new String[]{
-                getString(R.string.menu_key_wizard),
-                getString(R.string.menu_reload_keys),
-                getString(R.string.menu_about)
-        };
-
-        new AlertDialog.Builder(this)
-                .setTitle("选项")
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
+        new NokiaOptionsDialog(this, "选项")
+                .addItem(0, getString(R.string.menu_key_wizard))
+                .addItem(1, getString(R.string.menu_reload_keys))
+                .addItem(2, getString(R.string.menu_about))
+                .setOnOptionSelectedListener((index, item) -> {
+                    switch (item.getId()) {
                         case 0:
                             // 启动 SDK 自带的按键配置向导
                             NokiaKeyWizardActivity.start(this);
@@ -137,10 +134,9 @@ public class MainActivity extends NokiaBaseActivity implements NokiaKeyClient.On
                             Toast.makeText(this, "按键配置已重新加载", Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
-                            new AlertDialog.Builder(this)
-                                    .setTitle("关于")
-                                    .setMessage("KeydroidX Music 脚手架\n按键机专用轻量音乐播放器")
+                            new NokiaConfirmDialog(this, "关于", "KeydroidX Music 脚手架\n按键机专用轻量音乐播放器")
                                     .setPositiveButton("确定", null)
+                                    .setNegativeButton("关闭", null)
                                     .show();
                             break;
                     }
