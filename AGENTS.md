@@ -1,5 +1,4 @@
-# KeydroidX Music (原键音乐) - 智能体协作指南 (AGENTS.md)
-
+# KeydroidX Music (原键音乐) 
 本项目是基于 **KeydroidX 按键机生态** 构建的独立轻量级音乐播放器，专为物理九键/全键盘 Android 按键机量身定制。
 
 ---
@@ -9,9 +8,11 @@
 在 KeydroidX 生态中，各个项目分工明确、高度解耦：
 
 - **KeydroidX Launcher (桌面端 / 中枢)**：
+  - ../keydroidx-launcher
   - 负责待机桌面、通知栏与按键机全局设置。
   - 通过 `NokiaKeyProvider` 向外提供物理按键映射、主题、字体及缩放配置。
 - **keydroidx-core (通用 SDK 核心库)**：
+  - ../keydroidx-core
   - 生态客户端通用基础库（包含 Model, Client, UI, Dialog）。
   - 负责三级降级按键解析、跨进程配置热同步与复古 UI 规范。
 - **keydroidx-music (本项目 - 独立应用)**：
