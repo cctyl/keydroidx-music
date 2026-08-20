@@ -1,6 +1,8 @@
 # KeydroidX Music (原键音乐) 
 本项目是基于 **KeydroidX 按键机生态** 构建的独立轻量级音乐播放器，专为物理九键/全键盘 Android 按键机量身定制。
 
+本应用采用“功能逻辑外调，原生UI驱动”策略：底层核心音乐播放与请求逻辑移植自 `fork_Ncrust` 项目，UI 层完全重构以符合 KeydroidX 生态的物理按键交互与点阵设计规范。
+
 ---
 
 ## 一、 项目定位与生态架构关系
@@ -32,6 +34,31 @@
    - 弹窗统一采用 SDK 内置的 `NokiaOptionsDialog`（选项菜单）与 `NokiaConfirmDialog`（确认弹窗）。
 
 ---
+
+## 四、 项目路径
+- 本应用: `D:\project\keydroidx_ecosystem\keydroidx-music`
+- 参考库/项目 (Ncrust): `D:\project\fork_Ncrust`
+
+## 五、 移植分阶段计划
+我们会采取“先逻辑后UI”的原则，分模块进行代码迁移与适配：
+
+1. **移植网络接口层 (Network/API)**
+   - 迁移 `network` 相关代码，重构 API 调用逻辑以适配生态规范。
+2. **移植播放核心与状态管理 (Player)**
+   - 迁移 `PlaybackService` 及相关状态流，确保后台播放逻辑独立稳定。
+3. **本地库与缓存逻辑 (Library/Cache)**
+   - 迁移歌单、播放队列及本地缓存策略。
+4. **UI 重构与按键适配**
+   - 基于上述逻辑模块，重新设计符合 240dp 规范并适配物理按键的界面。
+
+## 六、 开发核心约束 (NOKIA_DEVELOPMENT_RULES.md)
+在进行任何 UI 实现或按键映射时，必须严格遵循以下原则：
+
+- **按键解耦**：严禁硬编码 `keyCode`，必须复用 `keydroidx-core` 中的 `NokiaKeyBinding` 来解析物理按键交互。
+- **UI 规范**：
+  - 必须使用内置矢量字体 `MaterialIcons`，禁止新增 PNG/XML 图标。
+  - 严禁硬编码主题颜色，必须通过 `NokiaTheme` 系列工具生成适配主题的 drawable。
+- **生命周期安全**：在异步回调或 Fragment 更新中，必须守护 Context，防止出现 `IllegalStateException` 导致的黑屏或崩溃。
 
 ## 三、 按键交互语义
 
