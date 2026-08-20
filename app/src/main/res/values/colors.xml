@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="music_bg">#F4F4F4</color>
+    <color name="music_primary">#0055AA</color>
+    <color name="music_item_selected">#0055AA</color>
+    <color name="music_item_selected_text">#FFFFFF</color>
+    <color name="music_item_normal_text">#1A1A1A</color>
+    <color name="music_item_subtext">#666666</color>
+    <color name="music_progress_bg">#CCCCCC</color>
+    <color name="music_progress_active">#0055AA</color>
+    <color name="music_divider">#E0E0E0</color>
+</resources>

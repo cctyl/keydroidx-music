@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal"
+    android:background="@color/music_bg">
+
+    <!-- 模拟黑胶/专辑封面框 (复古液晶风) -->
+    <LinearLayout
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="16dp"
+        android:background="#2E3033"
+        android:gravity="center">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_music_launcher" />
+    </LinearLayout>
+
+    <!-- 歌曲标题与歌手 -->
+    <TextView
+        android:id="@+id/tv_player_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/music_item_normal_text"
+        android:singleLine="true"
+        android:text="未知曲目" />
+
+    <TextView
+        android:id="@+id/tv_player_artist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:textSize="13sp"
+        android:textColor="@color/music_item_subtext"
+        android:singleLine="true"
+        android:text="未知艺术家" />
+
+    <!-- 状态与模式提示 -->
+    <TextView
+        android:id="@+id/tv_player_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="12sp"
+        android:textColor="@color/music_primary"
+        android:text="[ 暂停中 ]" />
+
+    <!-- 进度条模拟 -->
+    <ProgressBar
+        android:id="@+id/progress_music"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="16dp"
+        android:progress="35"
+        android:max="100" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_current_time"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:textColor="@color/music_item_subtext"
+            android:text="01:15" />
+
+        <TextView
+            android:id="@+id/tv_total_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@color/music_item_subtext"
+            android:text="03:45" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="bottom|center_horizontal"
+        android:paddingBottom="10dp"
+        android:textSize="11sp"
+        android:textColor="@color/music_item_subtext"
+        android:text="[确定]: 播放/暂停  [左/右]: 切歌  [返回]: 列表" />
+
+</LinearLayout>

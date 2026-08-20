@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/music_bg">
+
+    <!-- 顶部状态提示栏 -->
+    <TextView
+        android:id="@+id/tv_provider_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E8EEF5"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textSize="11sp"
+        android:textColor="#336699"
+        android:singleLine="true"
+        android:text="按键状态: 正在同步..." />
+
+    <!-- 音乐列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_music"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="vertical" />
+
+    <!-- 底部状态/小提示 -->
+    <TextView
+        android:id="@+id/tv_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="6dp"
+        android:gravity="center"
+        android:textSize="11sp"
+        android:textColor="@color/music_item_subtext"
+        android:text="@string/demo_empty_tip" />
+
+</LinearLayout>

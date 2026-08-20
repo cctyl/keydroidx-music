@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration & environment
+local.properties
+keystore.properties
+gradle.properties
+
+# Keystore & credentials (CRITICAL SECURITY)
+*.jks
+*.keystore
+test.jks
+app/test.jks
+
+# OS
+.DS_Store
+Thumbs.db

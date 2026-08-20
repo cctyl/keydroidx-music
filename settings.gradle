@@ -1,0 +1,29 @@
+pluginManagement {
+    repositories {
+        maven { url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/" }
+        maven { url = "https://maven.aliyun.com/repository/public/" }
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenLocal()
+        maven { url = "https://mirrors.cloud.tencent.com/nexus/repository/maven-public/" }
+        maven { url = "https://maven.aliyun.com/repository/public/" }
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "keydroidx-music"
+include ':app'
+
+includeBuild('../keydroidx-core') {
+    dependencySubstitution {
+        substitute module('io.github.cctyl.nokia:nokia-key-core') using project(':nokia-key-core')
+    }
+}

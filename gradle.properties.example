@@ -1,0 +1,17 @@
+# Android Gradle
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+android.enableJetifier=true
+android.nonTransitiveRClass=true
+
+# Local proxy config (if needed)
+# systemProp.https.proxyHost=127.0.0.1
+# systemProp.https.proxyPort=7897
+
+# JDK Path
+# org.gradle.java.home=D:\\soft\\temurin-jdk17\\jdk-17.0.19+10
+
+# Test Keystore credentials
+RELEASE_STORE_PASSWORD=eyJzdWIiOiI3ZDU0Yjk5ZmE
+RELEASE_KEY_PASSWORD=eyJzdWIiOiI3ZDU0Yjk5ZmE
+RELEASE_KEY_ALIAS=key0

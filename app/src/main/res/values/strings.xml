@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KeydroidX 音乐</string>
+    <string name="title_music_list">音乐库</string>
+    <string name="title_now_playing">正在播放</string>
+    
+    <string name="softkey_options">选项</string>
+    <string name="softkey_play">播放</string>
+    <string name="softkey_pause">暂停</string>
+    <string name="softkey_select">选择</string>
+    <string name="softkey_back">返回</string>
+    <string name="softkey_exit">退出</string>
+    
+    <string name="menu_key_wizard">按键设置向导</string>
+    <string name="menu_reload_keys">重载桌面按键</string>
+    <string name="menu_scan_media">刷新音乐库</string>
+    <string name="menu_about">关于</string>
+
+    <string name="demo_empty_tip">按上下键浏览，按 [确定] 查看详情，按 [选项] 进入设置</string>
+</resources>
