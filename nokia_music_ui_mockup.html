@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KeydroidX Music - 诺基亚按键机 UI 设计原型</title>
+  <!-- Material Icons Font for NokiaIcons rendering -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <!-- ArkPixel / Pixel style font simulator -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=ZCOOL+KuaiLe&family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* 经典深蓝默认配色 (NokiaTheme.THEME_CLASSIC_BLUE) */
+      --theme-primary: #1a3a6b;
+      --theme-dark: #0d1b3e;
+      --theme-accent: #0055aa;
+      --theme-focus: #0055aa;
+      --theme-text: #ffffff;
+      --theme-subtext: #b0b0b0;
+      --theme-cardbg: #141824;
+      --theme-bodybg: #090c13;
+      --theme-border: #233454;
+      --theme-playing: #22d3ee;
+      --theme-dashed: #3a4b6e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header.preview-header {
+      max-width: 900px;
+      width: 100%;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    header.preview-header h1 {
+      font-size: 24px;
+      color: #60a5fa;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    header.preview-header p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .main-workspace {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    /* 手机外壳 (模拟诺基亚经典机身) */
+    .nokia-phone-frame {
+      width: 290px;
+      background: linear-gradient(145deg, #2b3240, #181d28);
+      border: 3px solid #475569;
+      border-radius: 28px;
+      padding: 16px 14px 20px 14px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone-speaker {
+      width: 48px;
+      height: 4px;
+      background: #0f172a;
+      border-radius: 3px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* 240dp 屏幕模拟器 (按比例缩放到 260px 宽度) */
+    .nokia-screen {
+      width: 256px;
+      height: 340px;
+      background-color: var(--theme-bodybg);
+      border: 3px solid #000;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+      font-family: 'DotGothic16', 'Courier New', monospace, sans-serif;
+    }
+
+    /* 顶部标题栏 */
+    .nokia-titlebar {
+      height: 28px;
+      background: linear-gradient(to bottom, var(--theme-primary), var(--theme-dark));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      border-bottom: 1px solid rgba(0,0,0,0.4);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--theme-text);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .titlebar-left .material-icons {
+      font-size: 14px;
+    }
+
+    .titlebar-status {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+
+    .titlebar-status .material-icons {
+      font-size: 12px;
+    }
+
+    /* 屏幕内容区 */
+    .nokia-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--theme-cardbg);
+    }
+
+    /* 隐藏滚动条但保留滚动 */
+    .nokia-content::-webkit-scrollbar {
+      width: 3px;
+    }
+    .nokia-content::-webkit-scrollbar-thumb {
+      background: var(--theme-border);
+      border-radius: 2px;
+    }
+
+    /* 底部三段式软键条 */
+    .nokia-softkeybar {
+      height: 26px;
+      background: linear-gradient(to bottom, var(--theme-primary), var(--theme-dark));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--theme-text);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .softkey-btn {
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      padding: 2px 0;
+      transition: background 0.1s;
+    }
+    .softkey-btn.left { text-align: left; }
+    .softkey-btn.center { text-align: center; color: #fde047; }
+    .softkey-btn.right { text-align: right; }
+    .softkey-btn:active {
+      opacity: 0.7;
+    }
+
+    /* 底部物理按键区模拟 */
+    .nokia-keypad {
+      width: 100%;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .keypad-nav-row {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dpad-container {
+      width: 100px;
+      height: 90px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-areas: 
+        ". up ."
+        "left ok right"
+        ". down .";
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 3px;
+      background: #111622;
+      padding: 4px;
+      border-radius: 16px;
+      border: 1px solid #334155;
+    }
+
+    .key-btn {
+      background: linear-gradient(180deg, #334155, #1e293b);
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
+      transition: all 0.08s ease;
+      touch-action: manipulation;
+    }
+    .key-btn:hover {
+      background: linear-gradient(180deg, #475569, #334155);
+      border-color: #64748b;
+    }
+    .key-btn:active, .key-btn.pressed {
+      transform: translateY(2px);
+      box-shadow: 0 0 2px rgba(0,0,0,0.8), inset 0 2px 4px rgba(0,0,0,0.6);
+      background: #0f172a;
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .soft-func-btn {
+      height: 38px;
+      font-size: 12px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #3b4252, #242933);
+    }
+
+    .dpad-btn {
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .dpad-btn.ok {
+      grid-area: ok;
+      background: linear-gradient(180deg, #0284c7, #0369a1);
+      border-color: #38bdf8;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .dpad-btn.up { grid-area: up; }
+    .dpad-btn.down { grid-area: down; }
+    .dpad-btn.left { grid-area: left; }
+    .dpad-btn.right { grid-area: right; }
+
+    .num-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .num-btn {
+      height: 30px;
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+      justify-content: center;
+      align-items: baseline;
+      font-size: 12px;
+    }
+    .num-btn span.sub {
+      font-size: 8px;
+      color: #94a3b8;
+    }
+
+    /* ======= 诺基亚风格 UI 控件规范实现 ======= */
+
+    /* 1. 分类栏 / Tab 指示器 (诺基亚经典横向页签) */
+    .nokia-tab-bar {
+      display: flex;
+      background: #0a0e17;
+      border-bottom: 2px solid var(--theme-primary);
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+    .nokia-tab-item {
+      flex: 1;
+      padding: 5px 0;
+      text-align: center;
+      font-size: 11px;
+      color: var(--theme-subtext);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      position: relative;
+    }
+    .nokia-tab-item.active {
+      color: var(--theme-text);
+      font-weight: bold;
+      background: linear-gradient(to bottom, transparent, rgba(0, 85, 170, 0.4));
+    }
+    .nokia-tab-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 10%;
+      width: 80%;
+      height: 2px;
+      background: #38bdf8;
+    }
+    .nokia-tab-item .material-icons {
+      font-size: 13px;
+    }
+
+    /* 2. 列表项通用样式 (36dp / 44dp 行高) */
+    .nokia-list {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 0;
+    }
+
+    .nokia-list-item {
+      height: 36px;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--theme-text);
+      cursor: pointer;
+      position: relative;
+      border-bottom: 1px dashed var(--theme-dashed);
+    }
+    .nokia-list-item:last-child {
+      border-bottom: none;
+    }
+
+    /* 焦点高亮 (Nokia Focus 风格) */
+    .nokia-list-item.focused {
+      background-color: var(--theme-focus) !important;
+      color: #ffffff !important;
+      border-radius: 4px;
+      border-bottom-color: transparent;
+      margin: 0 3px;
+      padding: 0 5px;
+    }
+    .nokia-list-item.focused .sub-text,
+    .nokia-list-item.focused .item-extra {
+      color: #e0f2fe !important;
+    }
+    .nokia-list-item.focused .nokia-badge {
+      background: #ffffff;
+      color: var(--theme-focus);
+    }
+
+    .item-icon {
+      font-size: 16px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+    }
+    .item-cover-mini {
+      width: 24px;
+      height: 24px;
+      border-radius: 3px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+
+    .item-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .item-title {
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-artist {
+      font-size: 10px;
+      color: var(--theme-subtext);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-extra {
+      font-size: 10px;
+      color: var(--theme-subtext);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .nokia-badge {
+      font-size: 9px;
+      background: rgba(255,255,255,0.15);
+      color: #cbd5e1;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .playing-indicator {
+      color: #22d3ee;
+      animation: pulse 1.2s infinite ease-in-out;
+      font-size: 14px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+
+    /* 3. 页面模块分类分隔头 */
+    .nokia-section-header {
+      height: 22px;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #93c5fd;
+      border-left: 3px solid #38bdf8;
+      margin-top: 4px;
+    }
+
+    /* 4. 2x2 宫格推荐导航 (诺基亚快捷方块) */
+    .nokia-grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 6px;
+    }
+    .nokia-grid-card {
+      height: 48px;
+      background: linear-gradient(145deg, #182234, #0f1624);
+      border: 1px solid var(--theme-border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .nokia-grid-card.focused {
+      background: var(--theme-focus) !important;
+      border-color: #93c5fd;
+    }
+    .nokia-grid-card .grid-icon {
+      font-size: 22px;
+      color: #38bdf8;
+    }
+    .nokia-grid-card.focused .grid-icon {
+      color: #ffffff;
+    }
+    .nokia-grid-card .grid-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--theme-text);
+      line-height: 1.2;
+    }
+    .nokia-grid-card .grid-sub {
+      font-size: 9px;
+      color: var(--theme-subtext);
+    }
+    .nokia-grid-card.focused .grid-sub {
+      color: #e0f2fe;
+    }
+
+    /* 5. 正在播放详情页 (Player View) */
+    .player-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 10px;
+      height: 100%;
+      justify-content: space-between;
+    }
+
+    /* 黑胶唱片复古动效 */
+    .vinyl-disk-wrapper {
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2d3748 20%, #111827 25%, #1e293b 40%, #030712 70%);
+      border: 3px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+      position: relative;
+      margin: 4px 0;
+      animation: rotateVinyl 8s linear infinite;
+    }
+    .vinyl-disk-wrapper.paused {
+      animation-play-state: paused;
+    }
+    .vinyl-center-cover {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ef4444, #881337);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      color: #fff;
+      font-size: 18px;
+    }
+
+    @keyframes rotateVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .player-song-info {
+      text-align: center;
+      width: 100%;
+    }
+    .player-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-artist {
+      font-size: 11px;
+      color: var(--theme-subtext);
+      margin-top: 2px;
+    }
+
+    /* 单行歌词高亮轮播 */
+    .player-lyric-preview {
+      height: 26px;
+      background: rgba(0,0,0,0.5);
+      border: 1px dashed var(--theme-focus);
+      border-radius: 4px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #38bdf8;
+      padding: 0 8px;
+      margin: 4px 0;
+      cursor: pointer;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+      transition: all 0.15s;
+    }
+    .player-lyric-preview:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-style: solid;
+    }
+    .lyric-preview-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      text-align: center;
+    }
+    .lyric-expand-hint {
+      font-size: 9px;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.1);
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+
+    /* 播放器进度条组件 */
+    .player-progress-box {
+      width: 100%;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: #1e293b;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      width: 38%;
+      height: 100%;
+      background: #38bdf8;
+    }
+    .progress-time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--theme-subtext);
+      margin-top: 2px;
+    }
+
+    /* 播放器按键指引面板 */
+    .player-controls-guide {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      width: 100%;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 4px;
+      padding: 3px 2px;
+      margin-top: 2px;
+    }
+    .control-guide-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 8px;
+      color: #94a3b8;
+      line-height: 1.1;
+    }
+    .control-guide-item .material-icons {
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .control-guide-item.highlight .material-icons {
+      color: #fde047;
+    }
+    .control-guide-item.highlight span {
+      color: #fde047;
+      font-weight: bold;
+    }
+    .control-guide-item.active .material-icons {
+      color: #38bdf8;
+    }
+
+    /* 6. 歌词滚屏界面 (Full Lyric View) */
+    .lyric-full-view {
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .lyric-line {
+      font-size: 11px;
+      color: var(--theme-subtext);
+      transition: all 0.2s;
+    }
+    .lyric-line.highlight {
+      font-size: 13px;
+      font-weight: bold;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border-left: 2px solid #38bdf8;
+      border-right: 2px solid #38bdf8;
+    }
+
+    /* 7. Nokia 风格选项弹窗模拟 (NokiaOptionsDialog) */
+    .nokia-dialog-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 50;
+    }
+    .nokia-dialog-overlay.show {
+      display: flex;
+    }
+    .nokia-dialog-card {
+      background: var(--theme-cardbg);
+      border-top: 2px solid #38bdf8;
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+      box-shadow: 0 -8px 20px rgba(0,0,0,0.8);
+    }
+    .dialog-header {
+      height: 24px;
+      background: linear-gradient(to bottom, var(--theme-primary), var(--theme-dark));
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .dialog-body {
+      padding: 4px 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .dialog-option-item {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+      font-size: 11px;
+      color: #fff;
+    }
+    .dialog-option-item.focused {
+      background: var(--theme-focus);
+      font-weight: bold;
+    }
+    .dialog-footer {
+      height: 22px;
+      background: var(--theme-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 10px;
+      color: #cbd5e1;
+    }
+
+    /* 搜索栏输入框模拟 */
+    .search-input-box {
+      margin: 6px;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 4px;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .search-input-box .material-icons {
+      font-size: 14px;
+      color: #38bdf8;
+    }
+    .search-input-text {
+      font-size: 11px;
+      color: #fff;
+      flex: 1;
+    }
+    .search-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 11px;
+      background: #38bdf8;
+      animation: blink 0.8s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* 右侧控制面板与设计说明 */
+    .docs-panel {
+      flex: 1;
+      min-width: 320px;
+      max-width: 580px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .docs-panel h2 {
+      font-size: 16px;
+      color: #38bdf8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .docs-panel h3 {
+      font-size: 13px;
+      color: #f1f5f9;
+      margin: 12px 0 6px 0;
+      border-left: 3px solid #38bdf8;
+      padding-left: 6px;
+    }
+    .docs-panel p, .docs-panel li {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .docs-panel ul {
+      padding-left: 18px;
+    }
+
+    .key-badge {
+      display: inline-block;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #38bdf8;
+      font-family: monospace;
+    }
+
+    .theme-selector-bar {
+      display: flex;
+      gap: 6px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .theme-chip {
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      transition: transform 0.1s;
+    }
+    .theme-chip:hover {
+      transform: scale(1.05);
+    }
+
+    .status-toast {
+      position: absolute;
+      top: 36px;
+      left: 20px;
+      right: 20px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      color: #fff;
+      font-size: 10px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      text-align: center;
+      z-index: 60;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="preview-header">
+    <h1>KeydroidX Music (原键音乐) - 诺基亚按键机 UI 交互设计原型</h1>
+    <p>专为 240dp 物理按键机定制 · 严格符合 NOKIA_DEVELOPMENT_RULES.md · 支持物理按键映射与三段式软键交互</p>
+  </header>
+
+  <main class="main-workspace">
+
+    <!-- 诺基亚物理真机模型仿真 -->
+    <div class="nokia-phone-frame">
+      <div class="phone-speaker"></div>
+
+      <!-- 240dp 屏幕模拟 -->
+      <div class="nokia-screen" id="nokiaScreen">
+
+        <!-- Toast 浮层 -->
+        <div class="status-toast" id="statusToast">提示信息</div>
+
+        <!-- 顶部标题栏 (Top TitleBar) -->
+        <div class="nokia-titlebar" id="titleBar">
+          <div class="titlebar-left" id="pageTitleText">
+            <span class="material-icons" id="titleIcon">queue_music</span>
+            <span id="titleText">我的音乐</span>
+          </div>
+          <div class="titlebar-status">
+            <span class="material-icons" id="statusPlayIcon" style="display:none; color:#22d3ee;">play_arrow</span>
+            <span class="material-icons">signal_cellular_4_bar</span>
+            <span>70%</span>
+          </div>
+        </div>
+
+        <!-- 页面内容容器 (可切换页面) -->
+        <div class="nokia-content" id="screenContent">
+          <!-- 动态渲染页面视图 -->
+        </div>
+
+        <!-- 底部三段式软键条 (Softkey Bar) -->
+        <div class="nokia-softkeybar" id="softKeyBar">
+          <div class="softkey-btn left" id="softLeftText" onclick="handleAction('SOFT_LEFT')">选项</div>
+          <div class="softkey-btn center" id="softCenterText" onclick="handleAction('SELECT')">进入</div>
+          <div class="softkey-btn right" id="softRightText" onclick="handleAction('SOFT_RIGHT')">退出</div>
+        </div>
+
+        <!-- NokiaOptionsDialog 弹窗模拟 -->
+        <div class="nokia-dialog-overlay" id="dialogOverlay">
+          <div class="nokia-dialog-card">
+            <div class="dialog-header">
+              <span class="material-icons" style="font-size:13px; margin-right:4px;">menu</span>
+              <span id="dialogTitle">选项菜单</span>
+            </div>
+            <div class="dialog-body" id="dialogList">
+              <!-- 弹窗列表项 -->
+            </div>
+            <div class="dialog-footer">
+              <span>[OK] 选择</span>
+              <span>[返回] 关闭</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 物理按键与方向键模拟盘 -->
+      <div class="nokia-keypad">
+        <div class="keypad-nav-row">
+          <button class="key-btn soft-func-btn" id="btnSoftLeft" onclick="handleAction('SOFT_LEFT')">左软键</button>
+          
+          <div class="dpad-container">
+            <button class="key-btn dpad-btn up" onclick="handleAction('UP')"><span class="material-icons" style="font-size:16px;">arrow_drop_up</span></button>
+            <button class="key-btn dpad-btn left" onclick="handleAction('LEFT')"><span class="material-icons" style="font-size:16px;">arrow_left</span></button>
+            <button class="key-btn dpad-btn ok" onclick="handleAction('SELECT')">OK</button>
+            <button class="key-btn dpad-btn right" onclick="handleAction('RIGHT')"><span class="material-icons" style="font-size:16px;">arrow_right</span></button>
+            <button class="key-btn dpad-btn down" onclick="handleAction('DOWN')"><span class="material-icons" style="font-size:16px;">arrow_drop_down</span></button>
+          </div>
+
+          <button class="key-btn soft-func-btn" id="btnSoftRight" onclick="handleAction('SOFT_RIGHT')">右软键</button>
+        </div>
+
+        <!-- 数字九键区 -->
+        <div class="num-pad-grid">
+          <button class="key-btn num-btn" onclick="handleNumKey('1')">1 <span class="sub">.</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('2')">2 <span class="sub">abc</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('3')">3 <span class="sub">def</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('4')">4 <span class="sub">ghi</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('5')">5 <span class="sub">jkl</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('6')">6 <span class="sub">mno</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('7')">7 <span class="sub">pqrs</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('8')">8 <span class="sub">tuv</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('9')">9 <span class="sub">wxyz</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('*')">* <span class="sub">♪</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('0')">0 <span class="sub">_</span></button>
+          <button class="key-btn num-btn" onclick="handleNumKey('#')"># <span class="sub">模式</span></button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 右侧功能说明与设计审核看板 -->
+    <div class="docs-panel">
+      <h2><span class="material-icons">palette</span> 主题配色与全局热切换</h2>
+      <p>完全遵循 SDK 中的 <code>NokiaTheme</code> 规范，支持与 Launcher 桌面实时同步：</p>
+      <div class="theme-selector-bar">
+        <div class="theme-chip" style="background:#1a3a6b;" onclick="setTheme('classic_blue')">经典深蓝</div>
+        <div class="theme-chip" style="background:#2D2D2D;" onclick="setTheme('obsidian_black')">曜石纯黑</div>
+        <div class="theme-chip" style="background:#005A70;" onclick="setTheme('cyan_sea')">青海浩渺</div>
+        <div class="theme-chip" style="background:#1B4D2E;" onclick="setTheme('emerald_green')">翡翠幽绿</div>
+        <div class="theme-chip" style="background:#4A154B;" onclick="setTheme('wine_purple')">典雅酒红</div>
+        <div class="theme-chip" style="background:#5C4300;" onclick="setTheme('amber_gold')">琥珀暖金</div>
+      </div>
+
+      <h3><span class="material-icons" style="font-size:15px; vertical-align:middle;">tune</span> 按键交互规范映射 (键盘 / 遥控器映射)</h3>
+      <ul>
+        <li><span class="key-badge">↑</span> / <span class="key-badge">↓</span> 方向键：上下移动当前高亮光标 (列表/宫格/歌词)。</li>
+        <li><span class="key-badge">←</span> / <span class="key-badge">→</span> 方向键：横向切换 Tab 页签 (我的 / 发现 / 榜单 / 搜索) 或在播放页切换上/下一曲。</li>
+        <li><span class="key-badge">OK / Enter</span> 键：执行确定操作（进入页面、播放选中的歌曲、播放/暂停切换）。</li>
+        <li><span class="key-badge">左软键 (F1 / Q)</span>：呼出诺基亚标准 <code>NokiaOptionsDialog</code> 选项菜单。</li>
+        <li><span class="key-badge">右软键 (F2 / Backspace / Esc)</span>：返回上一级或退出当前弹窗。</li>
+        <li><span class="key-badge">快捷数字键</span>：在播放页按 <span class="key-badge">#</span> 切换循环模式，按 <span class="key-badge">*</span> 切换歌词/封面。</li>
+      </ul>
+
+      <h3><span class="material-icons" style="font-size:15px; vertical-align:middle;">grid_view</span> 网易云功能在按键机上的精简与重构策略</h3>
+      <ul>
+        <li><strong>我的音乐</strong>：精简为 本地音乐、最近播放、我喜欢的音乐(496首)、创建的歌单列表。</li>
+        <li><strong>发现 / 推荐</strong>：以 2x2 宫格模块呈现“私人FM”、“每日推荐”、“歌单广场”、“排行榜”，无需复杂的手势滑动。</li>
+        <li><strong>正在播放详情</strong>：诺基亚黑胶唱片旋转动效，单行浮动歌词预览，按确定键直接暂停/播放。</li>
+        <li><strong>全屏歌词滚动</strong>：大字号点阵高亮当前行，上下键支持手动拖动与回正。</li>
+        <li><strong>搜索功能</strong>：九键输入法联动检索，历史记录快速回填。</li>
+      </ul>
+      <p style="margin-top:10px; font-size:11px; color:#60a5fa;">💡 提示：您可以直接在键盘上使用 <b>↑ ↓ ← → 回车 Backspace</b> 体验真实的按键机交互！</p>
+    </div>
+
+  </main>
+
+  <script>
+    // ===== 1. 全局状态与数据模型 =====
+    const state = {
+      currentTheme: 'classic_blue',
+      currentPage: 'home', // 'home' (包含 Tab: 'my', 'discover', 'rank', 'search'), 'playlist_detail', 'player', 'lyric_full'
+      currentTab: 0, // 0: 我的, 1: 发现, 2: 榜单, 3: 搜索
+      focusIndex: 0,
+      dialogOpen: false,
+      dialogFocusIndex: 0,
+      isPlaying: true,
+      playProgress: 35, // 0 - 100
+      playMode: 0, // 0: 列表循环, 1: 单曲循环, 2: 随机播放
+      currentSong: {
+        id: 101,
+        title: "顺风顺水",
+        artist: "邹念慈 / 泰顺繁星童声合唱团",
+        album: "追光山海",
+        duration: "03:05",
+        curTime: "01:08",
+        isFav: true
+      },
+      // 模拟歌单歌曲
+      mySongs: [
+        { id: 1, title: "顺风顺水", artist: "邹念慈 / 繁星合唱团", isFav: true },
+        { id: 2, title: "唤晚风", artist: "Night Trigger", isFav: true },
+        { id: 3, title: "三笑", artist: "王朝1982 / 朱旭", isFav: false },
+        { id: 4, title: "什么时候告白啊？", artist: "Hanser", isFav: true },
+        { id: 5, title: "折柳记", artist: "银临 / 施夏明", isFav: false },
+        { id: 6, title: "Sada Nannu", artist: "Mickey J. Meyer", isFav: false },
+        { id: 7, title: "归园田居", artist: "lbg / 逆水寒", isFav: true }
+      ],
+      myPlaylists: [
+        { id: 201, title: "我喜欢的音乐", count: 496, icon: "favorite" },
+        { id: 202, title: "佛经禅乐男声清念", count: 6, icon: "queue_music" },
+        { id: 203, title: "仙剑经典原声大碟", count: 58, icon: "album" },
+        { id: 204, title: "古风国风精选", count: 72, icon: "music_note" }
+      ],
+      rankList: [
+        { id: 301, name: "飙升榜", top1: "无题 - 姜云升", update: "刚刚更新", color: "#3b82f6" },
+        { id: 302, name: "新歌榜", top1: "Emily - 房东的猫", update: "刚刚更新", color: "#10b981" },
+        { id: 303, name: "原创榜", top1: "街头婚礼 - 周以希", update: "每周四更新", color: "#06b6d4" },
+        { id: 304, name: "热歌榜", top1: "海屿你 - 马也", update: "更新11首", color: "#ec4899" }
+      ],
+      lyrics: [
+        "作词 : 邹念慈",
+        "作曲 : 邹念慈",
+        "编曲 : 徐轶凡",
+        "我在 云层之上 随风而舞",
+        "追着远山日升到日落",
+        "不回头",
+        "我在 山海之间 造一个梦",
+        "向着旷野向着明天走",
+        "不停留",
+        "翻过青山一座座（嘿！）"
+      ],
+      currentLyricIndex: 4
+    };
+
+    // 主题色彩定义表 (符合 NokiaTheme.java)
+    const themes = {
+      classic_blue: {
+        primary: "#1a3a6b",
+        dark: "#0d1b3e",
+        accent: "#0055AA",
+        focus: "#0055AA",
+        text: "#FFFFFF",
+        subtext: "#B0B0B0",
+        cardbg: "#141824",
+        bodybg: "#090c13",
+        border: "#233454",
+        dashed: "#2d426b"
+      },
+      obsidian_black: {
+        primary: "#2D2D2D",
+        dark: "#141414",
+        accent: "#4A4A4A",
+        focus: "#383838",
+        text: "#FFFFFF",
+        subtext: "#A0A0A0",
+        cardbg: "#181818",
+        bodybg: "#0c0c0c",
+        border: "#3a3a3a",
+        dashed: "#333333"
+      },
+      cyan_sea: {
+        primary: "#005A70",
+        dark: "#002A35",
+        accent: "#00838F",
+        focus: "#00838F",
+        text: "#FFFFFF",
+        subtext: "#80DEEA",
+        cardbg: "#0c1d24",
+        bodybg: "#041117",
+        border: "#184552",
+        dashed: "#124250"
+      },
+      emerald_green: {
+        primary: "#1B4D2E",
+        dark: "#0C2616",
+        accent: "#2E7D32",
+        focus: "#2E7D32",
+        text: "#FFFFFF",
+        subtext: "#A5D6A7",
+        cardbg: "#112217",
+        bodybg: "#07130b",
+        border: "#1e472a",
+        dashed: "#183e24"
+      },
+      wine_purple: {
+        primary: "#4A154B",
+        dark: "#250826",
+        accent: "#6A1B9A",
+        focus: "#6A1B9A",
+        text: "#FFFFFF",
+        subtext: "#CE93D8",
+        cardbg: "#221124",
+        bodybg: "#120613",
+        border: "#4b1e4e",
+        dashed: "#3d1440"
+      },
+      amber_gold: {
+        primary: "#5C4300",
+        dark: "#2E2000",
+        accent: "#E65100",
+        focus: "#D97706",
+        text: "#FFFFFF",
+        subtext: "#FFE082",
+        cardbg: "#241d0f",
+        bodybg: "#140f06",
+        border: "#543f17",
+        dashed: "#42310f"
+      }
+    };
+
+    function setTheme(themeKey) {
+      state.currentTheme = themeKey;
+      const t = themes[themeKey];
+      document.documentElement.style.setProperty('--theme-primary', t.primary);
+      document.documentElement.style.setProperty('--theme-dark', t.dark);
+      document.documentElement.style.setProperty('--theme-accent', t.accent);
+      document.documentElement.style.setProperty('--theme-focus', t.focus);
+      document.documentElement.style.setProperty('--theme-text', t.text);
+      document.documentElement.style.setProperty('--theme-subtext', t.subtext);
+      document.documentElement.style.setProperty('--theme-cardbg', t.cardbg);
+      document.documentElement.style.setProperty('--theme-bodybg', t.bodybg);
+      document.documentElement.style.setProperty('--theme-border', t.border);
+      document.documentElement.style.setProperty('--theme-dashed', t.dashed);
+      showToast("已应用主题: " + themeKey);
+      renderUI();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("statusToast");
+      t.innerText = msg;
+      t.style.display = "block";
+      setTimeout(() => {
+        t.style.display = "none";
+      }, 1800);
+    }
+
+    // ===== 2. 界面渲染器 =====
+
+    function renderUI() {
+      const container = document.getElementById("screenContent");
+      const titleText = document.getElementById("titleText");
+      const titleIcon = document.getElementById("titleIcon");
+      const softLeft = document.getElementById("softLeftText");
+      const softCenter = document.getElementById("softCenterText");
+      const softRight = document.getElementById("softRightText");
+      const statusPlayIcon = document.getElementById("statusPlayIcon");
+
+      statusPlayIcon.style.display = state.isPlaying ? "inline-block" : "none";
+
+      if (state.currentPage === 'home') {
+        // 主页带 Tab
+        const tabs = ["我的", "发现", "榜单", "搜索"];
+        const tabIcons = ["person", "explore", "leaderboard", "search"];
+        
+        let tabHtml = `<div class="nokia-tab-bar">`;
+        tabs.forEach((tabName, idx) => {
+          tabHtml += `
+            <div class="nokia-tab-item ${state.currentTab === idx ? 'active' : ''}" onclick="switchTab(${idx})">
+              <span class="material-icons">${tabIcons[idx]}</span>
+              <span>${tabName}</span>
+            </div>
+          `;
+        });
+        tabHtml += `</div>`;
+
+        let contentHtml = "";
+
+        if (state.currentTab === 0) {
+          // Tab 0: 我的音乐
+          titleText.innerText = "我的音乐库";
+          titleIcon.innerText = "library_music";
+          softLeft.innerText = "选项";
+          softCenter.innerText = "播放/查看";
+          softRight.innerText = "正在播放";
+
+          contentHtml += `
+            <div class="nokia-list">
+              <div class="nokia-list-item ${state.focusIndex === 0 ? 'focused' : ''}">
+                <span class="material-icons item-icon">favorite</span>
+                <div class="item-content">
+                  <div class="item-title">我喜欢的音乐</div>
+                  <div class="item-artist">496 首歌曲 · 云端已同步</div>
+                </div>
+                <span class="nokia-badge">496</span>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 1 ? 'focused' : ''}">
+                <span class="material-icons item-icon">history</span>
+                <div class="item-content">
+                  <div class="item-title">最近播放历史</div>
+                  <div class="item-artist">100 首播放记录</div>
+                </div>
+                <span class="nokia-badge">100</span>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 2 ? 'focused' : ''}">
+                <span class="material-icons item-icon">sd_card</span>
+                <div class="item-content">
+                  <div class="item-title">本地音乐扫描</div>
+                  <div class="item-artist">内部存储与 TF 卡</div>
+                </div>
+                <span class="nokia-badge">本地</span>
+              </div>
+              <div class="nokia-section-header">自建与收藏歌单 (4)</div>
+              ${state.myPlaylists.map((pl, idx) => `
+                <div class="nokia-list-item ${state.focusIndex === (idx + 3) ? 'focused' : ''}">
+                  <span class="material-icons item-icon">${pl.icon}</span>
+                  <div class="item-content">
+                    <div class="item-title">${pl.title}</div>
+                    <div class="item-artist">${pl.count} 首歌曲</div>
+                  </div>
+                  <span class="item-extra"><span class="material-icons" style="font-size:12px;">chevron_right</span></span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (state.currentTab === 1) {
+          // Tab 1: 发现音乐 (推荐/FM)
+          titleText.innerText = "发现音乐";
+          titleIcon.innerText = "explore";
+          softLeft.innerText = "选项";
+          softCenter.innerText = "进入";
+          softRight.innerText = "返回";
+
+          contentHtml += `
+            <div class="nokia-grid-4">
+              <div class="nokia-grid-card ${state.focusIndex === 0 ? 'focused' : ''}">
+                <span class="material-icons grid-icon">radio</span>
+                <div>
+                  <div class="grid-title">私人 FM</div>
+                  <div class="grid-sub">个性化随心听</div>
+                </div>
+              </div>
+              <div class="nokia-grid-card ${state.focusIndex === 1 ? 'focused' : ''}">
+                <span class="material-icons grid-icon">today</span>
+                <div>
+                  <div class="grid-title">每日推荐</div>
+                  <div class="grid-sub">每天 06:00 更新</div>
+                </div>
+              </div>
+              <div class="nokia-grid-card ${state.focusIndex === 2 ? 'focused' : ''}">
+                <span class="material-icons grid-icon">library_music</span>
+                <div>
+                  <div class="grid-title">歌单广场</div>
+                  <div class="grid-sub">流行/ACG/古风</div>
+                </div>
+              </div>
+              <div class="nokia-grid-card ${state.focusIndex === 3 ? 'focused' : ''}">
+                <span class="material-icons grid-icon">trending_up</span>
+                <div>
+                  <div class="grid-title">排行榜</div>
+                  <div class="grid-sub">官方云音乐榜</div>
+                </div>
+              </div>
+            </div>
+            <div class="nokia-section-header">今日推荐歌单</div>
+            <div class="nokia-list">
+              <div class="nokia-list-item ${state.focusIndex === 4 ? 'focused' : ''}">
+                <div class="item-cover-mini">纯蓝</div>
+                <div class="item-content">
+                  <div class="item-title">2026洛天依纯蓝幻乐</div>
+                  <div class="item-artist">演唱会官方精选 · 1.4万播</div>
+                </div>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 5 ? 'focused' : ''}">
+                <div class="item-cover-mini">古韵</div>
+                <div class="item-content">
+                  <div class="item-title">国风竹笛与古筝禅意精选</div>
+                  <div class="item-artist">传统器乐名作 · 25万播</div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (state.currentTab === 2) {
+          // Tab 2: 排行榜
+          titleText.innerText = "云音乐排行榜";
+          titleIcon.innerText = "leaderboard";
+          softLeft.innerText = "选项";
+          softCenter.innerText = "查看榜单";
+          softRight.innerText = "返回";
+
+          contentHtml += `
+            <div class="nokia-list">
+              ${state.rankList.map((rank, idx) => `
+                <div class="nokia-list-item ${state.focusIndex === idx ? 'focused' : ''}" style="height:44px;">
+                  <div class="item-cover-mini" style="background:${rank.color}; color:#fff; font-size:10px;">${rank.name.substring(0,2)}</div>
+                  <div class="item-content">
+                    <div class="item-title">${rank.name} <span style="font-size:9px; color:#38bdf8;">(${rank.update})</span></div>
+                    <div class="item-artist">1. ${rank.top1}</div>
+                  </div>
+                  <span class="material-icons" style="font-size:13px; color:var(--theme-subtext);">chevron_right</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (state.currentTab === 3) {
+          // Tab 3: 搜索页面
+          titleText.innerText = "歌曲搜索";
+          titleIcon.innerText = "search";
+          softLeft.innerText = "清空";
+          softCenter.innerText = "搜索";
+          softRight.innerText = "返回";
+
+          contentHtml += `
+            <div class="search-input-box">
+              <span class="material-icons">search</span>
+              <div class="search-input-text">周杰伦<span class="search-cursor"></span></div>
+              <span class="nokia-badge">拼音/按键</span>
+            </div>
+            <div class="nokia-section-header">热门搜索 / 搜索历史</div>
+            <div class="nokia-list">
+              <div class="nokia-list-item ${state.focusIndex === 0 ? 'focused' : ''}">
+                <span class="material-icons item-icon">history</span>
+                <div class="item-content"><div class="item-title">顺风顺水 邹念慈</div></div>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 1 ? 'focused' : ''}">
+                <span class="material-icons item-icon">history</span>
+                <div class="item-content"><div class="item-title">仙剑奇侠传 经典配乐</div></div>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 2 ? 'focused' : ''}">
+                <span class="material-icons item-icon">whatshot</span>
+                <div class="item-content"><div class="item-title">姜云升 无题</div></div>
+              </div>
+              <div class="nokia-list-item ${state.focusIndex === 3 ? 'focused' : ''}">
+                <span class="material-icons item-icon">whatshot</span>
+                <div class="item-content"><div class="item-title">房东的猫 Emily</div></div>
+              </div>
+            </div>
+          `;
+        }
+
+        container.innerHTML = tabHtml + contentHtml;
+
+      } else if (state.currentPage === 'playlist_detail') {
+        // 歌单详情页
+        titleText.innerText = "我喜欢的音乐";
+        titleIcon.innerText = "favorite";
+        softLeft.innerText = "选项";
+        softCenter.innerText = "播放选中";
+        softRight.innerText = "返回列表";
+
+        let songListHtml = `
+          <div class="nokia-list-item ${state.focusIndex === 0 ? 'focused' : ''}" style="background:rgba(0,0,0,0.25);">
+            <span class="material-icons item-icon" style="color:#22d3ee;">play_circle</span>
+            <div class="item-content">
+              <div class="item-title"><b>播放全部歌曲</b></div>
+              <div class="item-artist">共 ${state.mySongs.length} 首歌曲</div>
+            </div>
+            <span class="nokia-badge">顺序</span>
+          </div>
+          <div class="nokia-section-header">歌曲列表</div>
+          <div class="nokia-list">
+        `;
+
+        state.mySongs.forEach((song, idx) => {
+          const isFocused = (state.focusIndex === (idx + 1));
+          const isCurSong = (song.id === state.currentSong.id);
+          songListHtml += `
+            <div class="nokia-list-item ${isFocused ? 'focused' : ''}">
+              <span style="width:16px; font-size:10px; color:var(--theme-subtext); text-align:center;">${idx + 1}</span>
+              <div class="item-content">
+                <div class="item-title">${song.title} ${isCurSong ? '<span class="playing-indicator material-icons" style="font-size:11px; vertical-align:middle;">volume_up</span>' : ''}</div>
+                <div class="item-artist">${song.artist}</div>
+              </div>
+              <span class="material-icons" style="font-size:13px; color:${song.isFav ? '#ef4444' : '#64748b'};">${song.isFav ? 'favorite' : 'favorite_border'}</span>
+            </div>
+          `;
+        });
+
+        songListHtml += `</div>`;
+        container.innerHTML = songListHtml;
+
+      } else if (state.currentPage === 'player') {
+        // 正在播放详情页 (MusicPlayerActivity)
+        titleText.innerText = "正在播放";
+        titleIcon.innerText = "play_circle_filled";
+        softLeft.innerText = "选项";
+        softCenter.innerText = state.isPlaying ? "暂停" : "播放";
+        softRight.innerText = "返回";
+
+        const playModeIcon = ["repeat", "repeat_one", "shuffle"][state.playMode];
+        const playModeName = ["列表循环", "单曲循环", "随机播放"][state.playMode];
+
+        container.innerHTML = `
+          <div class="player-container">
+            <div class="vinyl-disk-wrapper ${state.isPlaying ? '' : 'paused'}">
+              <div class="vinyl-center-cover">
+                <span class="material-icons">${state.isPlaying ? 'music_note' : 'pause'}</span>
+              </div>
+            </div>
+
+            <div class="player-song-info">
+              <div class="player-title">${state.currentSong.title}</div>
+              <div class="player-artist">${state.currentSong.artist}</div>
+            </div>
+
+            <div class="player-lyric-preview" onclick="openFullLyric()" title="点击或按 * 键展开全屏歌词">
+              <span class="material-icons" style="font-size:13px; color:#38bdf8;">lyrics</span>
+              <span class="lyric-preview-text">${state.lyrics[state.currentLyricIndex]}</span>
+              <span class="lyric-expand-hint">[按 * 全屏]</span>
+            </div>
+
+            <div class="player-progress-box">
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${state.playProgress}%;"></div>
+              </div>
+              <div class="progress-time-row">
+                <span>01:08</span>
+                <span style="color:#38bdf8;">[OK 播放/暂停]</span>
+                <span>${state.currentSong.duration}</span>
+              </div>
+            </div>
+
+            <div class="player-controls-guide">
+              <div class="control-guide-item" onclick="handleAction('LEFT')">
+                <span class="material-icons">skip_previous</span>
+                <span>← 上曲</span>
+              </div>
+              <div class="control-guide-item" onclick="handleAction('RIGHT')">
+                <span class="material-icons">skip_next</span>
+                <span>→ 下曲</span>
+              </div>
+              <div class="control-guide-item highlight" onclick="openFullLyric()">
+                <span class="material-icons">subtitles</span>
+                <span>* 歌词</span>
+              </div>
+              <div class="control-guide-item highlight" onclick="handleAction('HASH')">
+                <span class="material-icons">${playModeIcon}</span>
+                <span># 模式</span>
+              </div>
+              <div class="control-guide-item active" onclick="handleAction('SOFT_LEFT')">
+                <span class="material-icons">menu</span>
+                <span>左软:选项</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+      } else if (state.currentPage === 'lyric_full') {
+        // 全屏滚屏歌词页
+        titleText.innerText = "歌词浏览";
+        titleIcon.innerText = "subtitles";
+        softLeft.innerText = "收藏歌曲";
+        softCenter.innerText = "回正进度";
+        softRight.innerText = "返回播放";
+
+        let lyricHtml = `<div class="lyric-full-view">`;
+        state.lyrics.forEach((line, idx) => {
+          const isCur = (idx === state.currentLyricIndex);
+          const isFocused = (idx === state.focusIndex);
+          lyricHtml += `
+            <div class="lyric-line ${isCur ? 'highlight' : ''} ${isFocused && !isCur ? 'focused' : ''}">
+              ${line}
+            </div>
+          `;
+        });
+        lyricHtml += `</div>`;
+        container.innerHTML = lyricHtml;
+      }
+
+      // 确保焦点元素在视口可见
+      const focusedEl = container.querySelector(".focused");
+      if (focusedEl) {
+        focusedEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+
+      renderDialog();
+    }
+
+    // ===== 3. NokiaOptionsDialog 弹窗逻辑 =====
+
+    const dialogOptionsMap = {
+      home_my: [
+        { id: 1, title: "播放选中", icon: "play_arrow" },
+        { id: 2, title: "进入歌单", icon: "folder_open" },
+        { id: 3, title: "刷新云端同步", icon: "refresh" },
+        { id: 4, title: "切换外观主题", icon: "palette" },
+        { id: 5, title: "退出应用", icon: "exit_to_app" }
+      ],
+      player: [
+        { id: 1, title: "全屏歌词浏览", icon: "lyrics" },
+        { id: 2, title: "切换播放模式", icon: "repeat" },
+        { id: 3, title: "红心喜欢 / 取消喜欢", icon: "favorite" },
+        { id: 4, title: "查看歌曲信息", icon: "info" },
+        { id: 5, title: "返回主菜单", icon: "home" }
+      ]
+    };
+
+    function renderDialog() {
+      const overlay = document.getElementById("dialogOverlay");
+      if (!state.dialogOpen) {
+        overlay.classList.remove("show");
+        return;
+      }
+      overlay.classList.add("show");
+
+      const options = (state.currentPage === 'player') ? dialogOptionsMap.player : dialogOptionsMap.home_my;
+      const listEl = document.getElementById("dialogList");
+      listEl.innerHTML = options.map((opt, idx) => `
+        <div class="dialog-option-item ${state.dialogFocusIndex === idx ? 'focused' : ''}">
+          <span class="material-icons" style="font-size:14px; color:#38bdf8;">${opt.icon}</span>
+          <span>${opt.title}</span>
+        </div>
+      `).join('');
+    }
+
+    // ===== 4. 按键与操作调度器 =====
+
+    function handleAction(action) {
+      // 弹窗处于打开状态时优先接管
+      if (state.dialogOpen) {
+        const options = (state.currentPage === 'player') ? dialogOptionsMap.player : dialogOptionsMap.home_my;
+        if (action === 'UP') {
+          if (state.dialogFocusIndex > 0) state.dialogFocusIndex--;
+        } else if (action === 'DOWN') {
+          if (state.dialogFocusIndex < options.length - 1) state.dialogFocusIndex++;
+        } else if (action === 'SELECT' || action === 'SOFT_LEFT') {
+          // 选中弹窗项
+          executeDialogAction(options[state.dialogFocusIndex]);
+          state.dialogOpen = false;
+        } else if (action === 'SOFT_RIGHT') {
+          state.dialogOpen = false;
+        }
+        renderUI();
+        return;
+      }
+
+      // 正常页面操作分发
+      if (state.currentPage === 'home') {
+        const maxIndexMap = [6, 5, 3, 3];
+        const maxIdx = maxIndexMap[state.currentTab] || 0;
+
+        if (action === 'UP') {
+          if (state.focusIndex > 0) state.focusIndex--;
+        } else if (action === 'DOWN') {
+          if (state.focusIndex < maxIdx) state.focusIndex++;
+        } else if (action === 'LEFT') {
+          if (state.currentTab > 0) {
+            state.currentTab--;
+            state.focusIndex = 0;
+          }
+        } else if (action === 'RIGHT') {
+          if (state.currentTab < 3) {
+            state.currentTab++;
+            state.focusIndex = 0;
+          }
+        } else if (action === 'SELECT') {
+          if (state.currentTab === 0) {
+            if (state.focusIndex === 0 || state.focusIndex === 1 || state.focusIndex >= 3) {
+              state.currentPage = 'playlist_detail';
+              state.focusIndex = 0;
+            } else {
+              showToast("扫描本地音乐中...");
+            }
+          } else if (state.currentTab === 1) {
+            if (state.focusIndex === 0) {
+              showToast("启动私人 FM...");
+              state.currentPage = 'player';
+            } else {
+              state.currentPage = 'playlist_detail';
+              state.focusIndex = 0;
+            }
+          } else if (state.currentTab === 2) {
+            state.currentPage = 'playlist_detail';
+            state.focusIndex = 0;
+          } else if (state.currentTab === 3) {
+            showToast("搜索中...");
+            state.currentPage = 'playlist_detail';
+            state.focusIndex = 0;
+          }
+        } else if (action === 'SOFT_LEFT') {
+          state.dialogOpen = true;
+          state.dialogFocusIndex = 0;
+        } else if (action === 'SOFT_RIGHT') {
+          // 主页右软键进入播放页
+          state.currentPage = 'player';
+        }
+
+      } else if (state.currentPage === 'playlist_detail') {
+        const maxIdx = state.mySongs.length; // 0 是播放全部，1..N 是歌曲
+
+        if (action === 'UP') {
+          if (state.focusIndex > 0) state.focusIndex--;
+        } else if (action === 'DOWN') {
+          if (state.focusIndex < maxIdx) state.focusIndex++;
+        } else if (action === 'SELECT') {
+          if (state.focusIndex === 0) {
+            showToast("播放全部歌曲");
+            state.currentSong = state.mySongs[0];
+          } else {
+            state.currentSong = state.mySongs[state.focusIndex - 1];
+            showToast("开始播放: " + state.currentSong.title);
+          }
+          state.isPlaying = true;
+          state.currentPage = 'player';
+        } else if (action === 'SOFT_LEFT') {
+          state.dialogOpen = true;
+          state.dialogFocusIndex = 0;
+        } else if (action === 'SOFT_RIGHT') {
+          state.currentPage = 'home';
+          state.focusIndex = 0;
+        }
+
+      } else if (state.currentPage === 'player') {
+        if (action === 'SELECT') {
+          state.isPlaying = !state.isPlaying;
+          showToast(state.isPlaying ? "已继续播放" : "已暂停播放");
+        } else if (action === 'LEFT') {
+          showToast("切换上一曲");
+          state.playProgress = 0;
+        } else if (action === 'RIGHT') {
+          showToast("切换下一曲");
+          state.playProgress = 0;
+        } else if (action === 'UP') {
+          showToast("音量 +");
+        } else if (action === 'DOWN') {
+          showToast("音量 -");
+        } else if (action === 'SOFT_LEFT') {
+          state.dialogOpen = true;
+          state.dialogFocusIndex = 0;
+        } else if (action === 'SOFT_RIGHT') {
+          state.currentPage = 'home';
+        }
+
+      } else if (state.currentPage === 'lyric_full') {
+        if (action === 'UP') {
+          if (state.focusIndex > 0) state.focusIndex--;
+        } else if (action === 'DOWN') {
+          if (state.focusIndex < state.lyrics.length - 1) state.focusIndex++;
+        } else if (action === 'SELECT') {
+          state.currentLyricIndex = state.focusIndex;
+          showToast("已同步播放进度至此行歌词");
+        } else if (action === 'SOFT_LEFT') {
+          showToast("已红心收藏当前歌曲");
+        } else if (action === 'SOFT_RIGHT') {
+          state.currentPage = 'player';
+        }
+      }
+
+      renderUI();
+    }
+
+    function executeDialogAction(opt) {
+      if (opt.title.includes("主题")) {
+        const themeKeys = Object.keys(themes);
+        const nextIdx = (themeKeys.indexOf(state.currentTheme) + 1) % themeKeys.length;
+        setTheme(themeKeys[nextIdx]);
+      } else if (opt.title.includes("播放")) {
+        state.currentPage = 'player';
+      } else if (opt.title.includes("歌词")) {
+        openFullLyric();
+      } else if (opt.title.includes("退出")) {
+        showToast("退出应用程序");
+      } else {
+        showToast("已执行: " + opt.title);
+      }
+    }
+
+    function switchTab(tabIdx) {
+      state.currentTab = tabIdx;
+      state.focusIndex = 0;
+      renderUI();
+    }
+
+    function openFullLyric() {
+      state.currentPage = 'lyric_full';
+      state.focusIndex = state.currentLyricIndex;
+      renderUI();
+    }
+
+    function handleNumKey(key) {
+      if (key === '#') {
+        state.playMode = (state.playMode + 1) % 3;
+        const modeNames = ["列表循环", "单曲循环", "随机播放"];
+        showToast("切换模式: " + modeNames[state.playMode]);
+        renderUI();
+      } else if (key === '*') {
+        if (state.currentPage === 'player') {
+          openFullLyric();
+        } else if (state.currentPage === 'lyric_full') {
+          state.currentPage = 'player';
+          renderUI();
+        }
+      } else {
+        showToast("按键: " + key);
+      }
+    }
+
+    // ===== 5. 实体 PC 键盘监听 (模拟物理手机按键) =====
+    window.addEventListener('keydown', (e) => {
+      // 避免阻止页面其他必要行为，但捕获主要方向键
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape", "F1", "F2", "Backspace"].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      if (e.key === "ArrowUp") handleAction('UP');
+      else if (e.key === "ArrowDown") handleAction('DOWN');
+      else if (e.key === "ArrowLeft") handleAction('LEFT');
+      else if (e.key === "ArrowRight") handleAction('RIGHT');
+      else if (e.key === "Enter" || e.key === " ") handleAction('SELECT');
+      else if (e.key === "F1" || e.key === "q" || e.key === "Q") handleAction('SOFT_LEFT');
+      else if (e.key === "F2" || e.key === "Escape" || e.key === "Backspace") handleAction('SOFT_RIGHT');
+      else if (e.key >= "0" && e.key <= "9") handleNumKey(e.key);
+      else if (e.key === "#" || e.key === "*") handleNumKey(e.key);
+    });
+
+    // 进度条微步更新模拟
+    setInterval(() => {
+      if (state.isPlaying && state.currentPage === 'player') {
+        state.playProgress = (state.playProgress + 0.5);
+        if (state.playProgress > 100) state.playProgress = 0;
+        const fill = document.querySelector(".progress-bar-fill");
+        if (fill) fill.style.width = state.playProgress + "%";
+      }
+    }, 1000);
+
+    // 初始化渲染
+    renderUI();
+  </script>
+</body>
+</html>

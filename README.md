@@ -40,3 +40,13 @@ keydroidx-music/
 # Release 签名打包
 ./gradlew assembleRelease
 ```
+
+---
+
+## 设计与开发文档
+
+- **UI 与按键交互设计规范**: [UI_DESIGN_SPEC.md](./UI_DESIGN_SPEC.md) (详细包含 4 个 Tab、播放详情、全屏歌词与菜单按键状态机)
+- **HTML 交互式视觉原型**: [nokia_music_ui_mockup.html](./nokia_music_ui_mockup.html) (浏览器直接打开，支持实体键盘按键交互)
+- **生态接入与移植指南**: [AGENTS.md](./AGENTS.md)
+- **KeydroidX 生态通用开发规范**: [NOKIA_DEVELOPMENT_RULES.md](./NOKIA_DEVELOPMENT_RULES.md)
+
