@@ -5,7 +5,7 @@
 
 ---
 
-## 一、 项目定位与生态架构关系
+##  项目定位与生态架构关系
 
 在 KeydroidX 生态中，各个项目分工明确、高度解耦：
 
@@ -23,7 +23,7 @@
 
 ---
 
-## 二、 核心机制与协同工作流
+##  核心机制与协同工作流
 
 1. **零二次配置**：
    - 用户在 KeydroidX 桌面配好物理按键或切换主题/字体后，音乐播放器通过 ContentProvider 即时自动换肤并生效，无需用户进入音乐 App 重新配键。
@@ -35,23 +35,11 @@
 
 ---
 
-## 四、 项目路径
+##  项目路径
 - 本应用: `D:\project\keydroidx_ecosystem\keydroidx-music`
 - 参考库/项目 (Ncrust): `D:\project\fork_Ncrust`
 
-## 五、 移植分阶段计划
-我们会采取“先逻辑后UI”的原则，分模块进行代码迁移与适配：
-
-1. **移植网络接口层 (Network/API)**
-   - 迁移 `network` 相关代码，重构 API 调用逻辑以适配生态规范。
-2. **移植播放核心与状态管理 (Player)**
-   - 迁移 `PlaybackService` 及相关状态流，确保后台播放逻辑独立稳定。
-3. **本地库与缓存逻辑 (Library/Cache)**
-   - 迁移歌单、播放队列及本地缓存策略。
-4. **UI 重构与按键适配**
-   - 基于上述逻辑模块，重新设计符合 240dp 规范并适配物理按键的界面。
-
-## 六、 开发核心约束 (NOKIA_DEVELOPMENT_RULES.md)
+## 开发核心约束 (NOKIA_DEVELOPMENT_RULES.md)
 在进行任何 UI 实现或按键映射时，必须严格遵循以下原则：
 
 - **按键解耦**：严禁硬编码 `keyCode`，必须复用 `keydroidx-core` 中的 `NokiaKeyBinding` 来解析物理按键交互。
@@ -60,7 +48,9 @@
   - 严禁硬编码主题颜色，必须通过 `NokiaTheme` 系列工具生成适配主题的 drawable。
 - **生命周期安全**：在异步回调或 Fragment 更新中，必须守护 Context，防止出现 `IllegalStateException` 导致的黑屏或崩溃。
 
-## 三、 按键交互与 UI 设计标准
+- 按键机开发约束文档： ./NOKIA_DEVELOPMENT_RULES.md ，必须遵守，若与其他文档有冲突，应该向我询问
+
+## 按键交互与 UI 设计标准
 详细的 UI 布局规范、全套按键交互状态机以及页面设计详见专项文档：
 👉 **[UI_DESIGN_SPEC.md](./UI_DESIGN_SPEC.md)**
 👉 交互原型单文件：`nokia_music_ui_mockup.html`
@@ -79,3 +69,7 @@
   - `#` (井号键)：切换播放模式（列表循环/单曲循环/随机播放）；
   - `SOFT_LEFT` (左软键)：呼出播放选项菜单；
   - `SOFT_RIGHT` (右软键)：返回列表主页（后台保持播放）。
+
+
+## 分辨率适配
+主要视频 240 *320 以及 320*480 的分辨率
