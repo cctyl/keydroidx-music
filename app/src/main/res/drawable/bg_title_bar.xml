@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 标题栏/软键栏渐变背景 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="@color/music_titlebar_top"
+        android:endColor="@color/music_titlebar_bottom"
+        android:angle="270" />
+</shape>

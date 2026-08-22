@@ -1,40 +1,207 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    音乐主界面：纵向布局
+    ┌─────────────────────┐
+    │     Tab 栏 (4个)    │  ← 固定
+    ├─────────────────────┤
+    │   内容区（各 Tab）   │  ← 可滚动
+    └─────────────────────┘
+    顶部标题栏 / 底部软键由 NokiaBaseActivity 的骨架提供
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/music_bg">
+    android:background="@color/music_dark_bg">
 
-    <!-- 顶部状态提示栏 -->
-    <TextView
-        android:id="@+id/tv_provider_status"
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- Tab 栏                                                  -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/tab_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#E8EEF5"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="4dp"
-        android:textSize="11sp"
-        android:textColor="#336699"
-        android:singleLine="true"
-        android:text="按键状态: 正在同步..." />
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:background="@color/music_tab_bg">
 
-    <!-- 音乐列表 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_music"
+        <!-- ── Tab 1: 我的 ── -->
+        <LinearLayout
+            android:id="@+id/tab_mine"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tab_icon_mine"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tab_label_mine"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tab_mine"
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
+
+            <!-- 激活指示条 -->
+            <View
+                android:id="@+id/tab_indicator_mine"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="@color/music_accent"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <!-- ── Tab 2: 发现 ── -->
+        <LinearLayout
+            android:id="@+id/tab_discover"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tab_icon_discover"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tab_label_discover"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tab_discover"
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
+
+            <View
+                android:id="@+id/tab_indicator_discover"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:background="@color/music_accent"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <!-- ── Tab 3: 榜单 ── -->
+        <LinearLayout
+            android:id="@+id/tab_chart"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tab_icon_chart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tab_label_chart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tab_chart"
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
+
+            <View
+                android:id="@+id/tab_indicator_chart"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:background="@color/music_accent"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <!-- ── Tab 4: 搜索 ── -->
+        <LinearLayout
+            android:id="@+id/tab_search"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tab_icon_search"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tab_label_search"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tab_search"
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
+
+            <View
+                android:id="@+id/tab_indicator_search"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:background="@color/music_accent"
+                android:visibility="invisible" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Tab 栏底部分割线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/music_tab_bottom_line" />
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 内容区 - 4个 Tab 内容页面，GONE/VISIBLE 切换             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical" />
+        android:layout_weight="1">
 
-    <!-- 底部状态/小提示 -->
-    <TextView
-        android:id="@+id/tv_hint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="6dp"
-        android:gravity="center"
-        android:textSize="11sp"
-        android:textColor="@color/music_item_subtext"
-        android:text="@string/demo_empty_tip" />
+        <!-- Tab 1: 我的 -->
+        <include
+            android:id="@+id/content_mine"
+            layout="@layout/fragment_tab_mine"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- Tab 2: 发现 -->
+        <include
+            android:id="@+id/content_discover"
+            layout="@layout/fragment_tab_discover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- Tab 3: 榜单 -->
+        <include
+            android:id="@+id/content_chart"
+            layout="@layout/fragment_tab_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- Tab 4: 搜索 -->
+        <include
+            android:id="@+id/content_search"
+            layout="@layout/fragment_tab_search"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

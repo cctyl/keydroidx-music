@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 发现 Tab 内容页 -->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/music_dark_bg"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 2×2 宫格区域                                        -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <!-- 第一行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:orientation="horizontal">
+
+                <!-- 私人 FM -->
+                <LinearLayout
+                    android:id="@+id/grid_fm"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginRight="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/bg_grid_card">
+
+                    <TextView
+                        android:id="@+id/icon_grid_fm"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textColor="@color/music_accent"
+                        android:includeFontPadding="false" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="6dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_fm"
+                            android:textColor="@color/music_item_normal_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_fm_sub"
+                            android:textColor="@color/music_subtext"
+                            android:textSize="10sp"
+                            android:includeFontPadding="false" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 每日推荐 -->
+                <LinearLayout
+                    android:id="@+id/grid_daily"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/bg_grid_card">
+
+                    <TextView
+                        android:id="@+id/icon_grid_daily"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textColor="@color/music_accent"
+                        android:includeFontPadding="false" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="6dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_daily"
+                            android:textColor="@color/music_item_normal_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_daily_sub"
+                            android:textColor="@color/music_subtext"
+                            android:textSize="10sp"
+                            android:includeFontPadding="false" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 间距 -->
+            <View android:layout_width="match_parent" android:layout_height="4dp" />
+
+            <!-- 第二行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:orientation="horizontal">
+
+                <!-- 歌单广场 -->
+                <LinearLayout
+                    android:id="@+id/grid_playlist"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginRight="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/bg_grid_card">
+
+                    <TextView
+                        android:id="@+id/icon_grid_playlist"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textColor="@color/music_accent"
+                        android:includeFontPadding="false" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="6dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_playlist"
+                            android:textColor="@color/music_item_normal_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_playlist_sub"
+                            android:textColor="@color/music_subtext"
+                            android:textSize="10sp"
+                            android:includeFontPadding="false" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 排行榜 -->
+                <LinearLayout
+                    android:id="@+id/grid_chart"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/bg_grid_card">
+
+                    <TextView
+                        android:id="@+id/icon_grid_chart"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="18sp"
+                        android:textColor="@color/music_accent"
+                        android:includeFontPadding="false" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="6dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_chart"
+                            android:textColor="@color/music_item_normal_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/discover_chart_sub"
+                            android:textColor="@color/music_subtext"
+                            android:textSize="10sp"
+                            android:includeFontPadding="false" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- Section Header: 今日推荐歌单                      -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#4D000000">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="match_parent"
+                android:background="@color/music_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:text="@string/discover_section_today"
+                android:textColor="@color/music_section_header_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 今日推荐歌单列表（代码动态填充）                    -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_discover_playlist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </LinearLayout>
+</ScrollView>

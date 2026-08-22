@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 榜单条目 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chart_item_root"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingLeft="6dp"
+    android:paddingRight="6dp">
+
+    <!-- 彩色缩略图方块 -->
+    <LinearLayout
+        android:id="@+id/ll_chart_thumb"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:gravity="center"
+        android:background="@drawable/bg_chart_thumb">
+
+        <TextView
+            android:id="@+id/icon_chart_thumb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- 文字区 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginLeft="10dp"
+        android:orientation="vertical">
+
+        <!-- 榜单名 + 更新时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_chart_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/music_item_normal_text"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_chart_update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:textColor="@color/music_subtext"
+                android:textSize="10sp"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- 榜首歌曲 -->
+        <TextView
+            android:id="@+id/tv_chart_song"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/music_subtext"
+            android:textSize="10sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- 右侧箭头 -->
+    <TextView
+        android:id="@+id/icon_chart_arrow"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:gravity="center"
+        android:textSize="14sp"
+        android:textColor="@color/music_subtext"
+        android:includeFontPadding="false" />
+</LinearLayout>

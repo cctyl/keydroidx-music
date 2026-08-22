@@ -1,12 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="music_bg">#F4F4F4</color>
+    <!-- ── 全局背景 ── -->
+    <color name="music_dark_bg">#141824</color>
+    <color name="music_tab_bg">#0A0E17</color>
+    <color name="music_tab_bottom_line">#1E2A3E</color>
+
+    <!-- ── 标题栏渐变端点 ── -->
+    <color name="music_titlebar_top">#1A3A6B</color>
+    <color name="music_titlebar_bottom">#0D1B3E</color>
+
+    <!-- ── 强调色 ── -->
+    <color name="music_accent">#38BDF8</color>
+    <color name="music_focus_bg">#0055AA</color>
+
+    <!-- ── 文字 ── -->
+    <color name="music_item_normal_text">#FFFFFF</color>
+    <color name="music_subtext">#B0B0B0</color>
+    <color name="music_section_header_text">#93C5FD</color>
+    <color name="music_softkey_center">#FDE047</color>
+    <color name="music_search_hint">#6B8AAC</color>
+
+    <!-- ── 分割线 ── -->
+    <color name="music_divider">#2D426B</color>
+
+    <!-- ── 兼容旧引用 ── -->
+    <color name="music_bg">#141824</color>
     <color name="music_primary">#0055AA</color>
     <color name="music_item_selected">#0055AA</color>
     <color name="music_item_selected_text">#FFFFFF</color>
-    <color name="music_item_normal_text">#1A1A1A</color>
-    <color name="music_item_subtext">#666666</color>
-    <color name="music_progress_bg">#CCCCCC</color>
-    <color name="music_progress_active">#0055AA</color>
-    <color name="music_divider">#E0E0E0</color>
+    <color name="music_item_subtext">#B0B0B0</color>
+    <color name="music_progress_bg">#2D426B</color>
+    <color name="music_progress_active">#38BDF8</color>
 </resources>

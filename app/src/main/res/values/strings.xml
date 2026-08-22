@@ -1,20 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">KeydroidX 音乐</string>
-    <string name="title_music_list">音乐库</string>
-    <string name="title_now_playing">正在播放</string>
-    
+
+    <!-- ── 标题栏 ── -->
+    <string name="title_music_lib">我的音乐库</string>
+    <string name="title_discover">发现音乐</string>
+    <string name="title_chart">云音乐排行榜</string>
+    <string name="title_search">歌曲搜索</string>
+
+    <!-- ── Tab 栏 ── -->
+    <string name="tab_mine">我的</string>
+    <string name="tab_discover">发现</string>
+    <string name="tab_chart">榜单</string>
+    <string name="tab_search">搜索</string>
+
+    <!-- ── 软键栏 ── -->
     <string name="softkey_options">选项</string>
+    <string name="softkey_play_view">播放/查看</string>
+    <string name="softkey_now_playing">正在播放</string>
+    <string name="softkey_enter">进入</string>
+    <string name="softkey_back">返回</string>
+    <string name="softkey_view_chart">查看榜单</string>
+    <string name="softkey_clear">清空</string>
+    <string name="softkey_search">搜索</string>
     <string name="softkey_play">播放</string>
     <string name="softkey_pause">暂停</string>
-    <string name="softkey_select">选择</string>
-    <string name="softkey_back">返回</string>
     <string name="softkey_exit">退出</string>
-    
+
+    <!-- ── 我的 Tab ── -->
+    <string name="mine_favorites">我喜欢的音乐</string>
+    <string name="mine_history">最近播放历史</string>
+    <string name="mine_local">本地音乐扫描</string>
+    <string name="mine_local_sub">内部存储与 TF 卡</string>
+    <string name="mine_local_badge">本地</string>
+
+    <!-- ── 发现 Tab ── -->
+    <string name="discover_fm">私人 FM</string>
+    <string name="discover_fm_sub">个性化随心听</string>
+    <string name="discover_daily">每日推荐</string>
+    <string name="discover_daily_sub">每天 06:00 更新</string>
+    <string name="discover_playlist">歌单广场</string>
+    <string name="discover_playlist_sub">流行/ACG/古风</string>
+    <string name="discover_chart">排行榜</string>
+    <string name="discover_chart_sub">官方云音乐榜单</string>
+    <string name="discover_section_today">今日推荐歌单</string>
+
+    <!-- ── 搜索 Tab ── -->
+    <string name="search_hint">周杰伦</string>
+    <string name="search_pinyin">拼音/按键</string>
+    <string name="search_hot_history">热门搜索 / 搜索历史</string>
+
+    <!-- ── 菜单 ── -->
     <string name="menu_key_wizard">按键设置向导</string>
     <string name="menu_reload_keys">重载桌面按键</string>
     <string name="menu_scan_media">刷新音乐库</string>
     <string name="menu_about">关于</string>
 
-    <string name="demo_empty_tip">按上下键浏览，按 [确定] 查看详情，按 [选项] 进入设置</string>
+    <!-- ── 正在播放 ── -->
+    <string name="title_now_playing">正在播放</string>
+    <string name="title_music_list">音乐库</string>
 </resources>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 搜索 Tab 内容页 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/music_dark_bg">
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- 搜索框                                              -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginLeft="6dp"
+        android:layout_marginRight="6dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:background="@drawable/bg_search_box">
+
+        <!-- 搜索图标 -->
+        <TextView
+            android:id="@+id/icon_search_field"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:textColor="@color/music_accent"
+            android:includeFontPadding="false" />
+
+        <!-- 输入内容（非真实 EditText，展示用） -->
+        <TextView
+            android:id="@+id/tv_search_input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="6dp"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="12sp"
+            android:singleLine="true"
+            android:includeFontPadding="false" />
+
+        <!-- 输入法标签 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/search_pinyin"
+            android:textColor="@color/music_search_hint"
+            android:textSize="9sp"
+            android:background="@drawable/bg_badge"
+            android:paddingLeft="4dp"
+            android:paddingRight="4dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Section Header: 热门搜索/搜索历史                  -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#4D000000">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:background="@color/music_accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="6dp"
+            android:text="@string/search_hot_history"
+            android:textColor="@color/music_section_header_text"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- 搜索词条列表（代码动态填充）                        -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/ll_search_keywords"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="2dp" />
+    </ScrollView>
+
+</LinearLayout>
