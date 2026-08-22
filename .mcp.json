@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+
+
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+		"--user-data-dir=D:\\soft\\chrome-devtool-mcp-data"
+      ]
+    }
+  }
+}
