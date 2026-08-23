@@ -35,7 +35,13 @@ object PlaylistApi {
     data class UserProfile(
         val userId: Long,
         val nickname: String,
-        val avatarUrl: String
+        val avatarUrl: String,
+        val signature: String = "",      // 个性签名
+        val level: Int = 0,              // 等级
+        val followeds: Long = 0,         // 粉丝数
+        val follows: Long = 0,           // 关注数
+        val playlistCount: Long = 0,     // 创建的歌单数
+        val vipType: Int = 0             // 0=无 11=黑胶VIP
     )
 
     suspend fun getUserProfile(): UserProfile = withContext(Dispatchers.IO) {
@@ -43,19 +49,52 @@ object PlaylistApi {
         val response = RetrofitClient.eapiPost(ACCOUNT_GET_PATH, payload)
         val body = response.body?.string() ?: throw Exception("empty response")
         val json = JSONObject(body)
+        Log.d(TAG, "account/get response code=${json.optInt("code", -1)}")
 
         val account = json.optJSONObject("account")
         val profile = json.optJSONObject("profile")
 
-        UserProfile(
+        val base = UserProfile(
             userId = profile?.optLong("userId", account?.optLong("id", 0) ?: 0)
                 ?: account?.optLong("id", 0) ?: 0,
             nickname = profile?.optString("nickname", "")?.ifEmpty { "用户" }
                 ?: account?.optString("userName", "")?.ifEmpty { "用户" }
                 ?: "用户",
             avatarUrl = profile?.optString("avatarUrl", "")
-                ?: account?.optString("avatarUrl", "") ?: ""
+                ?: account?.optString("avatarUrl", "") ?: "",
+            signature = profile?.optString("signature", "") ?: "",
+            vipType = profile?.optInt("vipType", 0) ?: 0
         )
+
+        // account/get 不含 level/粉丝/歌单数 —— 从 user/detail 补齐
+        return@withContext mergeUserDetail(base)
+    }
+
+    /**
+     * 拉 GET /api/v1/user/detail/{uid}（与 ncrust 同源接口），
+     * 把 level / 粉丝 / 关注 / 歌单数合并进 UserProfile。
+     * 失败不影响主流程（保持 account/get 的结果）。
+     */
+    private suspend fun mergeUserDetail(base: UserProfile): UserProfile = withContext(Dispatchers.IO) {
+        try {
+            val body = RetrofitClient.get("/api/v1/user/detail/${base.userId}").body?.string() ?: return@withContext base
+            val json = JSONObject(body)
+            if (json.optInt("code", -1) != 200) {
+                Log.w(TAG, "user/detail code=${json.optInt("code", -1)}")
+                return@withContext base
+            }
+            val p = json.optJSONObject("profile")
+            base.copy(
+                level = json.optInt("level", 0),
+                followeds = p?.optLong("followeds", 0) ?: 0,
+                follows = p?.optLong("follows", 0) ?: 0,
+                playlistCount = p?.optLong("playlistCount", 0) ?: 0,
+                signature = base.signature.ifBlank { p?.optString("signature", "") ?: "" }
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "mergeUserDetail failed: ${e.message}")
+            base
+        }
     }
 
     suspend fun getUserPlaylists(uid: Long, limit: Int = 100, offset: Int = 0): UserPlaylistResult = withContext(Dispatchers.IO) {

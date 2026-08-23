@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
+import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.warmup.AppWarmup
 
 class MusicApplication : Application() {
@@ -12,6 +13,8 @@ class MusicApplication : Application() {
         Log.i("MusicApplication", "MusicApplication onCreate, initializing managers and warmup")
         LibraryManager.init(this)
         SearchHistoryManager.init(this)
+        // 把持久化的 cookie 装载进运行时 RetrofitClient
+        RetrofitClient.init(this)
         AppWarmup.startWarmup(this)
     }
 }

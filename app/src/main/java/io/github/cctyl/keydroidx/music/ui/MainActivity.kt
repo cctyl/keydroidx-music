@@ -1,22 +1,36 @@
 package io.github.cctyl.keydroidx.music.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.keydroidx.music.auth.CookieManager
+import io.github.cctyl.keydroidx.music.network.PlaylistApi
+import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
 import io.github.cctyl.keydroidx.music.ui.SongDisplayItem
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * 音乐库主界面，包含 4 个 Tab：我的 / 发现 / 榜单 / 搜索
@@ -94,6 +108,9 @@ class MainActivity : NokiaBaseActivity() {
         setupChartTab()
         setupSearchTab()
         switchTab(TAB_MINE)
+
+        // 加载用户信息（未登录则显示占位提示）
+        loadUserProfile()
 
         // 状态栏：电量图标 + 百分比（与 HTML 原型一致）
         setStatusBarVisible(true)
@@ -479,7 +496,7 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                // TODO: 呼出 NokiaOptionsDialog
+                showOptionsDialog()
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
@@ -589,6 +606,160 @@ class MainActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     //  工具
     // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════
+    //  用户信息头部（登录态展示）
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * 加载当前登录用户信息并渲染到「我的」顶部。
+     * - 未登录：显示人形图标 + 提示文案
+     * - 已登录但 cookie 过期：清除本地 cookie，回退未登录态
+     * - 正常：昵称 + 等级/粉丝 + VIP 徽章 + 网络头像
+     */
+    private fun loadUserProfile() {
+        val iconAvatar = findViewById<TextView>(R.id.icon_user_avatar) ?: return
+        val ivAvatar = findViewById<ImageView>(R.id.iv_user_avatar)
+        val tvNickname = findViewById<TextView>(R.id.tv_user_nickname)
+        val tvSub = findViewById<TextView>(R.id.tv_user_sub)
+        val badgeVip = findViewById<View>(R.id.badge_vip)
+
+        NokiaIcons.setIcon(iconAvatar, NokiaIcons.ICON_PERSON)
+
+        if (!CookieManager.hasCookie(this)) {
+            renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
+            return
+        }
+
+        tvNickname?.text = "加载中…"
+        lifecycleScope.launch {
+            try {
+                val profile = PlaylistApi.getUserProfile()
+                if (profile.userId == 0L) {
+                    // 服务端对失效 cookie 返回空 account/profile → 判定过期
+                    Log.w("MainActivity", "cookie 已过期，自动清除")
+                    CookieManager.clearCookie(this@MainActivity)
+                    RetrofitClient.updateCookie(this@MainActivity, null)
+                    renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
+                    return@launch
+                }
+                Log.d("MainActivity", "profile: ${profile.nickname} uid=${profile.userId} level=${profile.level}")
+                renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, profile)
+                // 异步拉头像
+                if (profile.avatarUrl.isNotBlank()) {
+                    val bmp = withContext(Dispatchers.IO) { downloadBitmap(profile.avatarUrl) }
+                    if (bmp != null && !isDestroyed && !isFinishing) {
+                        iconAvatar.visibility = View.GONE
+                        ivAvatar?.visibility = View.VISIBLE
+                        ivAvatar?.setImageBitmap(bmp)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "loadUserProfile failed", e)
+                renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
+            }
+        }
+    }
+
+    private fun renderUserHeader(
+        iconAvatar: TextView,
+        ivAvatar: ImageView?,
+        tvNickname: TextView?,
+        tvSub: TextView?,
+        badgeVip: View?,
+        profile: PlaylistApi.UserProfile?
+    ) {
+        if (profile == null) {
+            // 未登录态
+            iconAvatar.visibility = View.VISIBLE
+            ivAvatar?.visibility = View.GONE
+            tvNickname?.text = "未登录"
+            tvSub?.text = "按左软键可登录网易云"
+            badgeVip?.visibility = View.GONE
+        } else {
+            iconAvatar.visibility = View.GONE   // 有图时隐藏；无图稍后由 loadUserProfile 恢复
+            tvNickname?.text = profile.nickname
+            val vipStr = if (profile.vipType > 0) "黑胶VIP · " else ""
+            tvSub?.text = "Lv.${profile.level} · ${vipStr}粉丝 ${profile.followeds} · 歌单 ${profile.playlistCount}"
+            badgeVip?.visibility = if (profile.vipType > 0) View.VISIBLE else View.GONE
+            if (profile.avatarUrl.isBlank()) {
+                // 没有头像 URL：恢复人形图标占位
+                iconAvatar.visibility = View.VISIBLE
+                ivAvatar?.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun downloadBitmap(urlStr: String): Bitmap? {
+        return try {
+            val conn = URL(urlStr).openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+            conn.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "avatar download failed: ${e.message}")
+            null
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  左软键：主菜单（登录 / 退出登录）
+    // ══════════════════════════════════════════════════════════
+    private val loginLauncher =
+        registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val cookie = CookieManager.getCookie(this)
+                Log.d("MainActivity", "login返回, hasCookie=${CookieManager.hasCookie(this)}, cookie长度=${cookie?.length ?: -1}")
+                if (CookieManager.hasCookie(this)) {
+                    Toast.makeText(this, "登录成功 ✓", Toast.LENGTH_SHORT).show()
+                    loadUserProfile()   // 刷新用户信息头部
+                } else {
+                    Toast.makeText(this, "登录失败：cookie 未保存", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+    private fun showOptionsDialog() {
+        val iconColor = Color.WHITE
+        val iconSize = (18 * resources.displayMetrics.density).toInt()
+        val title = if (CookieManager.hasCookie(this)) "账户" else "选项"
+        val dialog = NokiaOptionsDialog(this, title)
+
+        if (CookieManager.hasCookie(this)) {
+            // 已登录：显示退出登录
+            dialog.addItem(
+                1, "退出登录",
+                NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
+            )
+        } else {
+            // 未登录：显示登录网易云
+            dialog.addItem(
+                1, "登录网易云",
+                NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
+            )
+        }
+
+        dialog.setOnOptionSelectedListener { index, _ ->
+            when (index) {
+                0 -> {
+                    if (CookieManager.hasCookie(this)) {
+                        // 退出登录
+                        CookieManager.clearCookie(this)
+                        RetrofitClient.updateCookie(this, null)
+                        Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
+                        loadUserProfile()   // 回到未登录态
+                    } else {
+                        // 发起 WebView 登录
+                        loginLauncher.launch(
+                            Intent(this, WebLoginActivity::class.java)
+                        )
+                    }
+                }
+            }
+        }
+        dialog.show()
+    }
+
     private fun makeDivider(leftDp: Int, rightDp: Int): View {
         return object : View(this) {
             private val paint = Paint().apply {

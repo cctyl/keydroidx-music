@@ -38,7 +38,7 @@ object RetrofitClient {
 
     val api: NcmApi by lazy {
         val client = OkHttpClient.Builder().apply {
-            // �򵥴��� Debug �ж�
+            // �򵥴��� Debug �ж�
             addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BASIC
             })
@@ -78,6 +78,21 @@ object RetrofitClient {
             .header("Cookie", currentCookie ?: "")
             .build()
 
+        return plainClient.newCall(request).execute()
+    }
+
+    /**
+     * 普通 GET（非 eapi，与 ncrust 的 RetrofitClient.get 同源）。
+     * 用于 /api/v1/user/detail/{uid} 等公开接口，自动带 cookie。
+     */
+    fun get(path: String): okhttp3.Response {
+        val request = Request.Builder()
+            .url(BASE_URL + path)
+            .get()
+            .header("User-Agent", UA)
+            .header("Referer", "https://music.163.com/")
+            .header("Cookie", currentCookie ?: "")
+            .build()
         return plainClient.newCall(request).execute()
     }
 
