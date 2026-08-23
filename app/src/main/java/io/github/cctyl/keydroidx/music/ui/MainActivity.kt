@@ -18,6 +18,7 @@ import android.widget.Toast
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
@@ -279,6 +280,8 @@ class MainActivity : NokiaBaseActivity() {
             focusIdx = focusIdx.coerceAtMost((focusItems.size - 1).coerceAtLeast(0))
             applyFocus()
         }
+        // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
+        NokiaFontManager.applyToViewTree(container)
     }
 
     // 真实歌单条目轮换用的图标池

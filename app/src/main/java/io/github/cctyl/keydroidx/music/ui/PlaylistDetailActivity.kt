@@ -20,6 +20,7 @@ import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import java.io.Serializable
 import kotlinx.coroutines.launch
@@ -269,6 +270,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             songItemViews.add(itemView)
         }
         renderedCount = to
+        // 动态创建的行错过了基类的字体初始化，主动补一次点阵字体+缩放，
+        // 否则先显示系统默认大字，等异步 onFontChanged 才突然变小
+        NokiaFontManager.applyToViewTree(llSongContainer)
     }
 
     // ══════════════════════════════════════════════════════════
@@ -291,6 +295,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 if (i == focusIdx) {
                     view.setBackgroundResource(R.drawable.bg_focused_item)
                     setChildTextColors(view, true)
+                    // 规范要求（NOKIA_DEVELOPMENT_RULES.md）：焦点移动必须 requestFocus()，
+                    // 否则 ScrollView 不知道要把这一行滚进可视区，光标会滚出屏幕外
+                    view.requestFocus()
                 } else {
                     view.setBackgroundColor(Color.TRANSPARENT)
                     // 播放全部行有特殊背景，恢复它

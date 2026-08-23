@@ -29,6 +29,7 @@ import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import kotlinx.coroutines.Dispatchers
@@ -682,6 +683,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             container.addView(tv)
             lyricFullTextViews.add(tv)
         }
+        // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
+        NokiaFontManager.applyToViewTree(container)
     }
 
     /**
@@ -835,6 +838,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             container.addView(tv)
             lyricTextViews.add(tv)
         }
+        // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
+        NokiaFontManager.applyToViewTree(container)
     }
 
     /**
