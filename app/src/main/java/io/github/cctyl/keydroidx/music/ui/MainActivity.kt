@@ -22,6 +22,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
 import io.github.cctyl.keydroidx.music.auth.UserProfileCache
+import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
@@ -60,6 +61,8 @@ class MainActivity : NokiaBaseActivity() {
     private lateinit var mineFixedRoots: List<LinearLayout>
     private lateinit var minePlaylistRoots: MutableList<LinearLayout>
     private var realPlaylists: List<PlaylistApi.PlaylistInfo> = emptyList()
+    /** specialType=5 的「我喜欢的音乐」歌单 ID（未拉到时为 null） */
+    private var favPlaylistId: Long? = null
 
     // ── 发现 Tab ──
     private lateinit var discoverGridRoots: List<LinearLayout>
@@ -231,6 +234,8 @@ class MainActivity : NokiaBaseActivity() {
 
     /**
      * 渲染真实歌单列表（替换 mock 数据）。
+     * specialType=5 的「我喜欢的音乐」不进下方列表，
+     * 而是映射到上方固定入口「我喜欢的音乐」。
      */
     private fun renderUserPlaylists(playlists: List<PlaylistApi.PlaylistInfo>) {
         realPlaylists = playlists
@@ -238,13 +243,22 @@ class MainActivity : NokiaBaseActivity() {
         container.removeAllViews()
         minePlaylistRoots.clear()
 
-        findViewById<TextView>(R.id.tv_section_playlist)?.text = "自建与收藏歌单 (${playlists.size})"
+        // 拆出「我喜欢的音乐」→ 上方固定入口
+        val fav = playlists.firstOrNull { it.specialType == 5 }
+        favPlaylistId = fav?.id
+        if (fav != null) {
+            findViewById<TextView>(R.id.tv_favorites_sub)?.text = "${fav.trackCount} 首歌曲 · 云端已同步"
+            findViewById<TextView>(R.id.badge_favorites)?.text = "${fav.trackCount}"
+        }
+        val listPlaylists = playlists.filter { it.specialType != 5 }
 
-        playlists.forEachIndexed { i, pl ->
+        findViewById<TextView>(R.id.tv_section_playlist)?.text = "自建与收藏歌单 (${listPlaylists.size})"
+
+        listPlaylists.forEachIndexed { i, pl ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_playlist, container, false) as LinearLayout
-            // specialType=5 是「我喜欢的音乐」；其余按顺序轮换图标
-            val iconCode = if (pl.specialType == 5) NokiaIcons.ICON_FAVORITE else playlistIcons[pl.id.hashCode().mod(playlistIcons.size)]
+            // 按歌单名哈希轮换图标，保持视觉区分
+            val iconCode = playlistIcons[pl.name.hashCode().mod(playlistIcons.size)]
             NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist), iconCode)
             NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
             itemView.findViewById<TextView>(R.id.tv_playlist_name).text = pl.name
@@ -254,7 +268,7 @@ class MainActivity : NokiaBaseActivity() {
             container.addView(itemView)
             minePlaylistRoots.add(itemView)
 
-            if (i < playlists.size - 1) {
+            if (i < listPlaylists.size - 1) {
                 container.addView(makeDivider(6, 6))
             }
         }
@@ -573,10 +587,8 @@ class MainActivity : NokiaBaseActivity() {
         // ── 固定入口 ──
         when (focusIdx) {
             0 -> {
-                // 我喜欢的音乐 → 映射到 specialType=5 的真实歌单；无则退回 mock
-                val favId = minePlaylistRoots.firstOrNull { v ->
-                    realPlaylists.find { it.specialType == 5 && it.name == v.findViewById<TextView>(R.id.tv_playlist_name).text.toString() } != null
-                }?.tag as? Long
+                // 我喜欢的音乐 → specialType=5 真实歌单；无则退回 mock
+                val favId = favPlaylistId
                 if (favId != null) {
                     PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", NokiaIcons.ICON_FAVORITE)
                 } else {
@@ -824,6 +836,7 @@ class MainActivity : NokiaBaseActivity() {
                         // 退出登录
                         CookieManager.clearCookie(this)
                         UserProfileCache.clear(this)
+                        PlaylistSongCache.clearAll(this)
                         RetrofitClient.updateCookie(this, null)
                         Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
                         loadUserProfile()   // 回到未登录态

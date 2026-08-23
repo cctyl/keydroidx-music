@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
@@ -34,6 +35,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
     companion object {
         private const val TAG_DETAIL = "PlaylistDetail"
+        /** 懒加载页大小：每次只创建这么多行视图 */
+        private const val PAGE_SIZE = 20
         private const val EXTRA_PLAYLIST_NAME = "playlist_name"
         private const val EXTRA_PLAYLIST_ID = "playlist_id"
         private const val EXTRA_PLAYLIST_ICON = "playlist_icon"
@@ -91,6 +94,10 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private val songItemViews = mutableListOf<LinearLayout>()
     private var focusIdx = 0
 
+    // ── 懒加载 ──
+    /** 已渲染的曲目条数（songs 全量在内存，视图分页创建） */
+    private var renderedCount = 0
+
     // ── 颜色缓存 ──
     private val colorWhite by lazy { Color.WHITE }
     private val colorSubtext by lazy { Color.parseColor("#B0B0B0") }
@@ -144,9 +151,20 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     /**
-     * 按网易云歌单 ID 拉取真实歌曲列表。
+     * 拉取歌单歌曲（缓存优先）。
+     * ① 有缓存 → 立即渲染，离线可看
+     * ② 后台拉最新数据 → 覆盖缓存并重新渲染
      */
     private fun fetchRealSongs() {
+        // ① 先用缓存立即渲染
+        val cached = PlaylistSongCache.load(this, playlistId)
+        if (cached.isNotEmpty()) {
+            Log.d(TAG_DETAIL, "playlist $playlistId show cached: ${cached.size} songs")
+            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = false) }
+            finishSetup()
+        }
+
+        // ② 后台刷新最新数据
         lifecycleScope.launch {
             try {
                 val result = PlaylistApi.getPlaylistDetail(playlistId)
@@ -159,12 +177,22 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         isFav = false
                     )
                 }
+                PlaylistSongCache.save(
+                    this@PlaylistDetailActivity, playlistId,
+                    songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist) }
+                )
             } catch (e: Exception) {
-                Log.e(TAG_DETAIL, "fetchRealSongs failed", e)
-                songs = emptyList()
-                Toast.makeText(this@PlaylistDetailActivity, "加载失败：${e.message}", Toast.LENGTH_SHORT).show()
+                if (cached.isEmpty()) {
+                    // 无缓存且拉取失败才报错；有缓存则静默保留旧数据
+                    Log.e(TAG_DETAIL, "fetchRealSongs failed", e)
+                    Toast.makeText(this@PlaylistDetailActivity, "加载失败：${e.message}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.w(TAG_DETAIL, "refresh failed, keep cache: ${e.message}")
+                }
             }
-            finishSetup()
+            if (!isDestroyed && !isFinishing && songs.isNotEmpty()) {
+                finishSetup()
+            }
         }
     }
 
@@ -182,13 +210,35 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  填充歌曲列表
+    //  填充歌曲列表（懒加载：每次只渲染一页，焦点到底部时追加）
     // ══════════════════════════════════════════════════════════
     private fun populateSongs() {
         llSongContainer.removeAllViews()
         songItemViews.clear()
+        renderedCount = 0
+        appendSongs(PAGE_SIZE)
+    }
 
-        songs.forEachIndexed { idx, song ->
+    /** 追加渲染下一页曲目视图。 */
+    private fun appendSongs(count: Int) {
+        val from = renderedCount
+        val to = minOf(from + count, songs.size)
+
+        for (idx in from until to) {
+            val song = songs[idx]
+            // 分隔线在条目之前（首条除外）→ 跨页也能正确衔接
+            if (idx > 0) {
+                llSongContainer.addView(View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1
+                    ).also { lp ->
+                        lp.leftMargin = dp(8)
+                        lp.rightMargin = dp(8)
+                    }
+                    setBackgroundColor(colorDivider)
+                })
+            }
+
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_song, llSongContainer, false) as LinearLayout
 
@@ -198,20 +248,15 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             val iconPlaying = itemView.findViewById<TextView>(R.id.icon_playing)
             val iconFav = itemView.findViewById<TextView>(R.id.icon_fav)
 
-            // 序号
             tvIndex.text = (idx + 1).toString()
-
-            // 歌曲名
             tvTitle.text = song.title
 
             // 播放指示器（当前歌曲预留，后续由播放状态管理）
             iconPlaying.visibility = View.GONE
             NokiaIcons.setIcon(iconPlaying, NokiaIcons.ICON_VOLUME_UP)
 
-            // 歌手
             tvArtist.text = song.artist
 
-            // 收藏心
             if (song.isFav) {
                 NokiaIcons.setIcon(iconFav, NokiaIcons.ICON_FAVORITE)
                 iconFav.setTextColor(colorFavRed)
@@ -220,24 +265,10 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 iconFav.setTextColor(colorFavGray)
             }
 
-            // 分隔线
-            val divider = View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1
-                ).also { lp ->
-                    lp.leftMargin = dp(8)
-                    lp.rightMargin = dp(8)
-                }
-                setBackgroundColor(colorDivider)
-            }
-
             llSongContainer.addView(itemView)
             songItemViews.add(itemView)
-
-            if (idx < songs.size - 1) {
-                llSongContainer.addView(divider)
-            }
         }
+        renderedCount = to
     }
 
     // ══════════════════════════════════════════════════════════
@@ -332,6 +363,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             NokiaKeyAction.DOWN -> {
                 if (focusIdx < maxIdx) {
                     focusIdx++
+                    // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
+                    if (renderedCount < songs.size && focusIdx >= renderedCount - 2) {
+                        appendSongs(PAGE_SIZE)
+                        Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
+                    }
                     applyFocus()
                 }
                 true
