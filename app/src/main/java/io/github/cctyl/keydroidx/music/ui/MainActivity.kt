@@ -21,6 +21,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
+import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
@@ -58,6 +59,7 @@ class MainActivity : NokiaBaseActivity() {
     // ── 我的 Tab ──
     private lateinit var mineFixedRoots: List<LinearLayout>
     private lateinit var minePlaylistRoots: MutableList<LinearLayout>
+    private var realPlaylists: List<PlaylistApi.PlaylistInfo> = emptyList()
 
     // ── 发现 Tab ──
     private lateinit var discoverGridRoots: List<LinearLayout>
@@ -203,25 +205,52 @@ class MainActivity : NokiaBaseActivity() {
             }
         }
 
-        // Section Header
-        mineRoot.findViewById<TextView>(R.id.tv_section_playlist).text = "自建与收藏歌单 (4)"
+        // Section Header（数量由真实数据刷新）
+        mineRoot.findViewById<TextView>(R.id.tv_section_playlist).text = "自建与收藏歌单"
 
-        // 歌单列表
-        val playlists = listOf(
-            Triple(NokiaIcons.ICON_FAVORITE, "我喜欢的音乐", "496 首歌曲"),
-            Triple(NokiaIcons.ICON_QUEUE_MUSIC, "佛经禅乐男声清念", "6 首歌曲"),
-            Triple(NokiaIcons.ICON_ALBUM, "仙剑经典原声大碟", "58 首歌曲"),
-            Triple(NokiaIcons.ICON_MUSIC_NOTE, "古风国风精选", "72 首歌曲")
-        )
+        // 歌单列表：登录后由 loadUserPlaylists() 动态填充真实数据
         minePlaylistRoots = mutableListOf()
-        val container = mineRoot.findViewById<LinearLayout>(R.id.ll_playlist_container)
-        playlists.forEachIndexed { i, (iconCode, name, sub) ->
+    }
+
+    /**
+     * 拉取当前用户的真实网易云歌单并填充到列表。
+     * 未登录/失败时保留空列表。
+     */
+    private fun loadUserPlaylists(uid: Long) {
+        lifecycleScope.launch {
+            try {
+                val result = PlaylistApi.getUserPlaylists(uid)
+                Log.d("MainActivity", "getUserPlaylists: ${result.playlists.size}/${result.total} more=${result.more}")
+                UserProfileCache.savePlaylists(this@MainActivity, result.playlists)
+                renderUserPlaylists(result.playlists)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "loadUserPlaylists failed", e)
+            }
+        }
+    }
+
+    /**
+     * 渲染真实歌单列表（替换 mock 数据）。
+     */
+    private fun renderUserPlaylists(playlists: List<PlaylistApi.PlaylistInfo>) {
+        realPlaylists = playlists
+        val container = findViewById<LinearLayout>(R.id.ll_playlist_container) ?: return
+        container.removeAllViews()
+        minePlaylistRoots.clear()
+
+        findViewById<TextView>(R.id.tv_section_playlist)?.text = "自建与收藏歌单 (${playlists.size})"
+
+        playlists.forEachIndexed { i, pl ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_playlist, container, false) as LinearLayout
+            // specialType=5 是「我喜欢的音乐」；其余按顺序轮换图标
+            val iconCode = if (pl.specialType == 5) NokiaIcons.ICON_FAVORITE else playlistIcons[pl.id.hashCode().mod(playlistIcons.size)]
             NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist), iconCode)
             NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
-            itemView.findViewById<TextView>(R.id.tv_playlist_name).text = name
-            itemView.findViewById<TextView>(R.id.tv_playlist_sub).text = sub
+            itemView.findViewById<TextView>(R.id.tv_playlist_name).text = pl.name
+            itemView.findViewById<TextView>(R.id.tv_playlist_sub).text = "${pl.trackCount} 首歌曲"
+            // 记住真实歌单 ID，点击时用
+            itemView.tag = pl.id
             container.addView(itemView)
             minePlaylistRoots.add(itemView)
 
@@ -229,7 +258,23 @@ class MainActivity : NokiaBaseActivity() {
                 container.addView(makeDivider(6, 6))
             }
         }
+
+        // 当前在「我的」tab 时刷新焦点列表
+        if (currentTab == TAB_MINE) {
+            focusItems = mineFixedRoots + minePlaylistRoots
+            focusIdx = focusIdx.coerceAtMost((focusItems.size - 1).coerceAtLeast(0))
+            applyFocus()
+        }
     }
+
+    // 真实歌单条目轮换用的图标池
+    private val playlistIcons = listOf(
+        NokiaIcons.ICON_QUEUE_MUSIC,
+        NokiaIcons.ICON_ALBUM,
+        NokiaIcons.ICON_MUSIC_NOTE,
+        NokiaIcons.ICON_FAVORITE,
+        NokiaIcons.ICON_LIBRARY_MUSIC
+    )
 
     // ══════════════════════════════════════════════════════════
     //  发现 Tab
@@ -516,46 +561,36 @@ class MainActivity : NokiaBaseActivity() {
         val itemCount = mineFixedRoots.size + minePlaylistRoots.size
         if (focusIdx < 0 || focusIdx >= itemCount) return
 
-        val playlistName: String
-        val playlistIcon: String
-        val songs: ArrayList<SongDisplayItem>
-
-        when (focusIdx) {
-            0 -> {
-                // 我喜欢的音乐
-                playlistName = getString(R.string.mine_favorites)
-                playlistIcon = NokiaIcons.ICON_FAVORITE
-                songs = getFavoriteSongs()
-            }
-            1 -> {
-                // 最近播放历史
-                playlistName = getString(R.string.mine_history)
-                playlistIcon = NokiaIcons.ICON_HISTORY
-                songs = getHistorySongs()
-            }
-            2 -> {
-                // 本地音乐扫描
-                android.widget.Toast.makeText(this, "扫描本地音乐中…", android.widget.Toast.LENGTH_SHORT).show()
-                return
-            }
-            else -> {
-                // 自定义歌单
-                val plIdx = focusIdx - 3
-                val playlists = listOf(
-                    Triple(NokiaIcons.ICON_FAVORITE, "我喜欢的音乐", "496 首歌曲"),
-                    Triple(NokiaIcons.ICON_QUEUE_MUSIC, "佛经禅乐男声清念", "6 首歌曲"),
-                    Triple(NokiaIcons.ICON_ALBUM, "仙剑经典原声大碟", "58 首歌曲"),
-                    Triple(NokiaIcons.ICON_MUSIC_NOTE, "古风国风精选", "72 首歌曲")
-                )
-                if (plIdx >= playlists.size) return
-                val (icon, name, _) = playlists[plIdx]
-                playlistName = name
-                playlistIcon = icon
-                songs = getPlaylistSongs(plIdx)
-            }
+        // ── 自建/收藏歌单（真实数据，按 ID 打开）──
+        if (focusIdx >= mineFixedRoots.size) {
+            val view = minePlaylistRoots.getOrNull(focusIdx - mineFixedRoots.size) ?: return
+            val plId = view.tag as? Long ?: return
+            val name = view.findViewById<TextView>(R.id.tv_playlist_name).text.toString()
+            PlaylistDetailActivity.start(this, plId, name, NokiaIcons.ICON_QUEUE_MUSIC)
+            return
         }
 
-        PlaylistDetailActivity.start(this, playlistName, playlistIcon, songs)
+        // ── 固定入口 ──
+        when (focusIdx) {
+            0 -> {
+                // 我喜欢的音乐 → 映射到 specialType=5 的真实歌单；无则退回 mock
+                val favId = minePlaylistRoots.firstOrNull { v ->
+                    realPlaylists.find { it.specialType == 5 && it.name == v.findViewById<TextView>(R.id.tv_playlist_name).text.toString() } != null
+                }?.tag as? Long
+                if (favId != null) {
+                    PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", NokiaIcons.ICON_FAVORITE)
+                } else {
+                    PlaylistDetailActivity.start(this, getString(R.string.mine_favorites), NokiaIcons.ICON_FAVORITE, getFavoriteSongs())
+                }
+            }
+            1 -> {
+                // 最近播放历史（暂用 mock，后续接真实接口）
+                PlaylistDetailActivity.start(this, getString(R.string.mine_history), NokiaIcons.ICON_HISTORY, getHistorySongs())
+            }
+            2 -> {
+                android.widget.Toast.makeText(this, "扫描本地音乐中…", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     /**
@@ -612,9 +647,12 @@ class MainActivity : NokiaBaseActivity() {
 
     /**
      * 加载当前登录用户信息并渲染到「我的」顶部。
-     * - 未登录：显示人形图标 + 提示文案
-     * - 已登录但 cookie 过期：清除本地 cookie，回退未登录态
-     * - 正常：昵称 + 等级/粉丝 + VIP 徽章 + 网络头像
+     *
+     * 策略（缓存优先）：
+     *  1. 立即渲染本地缓存（断网也能显示）
+     *  2. 有 cookie 时延迟 1.5s 后台刷新，成功后更新缓存与 UI
+     *  3. 刷新失败（如无网）保持缓存不动，不误报「未登录」
+     *  4. 仅当服务端明确返回 userId=0（cookie 过期）才清除缓存回未登录态
      */
     private fun loadUserProfile() {
         val iconAvatar = findViewById<TextView>(R.id.icon_user_avatar) ?: return
@@ -625,12 +663,42 @@ class MainActivity : NokiaBaseActivity() {
 
         NokiaIcons.setIcon(iconAvatar, NokiaIcons.ICON_PERSON)
 
-        if (!CookieManager.hasCookie(this)) {
+        // ① 先渲染本地缓存（若有），保证离线可用；头像直接读本地文件
+        val cached = UserProfileCache.load(this)
+        if (cached != null) {
+            Log.d("MainActivity", "show cached profile: ${cached.nickname}")
+            renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, cached)
+            val cachedBmp = UserProfileCache.loadAvatar(this)
+            if (cachedBmp != null) {
+                iconAvatar.visibility = View.GONE
+                ivAvatar?.visibility = View.VISIBLE
+                ivAvatar?.setImageBitmap(cachedBmp)
+            }
+            // 歌单也先用缓存渲染，离线可看
+            val cachedPls = UserProfileCache.loadPlaylists(this)
+            if (cachedPls.isNotEmpty()) renderUserPlaylists(cachedPls)
+        } else if (!CookieManager.hasCookie(this)) {
             renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
             return
         }
 
-        tvNickname?.text = "加载中…"
+        // ② 无 cookie：只展示缓存即可，不发起网络请求
+        if (!CookieManager.hasCookie(this)) return
+
+        // ③ 延迟后台刷新，不拖慢首屏
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (isDestroyed || isFinishing) return@postDelayed
+            refreshUserProfileInBackground()
+        }, 1500)
+    }
+
+    private fun refreshUserProfileInBackground() {
+        val iconAvatar = findViewById<TextView>(R.id.icon_user_avatar) ?: return
+        val ivAvatar = findViewById<ImageView>(R.id.iv_user_avatar)
+        val tvNickname = findViewById<TextView>(R.id.tv_user_nickname)
+        val tvSub = findViewById<TextView>(R.id.tv_user_sub)
+        val badgeVip = findViewById<View>(R.id.badge_vip)
+
         lifecycleScope.launch {
             try {
                 val profile = PlaylistApi.getUserProfile()
@@ -638,24 +706,34 @@ class MainActivity : NokiaBaseActivity() {
                     // 服务端对失效 cookie 返回空 account/profile → 判定过期
                     Log.w("MainActivity", "cookie 已过期，自动清除")
                     CookieManager.clearCookie(this@MainActivity)
+                    UserProfileCache.clear(this@MainActivity)
                     RetrofitClient.updateCookie(this@MainActivity, null)
                     renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
                     return@launch
                 }
-                Log.d("MainActivity", "profile: ${profile.nickname} uid=${profile.userId} level=${profile.level}")
+                Log.d("MainActivity", "profile refreshed: ${profile.nickname} uid=${profile.userId} level=${profile.level}")
+                UserProfileCache.save(this@MainActivity, profile)
                 renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, profile)
-                // 异步拉头像
-                if (profile.avatarUrl.isNotBlank()) {
-                    val bmp = withContext(Dispatchers.IO) { downloadBitmap(profile.avatarUrl) }
-                    if (bmp != null && !isDestroyed && !isFinishing) {
-                        iconAvatar.visibility = View.GONE
-                        ivAvatar?.visibility = View.VISIBLE
-                        ivAvatar?.setImageBitmap(bmp)
-                    }
-                }
+                loadAvatarAsync(profile.avatarUrl, iconAvatar, ivAvatar)
+                // 用户信息更新后顺带刷新真实歌单（内部会更新歌单缓存）
+                loadUserPlaylists(profile.userId)
             } catch (e: Exception) {
-                Log.e("MainActivity", "loadUserProfile failed", e)
-                renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
+                // 断网等异常：保留缓存与当前 UI，不误报未登录
+                Log.w("MainActivity", "refresh profile failed (offline?), keep cache: ${e.message}")
+            }
+        }
+    }
+
+    /** 异步拉头像；成功后落盘缓存；失败保持现状（可能是已显示的本地缓存头像）。 */
+    private fun loadAvatarAsync(url: String, iconAvatar: TextView, ivAvatar: ImageView?) {
+        if (url.isBlank()) return
+        lifecycleScope.launch {
+            val bmp = withContext(Dispatchers.IO) { downloadBitmap(url) }
+            if (bmp != null && !isDestroyed && !isFinishing) {
+                withContext(Dispatchers.IO) { UserProfileCache.saveAvatar(this@MainActivity, bmp) }
+                iconAvatar.visibility = View.GONE
+                ivAvatar?.visibility = View.VISIBLE
+                ivAvatar?.setImageBitmap(bmp)
             }
         }
     }
@@ -745,6 +823,7 @@ class MainActivity : NokiaBaseActivity() {
                     if (CookieManager.hasCookie(this)) {
                         // 退出登录
                         CookieManager.clearCookie(this)
+                        UserProfileCache.clear(this)
                         RetrofitClient.updateCookie(this, null)
                         Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
                         loadUserProfile()   // 回到未登录态

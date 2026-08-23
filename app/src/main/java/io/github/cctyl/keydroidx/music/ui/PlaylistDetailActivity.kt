@@ -3,11 +3,15 @@ package io.github.cctyl.keydroidx.music.ui
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
@@ -17,6 +21,7 @@ import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import java.io.Serializable
+import kotlinx.coroutines.launch
 
 /**
  * 歌单详情页（歌曲列表）
@@ -28,16 +33,15 @@ import java.io.Serializable
 class PlaylistDetailActivity : NokiaBaseActivity() {
 
     companion object {
+        private const val TAG_DETAIL = "PlaylistDetail"
         private const val EXTRA_PLAYLIST_NAME = "playlist_name"
+        private const val EXTRA_PLAYLIST_ID = "playlist_id"
         private const val EXTRA_PLAYLIST_ICON = "playlist_icon"
         private const val EXTRA_SONGS = "songs"
+        private const val NO_ID = -1L
 
         /**
-         * 启动歌单详情页
-         * @param context 上下文
-         * @param playlistName 歌单名称
-         * @param playlistIcon 歌单图标（Material Icons 编码）
-         * @param songs 歌曲列表
+         * 启动歌单详情页（本地歌曲列表，mock 数据用）
          */
         fun start(
             context: Context,
@@ -52,12 +56,30 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             }
             context.startActivity(intent)
         }
+
+        /**
+         * 启动歌单详情页（真实网易云歌单，按 ID 异步拉取歌曲）
+         */
+        fun start(
+            context: Context,
+            playlistId: Long,
+            playlistName: String,
+            playlistIcon: String
+        ) {
+            val intent = Intent(context, PlaylistDetailActivity::class.java).apply {
+                putExtra(EXTRA_PLAYLIST_NAME, playlistName)
+                putExtra(EXTRA_PLAYLIST_ICON, playlistIcon)
+                putExtra(EXTRA_PLAYLIST_ID, playlistId)
+            }
+            context.startActivity(intent)
+        }
     }
 
     // ── 数据 ──
     private var playlistName: String = ""
     private var playlistIcon: String = NokiaIcons.ICON_QUEUE_MUSIC
-    private lateinit var songs: List<SongDisplayItem>
+    private var playlistId: Long = NO_ID
+    private var songs: List<SongDisplayItem> = emptyList()
 
     // ── UI 控件 ──
     private lateinit var llPlayAll: LinearLayout
@@ -87,6 +109,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         // 读取 Intent 数据
         playlistName = intent.getStringExtra(EXTRA_PLAYLIST_NAME) ?: "歌单"
         playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: NokiaIcons.ICON_QUEUE_MUSIC
+        playlistId = intent.getLongExtra(EXTRA_PLAYLIST_ID, NO_ID)
         @Suppress("UNCHECKED_CAST")
         songs = (intent.getSerializableExtra(EXTRA_SONGS) as? ArrayList<SongDisplayItem>) ?: emptyList()
 
@@ -110,6 +133,43 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
         // 设置播放全部行
         NokiaIcons.setIcon(findViewById(R.id.icon_play_all), NokiaIcons.ICON_PLAY_CIRCLE)
+        tvPlayAllSub.text = if (playlistId != NO_ID && songs.isEmpty()) "加载中…" else "共 ${songs.size} 首歌曲"
+
+        // 真实歌单：异步拉取歌曲列表；本地歌单：直接用传入数据
+        if (playlistId != NO_ID && songs.isEmpty()) {
+            fetchRealSongs()
+        } else {
+            finishSetup()
+        }
+    }
+
+    /**
+     * 按网易云歌单 ID 拉取真实歌曲列表。
+     */
+    private fun fetchRealSongs() {
+        lifecycleScope.launch {
+            try {
+                val result = PlaylistApi.getPlaylistDetail(playlistId)
+                Log.d(TAG_DETAIL, "playlist $playlistId loaded ${result.size} songs")
+                songs = result.map { s ->
+                    SongDisplayItem(
+                        s.id,
+                        s.name,
+                        s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
+                        isFav = false
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG_DETAIL, "fetchRealSongs failed", e)
+                songs = emptyList()
+                Toast.makeText(this@PlaylistDetailActivity, "加载失败：${e.message}", Toast.LENGTH_SHORT).show()
+            }
+            finishSetup()
+        }
+    }
+
+    private fun finishSetup() {
+        // 设置播放全部行副文字
         tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
 
         // 填充歌曲列表
