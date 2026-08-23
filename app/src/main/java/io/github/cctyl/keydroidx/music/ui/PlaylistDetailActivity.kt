@@ -41,6 +41,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         private const val EXTRA_PLAYLIST_NAME = "playlist_name"
         private const val EXTRA_PLAYLIST_ID = "playlist_id"
         private const val EXTRA_PLAYLIST_ICON = "playlist_icon"
+        private const val EXTRA_ALL_FAV = "all_fav"
         private const val EXTRA_SONGS = "songs"
         private const val NO_ID = -1L
 
@@ -63,17 +64,20 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
         /**
          * 启动歌单详情页（真实网易云歌单，按 ID 异步拉取歌曲）
+         * @param allFav true=歌单内所有歌曲显示红心（如「我喜欢的音乐」）
          */
         fun start(
             context: Context,
             playlistId: Long,
             playlistName: String,
-            playlistIcon: String
+            playlistIcon: String,
+            allFav: Boolean = false
         ) {
             val intent = Intent(context, PlaylistDetailActivity::class.java).apply {
                 putExtra(EXTRA_PLAYLIST_NAME, playlistName)
                 putExtra(EXTRA_PLAYLIST_ICON, playlistIcon)
                 putExtra(EXTRA_PLAYLIST_ID, playlistId)
+                putExtra(EXTRA_ALL_FAV, allFav)
             }
             context.startActivity(intent)
         }
@@ -83,6 +87,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private var playlistName: String = ""
     private var playlistIcon: String = NokiaIcons.ICON_QUEUE_MUSIC
     private var playlistId: Long = NO_ID
+    /** 「我喜欢的音乐」等全收藏歌单：所有歌曲红心 */
+    private var allFav = false
     private var songs: List<SongDisplayItem> = emptyList()
 
     // ── UI 控件 ──
@@ -118,6 +124,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         playlistName = intent.getStringExtra(EXTRA_PLAYLIST_NAME) ?: "歌单"
         playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: NokiaIcons.ICON_QUEUE_MUSIC
         playlistId = intent.getLongExtra(EXTRA_PLAYLIST_ID, NO_ID)
+        allFav = intent.getBooleanExtra(EXTRA_ALL_FAV, false)
         @Suppress("UNCHECKED_CAST")
         songs = (intent.getSerializableExtra(EXTRA_SONGS) as? ArrayList<SongDisplayItem>) ?: emptyList()
 
@@ -161,7 +168,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         val cached = PlaylistSongCache.load(this, playlistId)
         if (cached.isNotEmpty()) {
             Log.d(TAG_DETAIL, "playlist $playlistId show cached: ${cached.size} songs")
-            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = false) }
+            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = allFav) }
             finishSetup()
         }
 
@@ -175,7 +182,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         s.id,
                         s.name,
                         s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
-                        isFav = false
+                        isFav = allFav
                     )
                 }
                 PlaylistSongCache.save(

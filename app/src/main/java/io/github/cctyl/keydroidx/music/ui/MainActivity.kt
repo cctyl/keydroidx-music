@@ -593,7 +593,7 @@ class MainActivity : NokiaBaseActivity() {
                 // 我喜欢的音乐 → specialType=5 真实歌单；无则退回 mock
                 val favId = favPlaylistId
                 if (favId != null) {
-                    PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", NokiaIcons.ICON_FAVORITE)
+                    PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", NokiaIcons.ICON_FAVORITE, allFav = true)
                 } else {
                     PlaylistDetailActivity.start(this, getString(R.string.mine_favorites), NokiaIcons.ICON_FAVORITE, getFavoriteSongs())
                 }
