@@ -5,11 +5,12 @@
     android:id="@+id/playlist_item_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-        android:minHeight="44dp"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp"
+    android:minHeight="44dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
+    android:focusable="true"
     android:paddingLeft="6dp"
     android:paddingRight="6dp">
 

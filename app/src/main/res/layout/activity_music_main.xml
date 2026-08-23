@@ -2,7 +2,9 @@
 <!--
     音乐主界面：纵向布局
     ┌─────────────────────┐
-    │     Tab 栏 (4个)    │  ← 固定
+    │     Tab 栏 (4个)    │  ← 响应式高度（程序计算，约 11.76% 屏幕高）
+    ├─────────────────────┤
+    │      分割线          │  ← 2dp
     ├─────────────────────┤
     │   内容区（各 Tab）   │  ← 可滚动
     └─────────────────────┘
@@ -21,139 +23,180 @@
     <LinearLayout
         android:id="@+id/tab_bar"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
+        android:minHeight="40dp"
         android:orientation="horizontal"
         android:background="@color/music_tab_bg">
 
         <!-- ── Tab 1: 我的 ── -->
-        <LinearLayout
+        <!-- FrameLayout 使指示条可以通过 layout_gravity="bottom" 固定在底部 -->
+        <FrameLayout
             android:id="@+id/tab_mine"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tab_icon_mine"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:includeFontPadding="false" />
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/tab_label_mine"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/tab_mine"
-                android:textSize="10sp"
-                android:includeFontPadding="false" />
+                <TextView
+                    android:id="@+id/tab_icon_mine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="1dp" />
 
-            <!-- 激活指示条 -->
+                <TextView
+                    android:id="@+id/tab_label_mine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tab_mine"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <!-- 激活指示条：固定在底部 -->
             <View
                 android:id="@+id/tab_indicator_mine"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="2dp"
-                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_gravity="bottom"
                 android:background="@color/music_accent"
                 android:visibility="invisible" />
-        </LinearLayout>
+        </FrameLayout>
 
         <!-- ── Tab 2: 发现 ── -->
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/tab_discover"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tab_icon_discover"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:includeFontPadding="false" />
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/tab_label_discover"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/tab_discover"
-                android:textSize="10sp"
-                android:includeFontPadding="false" />
+                <TextView
+                    android:id="@+id/tab_icon_discover"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="1dp" />
+
+                <TextView
+                    android:id="@+id/tab_label_discover"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tab_discover"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
 
             <View
                 android:id="@+id/tab_indicator_discover"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="2dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_gravity="bottom"
                 android:background="@color/music_accent"
                 android:visibility="invisible" />
-        </LinearLayout>
+        </FrameLayout>
 
         <!-- ── Tab 3: 榜单 ── -->
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/tab_chart"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tab_icon_chart"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:includeFontPadding="false" />
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/tab_label_chart"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/tab_chart"
-                android:textSize="10sp"
-                android:includeFontPadding="false" />
+                <TextView
+                    android:id="@+id/tab_icon_chart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="1dp" />
+
+                <TextView
+                    android:id="@+id/tab_label_chart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tab_chart"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
 
             <View
                 android:id="@+id/tab_indicator_chart"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="2dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_gravity="bottom"
                 android:background="@color/music_accent"
                 android:visibility="invisible" />
-        </LinearLayout>
+        </FrameLayout>
 
         <!-- ── Tab 4: 搜索 ── -->
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/tab_search"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tab_icon_search"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:includeFontPadding="false" />
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/tab_label_search"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/tab_search"
-                android:textSize="10sp"
-                android:includeFontPadding="false" />
+                <TextView
+                    android:id="@+id/tab_icon_search"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="1dp" />
+
+                <TextView
+                    android:id="@+id/tab_label_search"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tab_search"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
 
             <View
                 android:id="@+id/tab_indicator_search"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="2dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_gravity="bottom"
                 android:background="@color/music_accent"
                 android:visibility="invisible" />
-        </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Tab 栏底部分割线 -->

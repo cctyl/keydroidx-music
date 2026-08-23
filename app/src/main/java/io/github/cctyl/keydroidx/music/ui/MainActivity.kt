@@ -1,7 +1,11 @@
 package io.github.cctyl.keydroidx.music.ui
 
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.DashPathEffect
+import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
@@ -60,7 +64,12 @@ class MainActivity : NokiaBaseActivity() {
     private val colorWhite by lazy { Color.WHITE }
     private val colorSubtextFocused by lazy { Color.parseColor("#E0F2FE") }
     private val colorFocusBg by lazy { Color.parseColor("#0055AA") }
-    private val colorTabActiveBg by lazy { Color.parseColor("#330055AA") }
+    private val activeTabGradient by lazy {
+        GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(Color.TRANSPARENT, Color.parseColor("#660055AA"))
+        )
+    }
     private val colorDivider by lazy { Color.parseColor("#2D426B") }
     private val colorSectionBg by lazy { Color.parseColor("#4D000000") }
 
@@ -70,6 +79,14 @@ class MainActivity : NokiaBaseActivity() {
     override fun getContentLayoutRes(): Int = R.layout.activity_music_main
 
     override fun onInitViews() {
+        // 响应式 Tab 栏高度：HTML 原型 tab 栏 = 40px / 340px ≈ 11.76% 屏幕高度
+        val tabBar = findViewById<View>(R.id.tab_bar)
+        val screenHeight = resources.displayMetrics.heightPixels
+        val tabBarHeightPx = (screenHeight * 0.1176f).toInt().coerceAtLeast(
+            (40 * resources.displayMetrics.density).toInt()
+        )
+        tabBar.layoutParams.height = tabBarHeightPx
+
         setupTabBar()
         setupMineTab()
         setupDiscoverTab()
@@ -154,6 +171,20 @@ class MainActivity : NokiaBaseActivity() {
         mineRoot.findViewById<TextView>(R.id.badge_favorites).text = "496"
         mineRoot.findViewById<TextView>(R.id.tv_history_sub).text = "100 首播放记录"
         mineRoot.findViewById<TextView>(R.id.badge_history).text = "100"
+
+        // 在固定入口之间插入虚线分割线
+        // mineRoot 是 ScrollView，其第一个子 View 是根 LinearLayout
+        val mineListRoot = (mineRoot as? android.widget.ScrollView)?.getChildAt(0) as? LinearLayout
+        if (mineListRoot != null) {
+            val favIdx = mineListRoot.indexOfChild(mineFixedRoots[0])
+            val histIdx = mineListRoot.indexOfChild(mineFixedRoots[1])
+            if (favIdx >= 0 && histIdx > favIdx) {
+                mineListRoot.addView(makeDivider(6, 6), favIdx + 1)
+                // 插入第一个分割线后，history 的索引 +1
+                val newHistIdx = mineListRoot.indexOfChild(mineFixedRoots[1])
+                mineListRoot.addView(makeDivider(6, 6), newHistIdx + 1)
+            }
+        }
 
         // Section Header
         mineRoot.findViewById<TextView>(R.id.tv_section_playlist).text = "自建与收藏歌单 (4)"
@@ -315,7 +346,7 @@ class MainActivity : NokiaBaseActivity() {
             tabLabels[i].setTextColor(if (active) colorWhite else colorSubtext)
             tabLabels[i].setTypeface(null, if (active) Typeface.BOLD else Typeface.NORMAL)
             tabIndicators[i].visibility = if (active) View.VISIBLE else View.INVISIBLE
-            v.setBackgroundColor(if (active) colorTabActiveBg else Color.TRANSPARENT)
+            v.background = if (active) activeTabGradient else null
         }
 
         // 内容区切换
@@ -362,6 +393,7 @@ class MainActivity : NokiaBaseActivity() {
             if (i == focusIdx) {
                 layout.setBackgroundResource(R.drawable.bg_focused_item)
                 setChildTextColors(layout, true)
+                layout.requestFocus()
             } else {
                 layout.setBackgroundColor(Color.TRANSPARENT)
                 setChildTextColors(layout, false)
@@ -556,14 +588,23 @@ class MainActivity : NokiaBaseActivity() {
     //  工具
     // ══════════════════════════════════════════════════════════
     private fun makeDivider(leftDp: Int, rightDp: Int): View {
-        return View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 1
-            ).also { lp ->
-                lp.leftMargin = dp(leftDp)
-                lp.rightMargin = dp(rightDp)
+        return object : View(this) {
+            private val paint = Paint().apply {
+                color = colorDivider
+                strokeWidth = 1f
+                pathEffect = DashPathEffect(floatArrayOf(4f, 3f), 0f)
+                style = Paint.Style.STROKE
             }
-            setBackgroundColor(colorDivider)
+            override fun onDraw(canvas: Canvas) {
+                val left = dp(leftDp).toFloat()
+                val right = width - dp(rightDp).toFloat()
+                val centerY = height / 2f
+                canvas.drawLine(left, centerY, right, centerY, paint)
+            }
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(8)
+            )
         }
     }
 

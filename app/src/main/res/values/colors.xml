@@ -3,7 +3,7 @@
     <!-- ── 全局背景 ── -->
     <color name="music_dark_bg">#141824</color>
     <color name="music_tab_bg">#0A0E17</color>
-    <color name="music_tab_bottom_line">#1E2A3E</color>
+    <color name="music_tab_bottom_line">#1A3A6B</color>
 
     <!-- ── 标题栏渐变端点 ── -->
     <color name="music_titlebar_top">#1A3A6B</color>
