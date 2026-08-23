@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    黑胶唱片同心圆纹路：
+    - 5 层细圆环叠加形成唱片密纹质感
+    - 半透明白色 (alpha 渐变) 让外圈更亮、内圈更淡
+    - 全部使用 android:left/right/top/bottom inset 控制每层大小（API 1+ 安全）
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 第 1 圈：最外环 (距外缘 6dp) -->
+    <item
+        android:left="6dp"
+        android:right="6dp"
+        android:top="6dp"
+        android:bottom="6dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#55FFFFFF" />
+            <solid android:color="@android:color/transparent" />
+       </shape>
+   </item>
+
+    <!-- 第 2 圈 -->
+    <item
+        android:left="12dp"
+        android:right="12dp"
+        android:top="12dp"
+        android:bottom="12dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#44FFFFFF" />
+            <solid android:color="@android:color/transparent" />
+       </shape>
+   </item>
+
+    <!-- 第 3 圈 -->
+    <item
+        android:left="18dp"
+        android:right="18dp"
+        android:top="18dp"
+        android:bottom="18dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#33FFFFFF" />
+            <solid android:color="@android:color/transparent" />
+       </shape>
+   </item>
+
+    <!-- 第 4 圈 -->
+    <item
+        android:left="24dp"
+        android:right="24dp"
+        android:top="24dp"
+        android:bottom="24dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#22FFFFFF" />
+            <solid android:color="@android:color/transparent" />
+       </shape>
+   </item>
+
+    <!-- 第 5 圈：最内环 (中心圆盖外侧) -->
+    <item
+        android:left="30dp"
+        android:right="30dp"
+        android:top="30dp"
+        android:bottom="30dp">
+        <shape android:shape="oval">
+            <stroke android:width="1dp" android:color="#18FFFFFF" />
+            <solid android:color="@android:color/transparent" />
+       </shape>
+   </item>
+</layer-list>

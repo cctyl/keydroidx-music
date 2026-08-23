@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ── 全局背景 ── -->
-    <color name="music_dark_bg">#141824</color>
+    <!-- 全局背景 (对齐 HTML theme-bodybg) -->
+    <color name="music_dark_bg">#090C13</color>
     <color name="music_tab_bg">#0A0E17</color>
     <color name="music_tab_bottom_line">#1A3A6B</color>
 
@@ -24,7 +24,7 @@
     <color name="music_divider">#2D426B</color>
 
     <!-- ── 兼容旧引用 ── -->
-    <color name="music_bg">#141824</color>
+    <color name="music_bg">#090C13</color>
     <color name="music_primary">#0055AA</color>
     <color name="music_item_selected">#0055AA</color>
     <color name="music_item_selected_text">#FFFFFF</color>

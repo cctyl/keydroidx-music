@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    音量条背景轨道：
+    - 居中显示在屏幕上方，带轻微发光阴影
+    - 半透明深色背板，让用户在亮 / 暗背景都能看清
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#CC000000" />
+            <corners android:radius="3dp" />
+       </shape>
+   </item>
+    <item
+        android:left="0dp"
+        android:right="0dp"
+        android:top="2dp"
+        android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#33FFFFFF" />
+            <corners android:radius="2dp" />
+       </shape>
+   </item>
+</layer-list>

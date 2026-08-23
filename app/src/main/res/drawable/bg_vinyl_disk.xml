@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    黑胶唱片圆盘背景：
+    - 复刻 HTML 原型 radial-gradient(circle, #2d3748 20%, #111827 25%, #1e293b 40%, #030712 70%)
+    - 关键节点 20%→25% 制造"内圈"亮带；40%→70% 制造"中环"暗带
+    - 外加 3px 边框 + 软阴影增强立体感
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 阴影层（避免外层 shape 干扰 border 渲染） -->
+    <item
+        android:left="0dp"
+        android:top="2dp"
+        android:right="0dp"
+        android:bottom="0dp">
+        <shape android:shape="oval">
+            <solid android:color="#33000000" />
+      </shape>
+  </item>
+
+    <!-- 主体：径向渐变 + 边框 -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="54dp"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#FF2D3748"
+                android:centerColor="#FF111827"
+                android:endColor="#FF030712" />
+            <stroke
+                android:width="3dp"
+                android:color="#334155" />
+      </shape>
+  </item>
+</layer-list>

@@ -8,6 +8,11 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.network.model.AlbumItem
+import io.github.cctyl.keydroidx.music.network.model.ArtistItem
+import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.player.PlaybackService
+import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
@@ -299,10 +304,35 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     private fun playSong(song: SongDisplayItem) {
-        // TODO: 启动 MusicPlayerActivity 并播放选中的歌曲
-        // 传递给 MusicPlayerActivity 或 PlaybackService
-        // 暂时用 Toast 提示
-        android.widget.Toast.makeText(this, "播放: ${song.title}", android.widget.Toast.LENGTH_SHORT).show()
+        val startIndex = if (focusIdx == 0) 0 else focusIdx - 1
+
+        // 1. SongDisplayItem → SongItem 并构造播放队列
+        val queue: List<SongItem> = songs.map { display ->
+            SongItem(
+                id = display.id,
+                name = display.title,
+                artists = listOfNotNull(
+                    display.artist.takeIf { it.isNotBlank() }?.let { ArtistItem(name = it) }
+                ),
+                album = AlbumItem(name = null, picUrl = null),
+                duration = null
+            )
+        }
+        val safeIndex = startIndex.coerceIn(0, queue.lastIndex.coerceAtLeast(0))
+
+        // 2. 推入全局播放状态管理器
+        PlaybackStateManager.updatePlaylist(queue, safeIndex)
+
+        // 3. 启动后台播放服务，按索引加载并播放
+        val playIntent = Intent(this, PlaybackService::class.java).apply {
+            action = PlaybackService.ACTION_PLAY_INDEX
+            putExtra(PlaybackService.EXTRA_INDEX, safeIndex)
+        }
+        startService(playIntent)
+
+        // 4. 跳转播放详情页
+        val playerIntent = Intent(this, MusicPlayerActivity::class.java)
+        startActivity(playerIntent)
     }
 
     // ══════════════════════════════════════════════════════════

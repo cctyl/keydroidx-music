@@ -1,5 +1,6 @@
 package io.github.cctyl.keydroidx.music.ui
 
+import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
@@ -94,10 +95,9 @@ class MainActivity : NokiaBaseActivity() {
         setupSearchTab()
         switchTab(TAB_MINE)
 
-        // 状态栏：信号 + 电量（与 HTML 原型一致）
+        // 状态栏：电量图标 + 百分比（与 HTML 原型一致）
         setStatusBarVisible(true)
-        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
-        setBatteryPercent("70%")
+        registerBatteryReceiver()
     }
 
     // ══════════════════════════════════════════════════════════
@@ -483,7 +483,9 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
-                finish()
+                // 右侧软键：进入正在播放界面
+                val intent = Intent(this, MusicPlayerActivity::class.java)
+                startActivity(intent)
                 true
             }
             else -> super.onAction(action)
