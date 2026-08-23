@@ -10,6 +10,8 @@ import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
+import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
+import io.github.cctyl.keydroidx.music.ui.SongDisplayItem
 
 /**
  * 音乐库主界面，包含 4 个 Tab：我的 / 发现 / 榜单 / 搜索
@@ -74,6 +76,11 @@ class MainActivity : NokiaBaseActivity() {
         setupChartTab()
         setupSearchTab()
         switchTab(TAB_MINE)
+
+        // 状态栏：信号 + 电量（与 HTML 原型一致）
+        setStatusBarVisible(true)
+        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
+        setBatteryPercent("70%")
     }
 
     // ══════════════════════════════════════════════════════════
@@ -320,21 +327,25 @@ class MainActivity : NokiaBaseActivity() {
         when (index) {
             TAB_MINE -> {
                 setPageTitle("我的音乐库")
+                setTitleIcon(NokiaIcons.ICON_LIBRARY_MUSIC)
                 setSoftKeys("选项", "播放/查看", "正在播放")
                 focusItems = mineFixedRoots + minePlaylistRoots
             }
             TAB_DISCOVER -> {
                 setPageTitle("发现音乐")
+                setTitleIcon(NokiaIcons.ICON_EXPLORE)
                 setSoftKeys("连项", "进入", "返回")
                 focusItems = discoverGridRoots + discoverListRoots
             }
             TAB_CHART -> {
                 setPageTitle("云音乐排行榜")
+                setTitleIcon(NokiaIcons.ICON_LEADERBOARD)
                 setSoftKeys("连项", "查看榜单", "返回")
                 focusItems = chartItemRoots
             }
             TAB_SEARCH -> {
                 setPageTitle("歌曲搜索")
+                setTitleIcon(NokiaIcons.ICON_SEARCH)
                 setSoftKeys("清空", "搜索", "返回")
                 focusItems = searchKeywordRoots
             }
@@ -428,7 +439,11 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SELECT -> {
-                // TODO: 进入选中项详情
+                if (currentTab == TAB_MINE) {
+                    onSelectMineItem()
+                } else {
+                    // 其他 Tab 暂不处理
+                }
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
@@ -440,6 +455,100 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             else -> super.onAction(action)
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  "我的" Tab 选中处理
+    // ══════════════════════════════════════════════════════════
+    private fun onSelectMineItem() {
+        val itemCount = mineFixedRoots.size + minePlaylistRoots.size
+        if (focusIdx < 0 || focusIdx >= itemCount) return
+
+        val playlistName: String
+        val playlistIcon: String
+        val songs: ArrayList<SongDisplayItem>
+
+        when (focusIdx) {
+            0 -> {
+                // 我喜欢的音乐
+                playlistName = getString(R.string.mine_favorites)
+                playlistIcon = NokiaIcons.ICON_FAVORITE
+                songs = getFavoriteSongs()
+            }
+            1 -> {
+                // 最近播放历史
+                playlistName = getString(R.string.mine_history)
+                playlistIcon = NokiaIcons.ICON_HISTORY
+                songs = getHistorySongs()
+            }
+            2 -> {
+                // 本地音乐扫描
+                android.widget.Toast.makeText(this, "扫描本地音乐中…", android.widget.Toast.LENGTH_SHORT).show()
+                return
+            }
+            else -> {
+                // 自定义歌单
+                val plIdx = focusIdx - 3
+                val playlists = listOf(
+                    Triple(NokiaIcons.ICON_FAVORITE, "我喜欢的音乐", "496 首歌曲"),
+                    Triple(NokiaIcons.ICON_QUEUE_MUSIC, "佛经禅乐男声清念", "6 首歌曲"),
+                    Triple(NokiaIcons.ICON_ALBUM, "仙剑经典原声大碟", "58 首歌曲"),
+                    Triple(NokiaIcons.ICON_MUSIC_NOTE, "古风国风精选", "72 首歌曲")
+                )
+                if (plIdx >= playlists.size) return
+                val (icon, name, _) = playlists[plIdx]
+                playlistName = name
+                playlistIcon = icon
+                songs = getPlaylistSongs(plIdx)
+            }
+        }
+
+        PlaylistDetailActivity.start(this, playlistName, playlistIcon, songs)
+    }
+
+    /**
+     * 模拟数据：我喜欢的音乐
+     */
+    private fun getFavoriteSongs(): ArrayList<SongDisplayItem> {
+        return arrayListOf(
+            SongDisplayItem(1, "顺风顺水", "邹念慈 / 繁星合唱团", isFav = true),
+            SongDisplayItem(2, "唤晚风", "Night Trigger", isFav = true),
+            SongDisplayItem(3, "三笑", "王朝1982 / 朱旭", isFav = false),
+            SongDisplayItem(4, "什么时候告白啊？", "Hanser", isFav = true),
+            SongDisplayItem(5, "折柳记", "银临 / 施夏明", isFav = false),
+            SongDisplayItem(6, "Sada Nannu", "Mickey J. Meyer", isFav = false),
+            SongDisplayItem(7, "归园田居", "lbg / 逆水寒", isFav = true)
+        )
+    }
+
+    private fun getHistorySongs(): ArrayList<SongDisplayItem> {
+        return arrayListOf(
+            SongDisplayItem(101, "海屿你", "马也", isFav = true),
+            SongDisplayItem(102, "无题", "姜云升", isFav = true),
+            SongDisplayItem(103, "Emily", "房东的猫", isFav = false)
+        )
+    }
+
+    private fun getPlaylistSongs(index: Int): ArrayList<SongDisplayItem> {
+        return when (index) {
+            0 -> getFavoriteSongs()
+            1 -> arrayListOf(
+                SongDisplayItem(201, "南无阿弥陀佛", "佛乐", isFav = true),
+                SongDisplayItem(202, "心经", "王菲", isFav = true),
+                SongDisplayItem(203, "大悲咒", "齐豫", isFav = false)
+            )
+            2 -> arrayListOf(
+                SongDisplayItem(301, "蝶恋", "大宇", isFav = true),
+                SongDisplayItem(302, "莫失莫忘", "大宇", isFav = true),
+                SongDisplayItem(303, "御剑江湖", "大宇", isFav = false)
+            )
+            3 -> arrayListOf(
+                SongDisplayItem(401, "牵丝戏", "银临 / Aki阿杰", isFav = true),
+                SongDisplayItem(402, "锦鲤抄", "云の泣 / 银临", isFav = true),
+                SongDisplayItem(403, "倾尽天下", "河图", isFav = false)
+            )
+            else -> arrayListOf()
         }
     }
 

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    歌曲列表条目（单行）
+    结构：
+      [序号] [歌曲名 + 歌手] [收藏心]
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_song_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="44dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <!-- 序号 -->
+    <TextView
+        android:id="@+id/tv_song_index"
+        android:layout_width="18dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="10sp"
+        android:textColor="@color/music_subtext"
+        android:includeFontPadding="false" />
+
+    <!-- 歌曲内容 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginLeft="6dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_song_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/music_item_normal_text"
+                android:textSize="12sp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:includeFontPadding="false" />
+
+            <!-- 播放指示器（当前播放歌曲时显示） -->
+            <TextView
+                android:id="@+id/icon_playing"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/music_accent"
+                android:visibility="gone"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_song_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/music_subtext"
+            android:textSize="10sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- 收藏心图标 -->
+    <TextView
+        android:id="@+id/icon_fav"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:layout_marginLeft="4dp"
+        android:includeFontPadding="false" />
+
+</LinearLayout>

@@ -40,6 +40,12 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
+        <!-- 歌单详情页 -->
+        <activity
+            android:name="io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
         <!-- 播放服务 -->
         <service
             android:name="io.github.cctyl.keydroidx.music.player.PlaybackService"
