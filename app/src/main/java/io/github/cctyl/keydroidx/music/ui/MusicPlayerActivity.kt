@@ -369,10 +369,13 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 //   playing=false  → ∥ pause      （暂停状态）
                 // 中心图标始终保持 ♪ music_note，不随状态切换
                 // （播放状态由黑胶旋转 + 底部软键文字体现）
-                setSoftCenter(
-                    if (playing) getString(R.string.softkey_pause)
-                    else getString(R.string.softkey_play)
-                )
+                // 全屏歌词模式下中间软键是「回正进度」，不能被播放状态覆盖
+                if (!isLyricFull) {
+                    setSoftCenter(
+                        if (playing) getString(R.string.softkey_pause)
+                        else getString(R.string.softkey_play)
+                    )
+                }
                 tvPlayStatus?.text = if (playing)
                     getString(R.string.play_status_playing)
                 else
@@ -522,7 +525,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
      * 全屏歌词：OK 键「回正进度」——跳转到光标行的 timestamp。
      */
     private fun seekToFocusedLyric() {
-        val idx = focusLyricIndex
+        // 跟随模式（-1）下按确认：默认跳转到当前播放行
+        val idx = if (focusLyricIndex in lrcLines.indices) focusLyricIndex else currentLyricIndex
         if (idx !in lrcLines.indices) return
         val targetMs = lrcLines[idx].timeMs
         if (DEMO_MODE) {
