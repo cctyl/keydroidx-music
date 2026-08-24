@@ -123,4 +123,21 @@
     <string name="softkey_favorite">收藏歌曲</string>
     <string name="softkey_seek">回正进度</string>
     <string name="softkey_return_play">返回播放</string>
+    <string name="softkey_save">保存</string>
+    <string name="softkey_input">输入</string>
+    <string name="softkey_done">完成</string>
+    <string name="softkey_delete">删除</string>
+
+    <!-- Cookie 设置页 -->
+    <string name="cookie_settings_title">网易云 Cookie 设置</string>
+    <string name="cookie_settings_help"><![CDATA[【获取方法】
+1. 电脑浏览器打开 music.163.com 并登录；
+2. 按 F12 打开开发者工具，切换到「网络/Network」或「应用/Application → Cookies」；
+3. 找到名为 MUSIC_U 的 Cookie 值复制（或复制整条 Cookie）；
+4. 粘贴到上方输入框，按左软键保存。
+
+【说明】
+· 仅保存在本机，用于解锁 VIP 歌曲、歌单与每日推荐等功能；
+· Cookie 失效后请重新获取；
+· 清空输入框保存即可退出登录。]]></string>
 </resources>

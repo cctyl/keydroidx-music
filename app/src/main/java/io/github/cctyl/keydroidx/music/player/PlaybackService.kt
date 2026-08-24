@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.SongItem
@@ -74,7 +75,15 @@ class PlaybackService : MediaSessionService() {
             }
 
         mediaSession = player?.let {
-            MediaSession.Builder(this, it).build()
+            MediaSession.Builder(this, it)
+                // 点媒体通知回到播放详情页
+                .setSessionActivity(PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MusicPlayerActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                ))
+                .build()
         }
 
         handler.post(progressRunnable)

@@ -274,7 +274,8 @@ object PlaylistApi {
         val name: String,
         val coverUrl: String,
         val playCount: Long = 0,
-        val trackCount: Int = 0
+        val trackCount: Int = 0,
+        val copywriter: String = ""
     )
 
     suspend fun getDailyRecommendSongs(): List<SongItem> = withContext(Dispatchers.IO) {
@@ -302,18 +303,48 @@ object PlaylistApi {
     }
 
     suspend fun getRecommendPlaylists(): List<PlaylistCard> = withContext(Dispatchers.IO) {
-        val response = RetrofitClient.eapiPost("/eapi/v1/discovery/recommend/resource", emptyMap())
-        val body = response.body?.string() ?: throw Exception("empty response")
-        val arr = JSONObject(body).optJSONArray("recommend") ?: return@withContext emptyList()
-        (0 until minOf(arr.length(), 10)).map { i ->
-            val item = arr.getJSONObject(i)
-            PlaylistCard(
-                id = item.optLong("id"),
-                name = item.optString("name"),
-                coverUrl = item.optString("picUrl"),
-                playCount = item.optLong("playCount"),
-                trackCount = if (item.optString("name") == "私人雷达") 35 else item.optInt("trackCount")
-            )
+        val cookie = RetrofitClient.getCookie()
+        if (!cookie.isNullOrBlank()) {
+            try {
+                val response = RetrofitClient.eapiPost("/eapi/v1/discovery/recommend/resource", emptyMap())
+                val body = response.body?.string() ?: ""
+                val arr = JSONObject(body).optJSONArray("recommend")
+                if (arr != null && arr.length() > 0) {
+                    return@withContext (0 until minOf(arr.length(), 10)).map { i ->
+                        val item = arr.getJSONObject(i)
+                        PlaylistCard(
+                            id = item.optLong("id"),
+                            name = item.optString("name"),
+                            coverUrl = item.optString("picUrl"),
+                            playCount = item.optLong("playCount"),
+                            trackCount = if (item.optString("name") == "私人雷达") 35 else item.optInt("trackCount"),
+                            copywriter = item.optString("copywriter")
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "getRecommendPlaylists eapi failed, fallback to personalized: ${e.message}")
+            }
+        }
+        // 未登录或 eapi 失败时：平滑回退到公开推荐歌单接口
+        try {
+            val response = RetrofitClient.get("/api/personalized/playlist?limit=10")
+            val body = response.body?.string() ?: ""
+            val arr = JSONObject(body).optJSONArray("result") ?: return@withContext emptyList()
+            (0 until minOf(arr.length(), 10)).map { i ->
+                val item = arr.getJSONObject(i)
+                PlaylistCard(
+                    id = item.optLong("id"),
+                    name = item.optString("name"),
+                    coverUrl = item.optString("picUrl"),
+                    playCount = item.optLong("playCount"),
+                    trackCount = item.optInt("trackCount"),
+                    copywriter = item.optString("copywriter")
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "getRecommendPlaylists personalized fallback error: ${e.message}", e)
+            emptyList()
         }
     }
 

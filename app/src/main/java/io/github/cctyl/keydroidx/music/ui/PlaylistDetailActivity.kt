@@ -25,6 +25,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
 import java.io.Serializable
 import kotlinx.coroutines.launch
 
@@ -106,7 +107,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
     // ── 焦点状态 ──
     private val songItemViews = mutableListOf<LinearLayout>()
-    private var focusIdx = 0
+    private lateinit var focusHelper: NokiaListFocusHelper
+    val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else 0
 
     // ── 懒加载 ──
     /** 已渲染的曲目条数（songs 全量在内存，视图分页创建） */
@@ -153,6 +155,22 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         tvPlayAllSub = findViewById(R.id.tv_play_all_sub)
         badgePlayMode = findViewById(R.id.badge_play_mode)
         llSongContainer = findViewById(R.id.ll_song_container)
+
+        // 初始化焦点辅助器
+        val scroll = findViewById<android.widget.ScrollView>(R.id.scroll_playlist_detail)
+        focusHelper = NokiaListFocusHelper(this, scroll)
+        focusHelper.setOnFocusChangedListener { oldIdx, newIdx, newView ->
+            if (newView is LinearLayout) {
+                setChildTextColors(newView, true)
+            }
+            val oldView = focusHelper.items.getOrNull(oldIdx) as? LinearLayout
+            if (oldView != null) {
+                if (oldView == llPlayAll) {
+                    oldView.setBackgroundColor(Color.parseColor("#40000000"))
+                }
+                setChildTextColors(oldView, false)
+            }
+        }
 
         // 设置播放全部行
         NokiaIcons.setIcon(findViewById(R.id.icon_play_all), NokiaIcons.ICON_PLAY_CIRCLE)
@@ -231,13 +249,14 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         populateSongs()
 
         // 初始焦点；后台刷新重建时保留光标位置，避免用户正在浏览被重置回顶部
-        buildFocusList()
+        val views = getFocusableViews()
+        focusHelper.setItems(views)
         if (preserveFocus) {
-            focusIdx = focusIdx.coerceIn(0, getFocusableViews().lastIndex.coerceAtLeast(0))
+            val targetIdx = focusHelper.focusIndex.coerceIn(0, (views.size - 1).coerceAtLeast(0))
+            focusHelper.setFocusIndex(targetIdx, true)
         } else {
-            focusIdx = 0
+            focusHelper.setFocusIndex(0, true)
         }
-        applyFocus()
     }
 
     // ══════════════════════════════════════════════════════════
@@ -402,37 +421,31 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     //  按键处理
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
-        val maxIdx = songs.size  // 0 = 播放全部, 1..N = 歌曲
-
         return when (action) {
             NokiaKeyAction.UP -> {
-                if (focusIdx > 0) {
-                    focusIdx--
-                    applyFocus()
-                }
+                focusHelper.onDirection(action)
                 true
             }
             NokiaKeyAction.DOWN -> {
-                if (focusIdx < maxIdx) {
-                    focusIdx++
-                    // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
-                    if (renderedCount < songs.size && focusIdx >= renderedCount - 2) {
-                        appendSongs(PAGE_SIZE)
-                        Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
-                    }
-                    applyFocus()
+                // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
+                if (renderedCount < songs.size && focusHelper.focusIndex >= renderedCount - 2) {
+                    appendSongs(PAGE_SIZE)
+                    focusHelper.setItems(getFocusableViews())
+                    Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
                 }
+                focusHelper.onDirection(action)
                 true
             }
             NokiaKeyAction.SELECT -> {
                 // 选中播放
-                if (focusIdx == 0) {
+                val currentIdx = focusHelper.focusIndex
+                if (currentIdx == 0) {
                     // 播放全部
                     if (songs.isNotEmpty()) {
                         playSong(songs[0])
                     }
                 } else {
-                    val songIdx = focusIdx - 1
+                    val songIdx = currentIdx - 1
                     if (songIdx in songs.indices) {
                         playSong(songs[songIdx])
                     }
@@ -533,7 +546,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         updated.removeAt(songIdx)
                         songs = updated
                         tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
-                        focusIdx = focusIdx.coerceAtMost(songs.size)
+                        focusHelper.setFocusIndex(focusIdx.coerceAtMost(songs.size), true)
                         finishSetup(preserveFocus = true)
                         Toast.makeText(this, getString(R.string.toast_history_removed), Toast.LENGTH_SHORT).show()
                     }
@@ -564,7 +577,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     )
                 }
                 tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
-                focusIdx = 0
+                focusHelper.setFocusIndex(0, true)
                 finishSetup(preserveFocus = false)
                 Toast.makeText(this, "已刷新", Toast.LENGTH_SHORT).show()
             } else if (playlistId != NO_ID) {
@@ -586,7 +599,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 LibraryManager.clearRecent()
                 songs = emptyList()
                 tvPlayAllSub.text = "共 0 首歌曲"
-                focusIdx = 0
+                focusHelper.setFocusIndex(0, true)
                 finishSetup(preserveFocus = false)
                 Toast.makeText(this, getString(R.string.toast_history_cleared), Toast.LENGTH_SHORT).show()
             }

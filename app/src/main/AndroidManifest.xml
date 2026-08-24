@@ -10,6 +10,8 @@
     <!-- ǰ̨����Ȩ�� -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Android 13+ 媒体通知需要通知权限 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- ���� Android 11+ �������ɼ��� -->
     <queries tools:node="merge" />
@@ -55,6 +57,12 @@
         <!-- 网易云 WebView 登录页 -->
         <activity
             android:name="io.github.cctyl.keydroidx.music.ui.WebLoginActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
+        <!-- 网易云 Cookie 设置页 -->
+        <activity
+            android:name="io.github.cctyl.keydroidx.music.ui.CookieSettingsActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 

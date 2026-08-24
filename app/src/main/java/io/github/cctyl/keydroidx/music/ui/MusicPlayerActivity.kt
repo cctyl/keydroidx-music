@@ -1041,7 +1041,11 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 val targetTop = accumulateTop(idx)
                 val targetCenter = targetTop + target.height / 2
                 val scrollTarget = (targetCenter - sv.height / 2).coerceAtLeast(0)
+                Log.d(TAG, "[lyric-scroll-plain] idx=$idx targetTop=$targetCenter dest=$scrollTarget before=${sv.scrollY} max=${sv.height - (lyricListContainer?.height ?: 0)}")
                 sv.smoothScrollTo(0, scrollTarget)
+                sv.postDelayed({
+                    Log.d(TAG, "[lyric-scroll-plain] after idx=$idx scrollY=${scrollLyric?.scrollY}")
+                }, 600)
             }
         }
     }

@@ -13,8 +13,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
@@ -71,7 +73,21 @@ class MainActivity : NokiaBaseActivity() {
 
     // ── 发现 Tab ──
     private lateinit var discoverGridRoots: List<LinearLayout>
-    private lateinit var discoverListRoots: MutableList<LinearLayout>
+    private var discoverListRoots = mutableListOf<LinearLayout>()
+    private var discoverPlaylists: List<PlaylistApi.PlaylistCard> = emptyList()
+
+    private val tagPalettes = listOf(
+        Pair("#E05A47", "精选"),
+        Pair("#1E88E5", "推荐"),
+        Pair("#43A047", "热播"),
+        Pair("#8E24AA", "私享"),
+        Pair("#FB8C00", "歌单"),
+        Pair("#00ACC1", "雷达"),
+        Pair("#D81B60", "流行"),
+        Pair("#546E7A", "精选"),
+        Pair("#3949AB", "推荐"),
+        Pair("#00897B", "精选")
+    )
 
     // ── 榜单 Tab ──
     private lateinit var chartItemRoots: MutableList<LinearLayout>
@@ -135,6 +151,26 @@ class MainActivity : NokiaBaseActivity() {
         // 状态栏：电量图标 + 百分比（与 HTML 原型一致）
         setStatusBarVisible(true)
         registerBatteryReceiver()
+
+        requestNotificationPermissionIfNeeded()
+    }
+
+    /**
+     * Android 13+ 媒体通知需要 POST_NOTIFICATIONS 运行时权限，
+     * 不申请的话播放通知栏不显示（前台服务仍存活，但用户看不到状态）。
+     */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d("MainActivity", "request POST_NOTIFICATIONS")
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                2001
+            )
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -315,39 +351,111 @@ class MainActivity : NokiaBaseActivity() {
     private fun setupDiscoverTab() {
         val discRoot = findViewById<View>(R.id.content_discover)
 
-        // 宫格图标
+        // 宫格图标（仅保留 私人FM 与 每日推荐）
         NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_fm), NokiaIcons.ICON_RADIO)
         NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_daily), NokiaIcons.ICON_TODAY)
-        NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_playlist), NokiaIcons.ICON_QUEUE_MUSIC)
-        NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_chart), NokiaIcons.ICON_LEADERBOARD)
 
         discoverGridRoots = listOf(
             discRoot.findViewById(R.id.grid_fm),
-            discRoot.findViewById(R.id.grid_daily),
-            discRoot.findViewById(R.id.grid_playlist),
-            discRoot.findViewById(R.id.grid_chart)
-        )
-
-        // 今日推荐歌单
-        val todayPlaylists = listOf(
-            Triple("#1A3A6B", "纯蓝", Pair("2026洛天依纯蓝幻乐", "演唱会官方精选 · 1.4万播")),
-            Triple("#3A2A1A", "古韵", Pair("国风竹笛与古筝禅意精选", "传统器乐名作 · 25万播"))
+            discRoot.findViewById(R.id.grid_daily)
         )
         discoverListRoots = mutableListOf()
-        val container = discRoot.findViewById<LinearLayout>(R.id.ll_discover_playlist)
-        todayPlaylists.forEachIndexed { i, (color, tag, info) ->
+
+        loadDiscoverPlaylists()
+    }
+
+    private fun loadDiscoverPlaylists() {
+        lifecycleScope.launch {
+            try {
+                val playlists = PlaylistApi.getRecommendPlaylists()
+                if (isDestroyed || isFinishing) return@launch
+                if (playlists.isNotEmpty()) {
+                    discoverPlaylists = playlists
+                    renderDiscoverPlaylists(playlists)
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "loadDiscoverPlaylists error", e)
+            }
+        }
+    }
+
+    private fun renderDiscoverPlaylists(playlists: List<PlaylistApi.PlaylistCard>) {
+        val discRoot = findViewById<View>(R.id.content_discover) ?: return
+        val container = discRoot.findViewById<LinearLayout>(R.id.ll_discover_playlist) ?: return
+        container.removeAllViews()
+        discoverListRoots.clear()
+
+        val density = resources.displayMetrics.density
+
+        playlists.forEachIndexed { i, card ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_discover_playlist, container, false) as LinearLayout
             val tagView = itemView.findViewById<TextView>(R.id.tv_discover_tag)
-            tagView.text = tag
-            tagView.setBackgroundColor(Color.parseColor(color))
-            itemView.findViewById<TextView>(R.id.tv_discover_name).text = info.first
-            itemView.findViewById<TextView>(R.id.tv_discover_sub).text = info.second
+            val nameView = itemView.findViewById<TextView>(R.id.tv_discover_name)
+            val subView = itemView.findViewById<TextView>(R.id.tv_discover_sub)
+
+            // 标签颜色与文字
+            val palette = tagPalettes[i % tagPalettes.size]
+            val tagText = when {
+                card.name.contains("雷达") -> "雷达"
+                card.name.contains("精选") -> "精选"
+                card.name.contains("流行") -> "流行"
+                card.name.contains("民谣") -> "民谣"
+                card.name.contains("摇滚") -> "摇滚"
+                card.name.contains("国风") || card.name.contains("古风") -> "国风"
+                card.name.contains("纯音") || card.name.contains("轻音乐") -> "纯音"
+                else -> palette.second
+            }
+            tagView.text = tagText
+            val tagBg = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 3 * density
+                setColor(Color.parseColor(palette.first))
+            }
+            tagView.background = tagBg
+
+            nameView.text = card.name
+
+            val playCountStr = formatPlayCount(card.playCount)
+            val trackCountStr = if (card.trackCount > 0) "${card.trackCount}首" else ""
+            val subText = when {
+                card.copywriter.isNotBlank() && playCountStr.isNotBlank() ->
+                    "$playCountStr · ${card.copywriter}"
+                card.copywriter.isNotBlank() -> card.copywriter
+                playCountStr.isNotBlank() && trackCountStr.isNotBlank() ->
+                    "$playCountStr · $trackCountStr"
+                playCountStr.isNotBlank() -> "$playCountStr 播放"
+                trackCountStr.isNotBlank() -> trackCountStr
+                else -> "今日推荐"
+            }
+            subView.text = subText
+
+            itemView.tag = card.id
             container.addView(itemView)
             discoverListRoots.add(itemView)
-            if (i < todayPlaylists.size - 1) {
+
+            if (i < playlists.size - 1) {
                 container.addView(makeDivider(6, 6))
             }
+        }
+
+        NokiaFontManager.applyToViewTree(container)
+
+        if (currentTab == TAB_DISCOVER) {
+            focusItems = discoverGridRoots + discoverListRoots
+            if (focusIdx >= focusItems.size) {
+                focusIdx = (focusItems.size - 1).coerceAtLeast(0)
+            }
+            applyFocus()
+        }
+    }
+
+    private fun formatPlayCount(count: Long): String {
+        return when {
+            count >= 100_000_000 -> "${count / 100_000_000}.${(count % 100_000_000) / 10_000_000}亿"
+            count >= 10_000 -> "${count / 10_000}万"
+            count > 0 -> "$count"
+            else -> ""
         }
     }
 
@@ -460,19 +568,19 @@ class MainActivity : NokiaBaseActivity() {
             TAB_DISCOVER -> {
                 setPageTitle("发现音乐")
                 setTitleIcon(NokiaIcons.ICON_EXPLORE)
-                setSoftKeys("连项", "进入", "返回")
+                setSoftKeys("选项", "进入", "正在播放")
                 focusItems = discoverGridRoots + discoverListRoots
             }
             TAB_CHART -> {
                 setPageTitle("云音乐排行榜")
                 setTitleIcon(NokiaIcons.ICON_LEADERBOARD)
-                setSoftKeys("连项", "查看榜单", "返回")
+                setSoftKeys("选项", "查看榜单", "正在播放")
                 focusItems = chartItemRoots
             }
             TAB_SEARCH -> {
                 setPageTitle("歌曲搜索")
                 setTitleIcon(NokiaIcons.ICON_SEARCH)
-                setSoftKeys("清空", "搜索", "返回")
+                setSoftKeys("清空", "搜索", "正在播放")
                 focusItems = searchKeywordRoots
             }
         }
@@ -484,15 +592,26 @@ class MainActivity : NokiaBaseActivity() {
     //  焦点渲染
     // ══════════════════════════════════════════════════════════
     private fun applyFocus() {
+        var focusedView: View? = null
         focusItems.forEachIndexed { i, layout ->
             if (i == focusIdx) {
                 layout.setBackgroundResource(R.drawable.bg_focused_item)
                 setChildTextColors(layout, true)
                 layout.requestFocus()
+                focusedView = layout
             } else {
                 layout.setBackgroundColor(Color.TRANSPARENT)
                 setChildTextColors(layout, false)
             }
+        }
+        val currentScroll = when (currentTab) {
+            TAB_MINE -> findViewById<ScrollView>(R.id.content_mine)
+            TAB_DISCOVER -> findViewById<ScrollView>(R.id.content_discover)
+            TAB_CHART -> findViewById<ScrollView>(R.id.content_chart)
+            else -> null
+        }
+        if (currentScroll != null && focusedView != null) {
+            smoothScrollToVisible(currentScroll, focusedView)
         }
     }
 
@@ -575,7 +694,12 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                showOptionsDialog()
+                // 左软键按各 Tab 标签执行：搜索 Tab = 清空搜索词；其余 = 选项菜单
+                if (currentTab == TAB_SEARCH) {
+                    clearSearchInput()
+                } else {
+                    showOptionsDialog()
+                }
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
@@ -586,6 +710,21 @@ class MainActivity : NokiaBaseActivity() {
             }
             else -> super.onAction(action)
         }
+    }
+
+    /**
+     * 搜索 Tab 左软键「清空」：清空搜索输入框并回占位提示。
+     */
+    private fun clearSearchInput() {
+        val input = findViewById<TextView>(R.id.tv_search_input) ?: return
+        if (input.text.isNullOrBlank()) {
+            Toast.makeText(this, "搜索词已为空", Toast.LENGTH_SHORT).show()
+            return
+        }
+        input.text = ""
+        input.hint = "搜索歌曲 / 歌手"
+        Log.d("MainActivity", "search input cleared")
+        Toast.makeText(this, "已清空搜索词", Toast.LENGTH_SHORT).show()
     }
 
     // ══════════════════════════════════════════════════════════
@@ -653,12 +792,22 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     /**
-     * 发现 Tab 选中处理：0=私人FM（暂未实现），1=每日推荐，2+=推荐歌单
+     * 发现 Tab 选中处理：0=私人FM，1=每日推荐，2+=推荐歌单
      */
     private fun onSelectDiscoverItem() {
-        when (focusIdx) {
-            0 -> openPersonalFm()
-            1 -> openDailyRecommend()
+        when {
+            focusIdx == 0 -> openPersonalFm()
+            focusIdx == 1 -> openDailyRecommend()
+            focusIdx >= 2 -> {
+                val playlistIdx = focusIdx - 2
+                val playlist = discoverPlaylists.getOrNull(playlistIdx) ?: return
+                PlaylistDetailActivity.start(
+                    this,
+                    playlist.id,
+                    playlist.name,
+                    NokiaIcons.ICON_QUEUE_MUSIC
+                )
+            }
         }
     }
 
@@ -945,6 +1094,7 @@ class MainActivity : NokiaBaseActivity() {
                 if (CookieManager.hasCookie(this)) {
                     Toast.makeText(this, "登录成功 ✓", Toast.LENGTH_SHORT).show()
                     loadUserProfile()   // 刷新用户信息头部
+                    loadDiscoverPlaylists() // 刷新发现页推荐
                 } else {
                     Toast.makeText(this, "登录失败：cookie 未保存", Toast.LENGTH_SHORT).show()
                 }
@@ -957,19 +1107,33 @@ class MainActivity : NokiaBaseActivity() {
         val title = if (CookieManager.hasCookie(this)) "账户" else "选项"
         val dialog = NokiaOptionsDialog(this, title)
 
+        // 账户项（登录 / 退出登录）
         if (CookieManager.hasCookie(this)) {
-            // 已登录：显示退出登录
             dialog.addItem(
                 1, "退出登录",
                 NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
             )
         } else {
-            // 未登录：显示登录网易云
             dialog.addItem(
                 1, "登录网易云",
                 NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
             )
         }
+
+        // 公共项：Cookie 设置 / 后台播放 / 退出应用（所有 Tab 一致）
+        // 注：「正在播放」由右软键直达，不进菜单避免重复
+        dialog.addItem(
+            2, "网易云 Cookie 设置",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
+        )
+        dialog.addItem(
+            3, "后台播放",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_VOLUME_UP, iconSize, iconColor)
+        )
+        dialog.addItem(
+            4, "退出应用",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
+        )
 
         dialog.setOnOptionSelectedListener { index, _ ->
             when (index) {
@@ -982,12 +1146,28 @@ class MainActivity : NokiaBaseActivity() {
                         RetrofitClient.updateCookie(this, null)
                         Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
                         loadUserProfile()   // 回到未登录态
+                        loadDiscoverPlaylists() // 回退到默认推荐歌单
                     } else {
                         // 发起 WebView 登录
                         loginLauncher.launch(
                             Intent(this, WebLoginActivity::class.java)
                         )
                     }
+                }
+                1 -> {
+                    // 网易云 Cookie 设置
+                    startActivity(Intent(this, CookieSettingsActivity::class.java))
+                }
+                2 -> {
+                    // 后台播放：退到桌面但应用进程与 PlaybackService 存活，音乐继续播
+                    Log.d("MainActivity", "后台播放：moveTaskToBack")
+                    moveTaskToBack(true)
+                }
+                3 -> {
+                    // 退出应用：停止播放服务并结束任务
+                    Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
+                    stopService(Intent(this, PlaybackService::class.java))
+                    finishAffinity()
                 }
             }
         }

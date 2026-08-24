@@ -7,6 +7,7 @@
     android:layout_height="50dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
+    android:focusable="true"
     android:paddingLeft="6dp"
     android:paddingRight="6dp">
 

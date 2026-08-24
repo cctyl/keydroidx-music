@@ -26,6 +26,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,7 +81,8 @@ class LocalMusicActivity : NokiaBaseActivity() {
 
     // ── 焦点 / 懒加载 ──
     private val songItemViews = mutableListOf<LinearLayout>()
-    private var focusIdx = 0
+    private lateinit var focusHelper: NokiaListFocusHelper
+    val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else 0
     private var renderedCount = 0
 
     // ── 颜色缓存 ──
@@ -112,6 +114,22 @@ class LocalMusicActivity : NokiaBaseActivity() {
         llScanBar = findViewById(R.id.ll_scan_bar)
         tvScanSub = findViewById(R.id.tv_scan_sub)
         llSongContainer = findViewById(R.id.ll_song_container)
+
+        // 初始化焦点辅助器
+        val scroll = findViewById<android.widget.ScrollView>(R.id.scroll_local_music)
+        focusHelper = NokiaListFocusHelper(this, scroll)
+        focusHelper.setOnFocusChangedListener { oldIdx, newIdx, newView ->
+            if (newView is LinearLayout) {
+                setChildTextColors(newView, true)
+            }
+            val oldView = focusHelper.items.getOrNull(oldIdx) as? LinearLayout
+            if (oldView != null) {
+                if (oldView == llPickFolder || oldView == llScanBar) {
+                    oldView.setBackgroundColor(Color.parseColor("#40000000"))
+                }
+                setChildTextColors(oldView, false)
+            }
+        }
 
         NokiaIcons.setIcon(findViewById(R.id.icon_scan), NokiaIcons.ICON_REFRESH)
         NokiaIcons.setIcon(findViewById(R.id.icon_pick_folder), NokiaIcons.ICON_FOLDER)
@@ -155,8 +173,8 @@ class LocalMusicActivity : NokiaBaseActivity() {
             Log.d(TAG, "scan done: +${result.size}, total ${localSongs.size} songs")
             tvScanSub.text = "本次新增 ${result.size} 首，共 ${localSongs.size} 首 · 再次点击可重新扫描"
             renderSongs()
-            focusIdx = focusIdx.coerceIn(0, localSongs.size + 1)  // 0=选文件夹, 1=扫描, 2..N+1=歌曲
-            applyFocus()
+            val targetIdx = focusHelper.focusIndex.coerceIn(0, (getFocusableViews().size - 1).coerceAtLeast(0))
+            focusHelper.setFocusIndex(targetIdx, true)
         }
     }
 
@@ -344,8 +362,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         localSongs = emptyList()
         saveScannedSongs()
         renderSongs()
-        focusIdx = 1
-        applyFocus()
+        focusHelper.setFocusIndex(1, true)
         Toast.makeText(this, "已清空本地歌曲列表", Toast.LENGTH_SHORT).show()
     }
 
@@ -437,6 +454,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         renderedCount = 0
         appendSongs(PAGE_SIZE)
         NokiaFontManager.applyToViewTree(llSongContainer)
+        focusHelper.setItems(getFocusableViews())
     }
 
     private fun appendSongs(count: Int) {
@@ -534,37 +552,31 @@ class LocalMusicActivity : NokiaBaseActivity() {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  按键处理：0 = 扫描行, 1..N = 歌曲
+    //  按键处理：0 = 选文件夹, 1 = 扫描行, 2..N+1 = 歌曲
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
         Log.d(TAG, "onAction=$action focusIdx=$focusIdx songs=${localSongs.size}")
         return when (action) {
             NokiaKeyAction.UP -> {
-                if (focusIdx > 0) {
-                    focusIdx--
-                    applyFocus()
-                }
+                focusHelper.onDirection(action)
                 true
             }
             NokiaKeyAction.DOWN -> {
-                val maxIdx = localSongs.size + 1
-                if (focusIdx < maxIdx) {
-                    focusIdx++
-                    // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
-                    if (renderedCount < localSongs.size && focusIdx >= renderedCount + 1) {
-                        appendSongs(PAGE_SIZE)
-                        Log.d(TAG, "lazy load: rendered $renderedCount/${localSongs.size}")
-                    }
-                    applyFocus()
+                // 懒加载：焦点接近已渲染末尾时追加下一页
+                if (renderedCount < localSongs.size && focusHelper.focusIndex >= renderedCount + 1) {
+                    appendSongs(PAGE_SIZE)
+                    focusHelper.setItems(getFocusableViews())
+                    Log.d(TAG, "lazy load: rendered $renderedCount/${localSongs.size}")
                 }
+                focusHelper.onDirection(action)
                 true
             }
             NokiaKeyAction.SELECT -> {
-                when (focusIdx) {
+                when (focusHelper.focusIndex) {
                     0 -> showFolderPicker()
                     1 -> beginScan()
                     else -> {
-                        val songIdx = focusIdx - 2
+                        val songIdx = focusHelper.focusIndex - 2
                         if (songIdx in localSongs.indices) playSong(songIdx)
                     }
                 }

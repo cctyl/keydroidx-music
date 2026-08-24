@@ -1,0 +1,64 @@
+<!--
+    网易云 Cookie 设置页
+      ScrollView
+        说明标题行（图标 + 标题）
+        Cookie 输入框（EditText，多行）
+        使用说明文字块
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/music_dark_bg"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 输入框                                               -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <EditText
+            android:id="@+id/et_cookie_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="90dp"
+            android:gravity="top"
+            android:hint="在此粘贴网易云音乐 Cookie…"
+            android:textColorHint="#66FFFFFF"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="11sp"
+            android:inputType="textMultiLine"
+            android:textIsSelectable="true"
+            android:background="#33000000"
+            android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/tv_cookie_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="10sp"
+            android:textColor="@color/music_accent" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 使用说明                                             -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <TextView
+            android:id="@+id/tv_cookie_help"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingExtra="3dp"
+            android:textSize="10sp"
+            android:textColor="#B0B0B0"
+            android:text="@string/cookie_settings_help" />
+
+    </LinearLayout>
+</ScrollView>
