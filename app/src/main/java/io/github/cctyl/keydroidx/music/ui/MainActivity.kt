@@ -644,7 +644,8 @@ class MainActivity : NokiaBaseActivity() {
                 }
             }
             2 -> {
-                android.widget.Toast.makeText(this, "扫描本地音乐中…", android.widget.Toast.LENGTH_SHORT).show()
+                // 本地音乐
+                LocalMusicActivity.start(this)
             }
         }
     }

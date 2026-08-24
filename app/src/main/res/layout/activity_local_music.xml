@@ -1,0 +1,179 @@
+<!--
+    本地音乐页
+    布局结构（对齐 activity_playlist_detail.xml）：
+      ScrollView 包裹全部内容，可滚动
+        "扫描本地音乐" 高亮行（第 0 项焦点，SELECT 触发重新扫描）
+        "歌曲列表" 分隔头
+        歌曲列表容器（动态填充 item_song.xml）
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/music_dark_bg"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 选择文件夹行                                         -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_pick_folder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:focusable="true"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#40000000"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/icon_pick_folder"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:gravity="center"
+                android:textSize="18sp"
+                android:textColor="@color/music_accent"
+                android:includeFontPadding="false" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_pick_folder_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/local_pick_folder"
+                    android:textColor="@color/music_item_normal_text"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:id="@+id/tv_pick_folder_sub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:ellipsize="start"
+                    android:textColor="@color/music_subtext"
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/music_divider" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 扫描行                                               -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_scan_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:focusable="true"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#40000000"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/icon_scan"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:gravity="center"
+                android:textSize="18sp"
+                android:textColor="@color/music_accent"
+                android:includeFontPadding="false" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_scan_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/local_scan_title"
+                    android:textColor="@color/music_item_normal_text"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:id="@+id/tv_scan_sub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/music_subtext"
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 分隔线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/music_divider"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 歌曲列表分隔头                                       -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:gravity="center_vertical"
+            android:background="#4D000000"
+            android:paddingLeft="8dp">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="14dp"
+                android:background="@color/music_accent"
+                android:layout_marginRight="6dp" />
+
+            <TextView
+                android:id="@+id/tv_section_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/song_list"
+                android:textColor="@color/music_section_header_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 歌曲列表容器（动态填充）                               -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_song_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </LinearLayout>
+</ScrollView>

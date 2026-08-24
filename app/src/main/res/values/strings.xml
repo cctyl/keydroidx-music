@@ -30,9 +30,13 @@
     <!-- ── 我的 Tab ── -->
     <string name="mine_favorites">我喜欢的音乐</string>
     <string name="mine_history">最近播放历史</string>
-    <string name="mine_local">本地音乐扫描</string>
+    <string name="mine_local">本地音乐</string>
     <string name="mine_local_sub">内部存储与 TF 卡</string>
     <string name="mine_local_badge">本地</string>
+    <string name="local_scan_title">扫描本地音乐</string>
+    <string name="local_pick_folder">选择文件夹</string>
+    <string name="local_menu_rescan">重新扫描</string>
+    <string name="local_menu_clear_folder">恢复默认扫描范围</string>
 
     <!-- ── 发现 Tab ── -->
     <string name="discover_fm">私人 FM</string>
@@ -111,6 +115,10 @@
 
     <!-- ── 全屏歌词页 ── -->
     <string name="title_lyric_browse">歌词浏览</string>
+    <string name="title_current_queue">当前播放列表</string>
+    <string name="option_play_queue">播放列表</string>
+    <string name="option_toggle_fav">收藏 / 取消收藏</string>
+    <string name="toast_queue_empty">当前播放列表为空</string>
     <string name="softkey_favorite">收藏歌曲</string>
     <string name="softkey_seek">回正进度</string>
     <string name="softkey_return_play">返回播放</string>

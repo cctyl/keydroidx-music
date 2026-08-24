@@ -133,6 +133,17 @@ class PlaybackService : MediaSessionService() {
             skipToNextPlayable()
             return
         }
+        // 本地歌曲：直接读文件，不走网易云取链与 VIP/版权检查
+        song.localPath?.let { path ->
+            Log.d(TAG, "Playing local song: ${song.name}, path: $path")
+            val mediaItem = MediaItem.fromUri(android.net.Uri.parse(path))
+            player?.let { p ->
+                p.setMediaItem(mediaItem)
+                p.prepare()
+                p.play()
+            }
+            return
+        }
         serviceScope.launch {
             try {
                 Log.d(TAG, "Fetching song url for id: ${song.id}")
