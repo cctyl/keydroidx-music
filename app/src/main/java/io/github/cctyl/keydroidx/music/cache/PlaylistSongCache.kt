@@ -20,8 +20,8 @@ object PlaylistSongCache {
     private fun fileFor(context: Context, playlistId: Long) =
         File(context.filesDir, "playlist_songs_$playlistId.json")
 
-    /** 缓存的曲目条目：id / 标题 / 歌手（播放需要真实 id，故必须存）。 */
-    data class Entry(val id: Long, val title: String, val artist: String)
+    /** 缓存的曲目条目：id / 标题 / 歌手 / 是否会员歌（播放需要真实 id，故必须存）。 */
+    data class Entry(val id: Long, val title: String, val artist: String, val isVip: Boolean = false)
 
     fun save(context: Context, playlistId: Long, entries: List<Entry>) {
         try {
@@ -31,6 +31,7 @@ object PlaylistSongCache {
                     put("id", e.id)
                     put("title", e.title)
                     put("artist", e.artist)
+                    put("vip", e.isVip)
                 })
             }
             fileFor(context, playlistId).writeText(arr.toString())
@@ -47,7 +48,7 @@ object PlaylistSongCache {
             val arr = JSONArray(f.readText())
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
-                Entry(o.optLong("id"), o.optString("title"), o.optString("artist"))
+                Entry(o.optLong("id"), o.optString("title"), o.optString("artist"), o.optBoolean("vip", false))
             }
         } catch (e: Exception) {
             Log.w(TAG, "load failed: ${e.message}")

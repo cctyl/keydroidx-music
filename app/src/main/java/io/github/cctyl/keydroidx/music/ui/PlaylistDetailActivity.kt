@@ -168,11 +168,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         val cached = PlaylistSongCache.load(this, playlistId)
         if (cached.isNotEmpty()) {
             Log.d(TAG_DETAIL, "playlist $playlistId show cached: ${cached.size} songs")
-            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = allFav) }
+            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = allFav, isVip = it.isVip) }
             finishSetup()
         }
 
-        // ② 后台刷新最新数据
+        // ② 后台刷新最新数据（完成后重建列表，但保留光标位置）
         lifecycleScope.launch {
             try {
                 val result = PlaylistApi.getPlaylistDetail(playlistId)
@@ -182,12 +182,13 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         s.id,
                         s.name,
                         s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
-                        isFav = allFav
+                        isFav = allFav,
+                        isVip = (s.fee ?: 0) == 1
                     )
                 }
                 PlaylistSongCache.save(
                     this@PlaylistDetailActivity, playlistId,
-                    songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist) }
+                    songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist, it.isVip) }
                 )
             } catch (e: Exception) {
                 if (cached.isEmpty()) {
@@ -199,21 +200,25 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 }
             }
             if (!isDestroyed && !isFinishing && songs.isNotEmpty()) {
-                finishSetup()
+                finishSetup(preserveFocus = true)
             }
         }
     }
 
-    private fun finishSetup() {
+    private fun finishSetup(preserveFocus: Boolean = false) {
         // 设置播放全部行副文字
         tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
 
         // 填充歌曲列表
         populateSongs()
 
-        // 初始焦点
+        // 初始焦点；后台刷新重建时保留光标位置，避免用户正在浏览被重置回顶部
         buildFocusList()
-        focusIdx = 0
+        if (preserveFocus) {
+            focusIdx = focusIdx.coerceIn(0, getFocusableViews().lastIndex.coerceAtLeast(0))
+        } else {
+            focusIdx = 0
+        }
         applyFocus()
     }
 
@@ -264,6 +269,15 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             NokiaIcons.setIcon(iconPlaying, NokiaIcons.ICON_VOLUME_UP)
 
             tvArtist.text = song.artist
+
+            // 会员歌曲：灰显 + 「需要会员」标记
+            if (song.isVip) {
+                val gray = Color.parseColor("#9CA3AF")
+                tvIndex.setTextColor(gray)
+                tvTitle.setTextColor(gray)
+                tvArtist.text = "${song.artist} · 需要会员"
+                tvArtist.setTextColor(gray)
+            }
 
             if (song.isFav) {
                 NokiaIcons.setIcon(iconFav, NokiaIcons.ICON_FAVORITE)
@@ -414,7 +428,21 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     private fun playSong(song: SongDisplayItem) {
-        val startIndex = if (focusIdx == 0) 0 else focusIdx - 1
+        var startIndex = if (focusIdx == 0) 0 else focusIdx - 1
+
+        // 会员歌不可播：从选中处向后找第一个可播的（环形）
+        if (song.isVip) {
+            val alt = (1..songs.size).firstOrNull { off ->
+                val cand = songs[(startIndex + off) % songs.size]
+                !cand.isVip
+            }?.let { (startIndex + it) % songs.size }
+            if (alt == null) {
+                Toast.makeText(this, "歌单内全部歌曲都需要会员，无法播放", Toast.LENGTH_SHORT).show()
+                return
+            }
+            Toast.makeText(this, "《${song.title}》需要会员，已跳过", Toast.LENGTH_SHORT).show()
+            startIndex = alt
+        }
 
         // 1. SongDisplayItem → SongItem 并构造播放队列
         val queue: List<SongItem> = songs.map { display ->
@@ -425,7 +453,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     display.artist.takeIf { it.isNotBlank() }?.let { ArtistItem(name = it) }
                 ),
                 album = AlbumItem(name = null, picUrl = null),
-                duration = null
+                duration = null,
+                fee = if (display.isVip) 1 else 0
             )
         }
         val safeIndex = startIndex.coerceIn(0, queue.lastIndex.coerceAtLeast(0))
@@ -460,5 +489,6 @@ data class SongDisplayItem(
     val id: Long,
     val title: String,
     val artist: String,
-    val isFav: Boolean = false
+    val isFav: Boolean = false,
+    val isVip: Boolean = false
 ) : Serializable

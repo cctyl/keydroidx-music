@@ -197,7 +197,8 @@ object PlaylistApi {
             name = track.optString("name"),
             artists = artists,
             album = album,
-            duration = track.optLong("dt")
+            duration = track.optLong("dt"),
+            fee = track.optInt("fee", 0)
         )
     }
 

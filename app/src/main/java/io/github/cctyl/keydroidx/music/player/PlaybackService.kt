@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.widget.Toast
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.AudioAttributes
@@ -119,13 +120,20 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun loadAndPlaySong(song: SongItem) {
+        // 会员歌直接跳过（fee=1）
+        if ((song.fee ?: 0) == 1) {
+            Log.w(TAG, "VIP song skipped: ${song.name}")
+            skipToNextPlayable()
+            return
+        }
         serviceScope.launch {
             try {
                 Log.d(TAG, "Fetching song url for id: ${song.id}")
                 val result = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
-        val url = result.url
+                val url = result.url
                 if (url.isNullOrEmpty()) {
                     Log.e(TAG, "Failed to get song url for: ${song.name}")
+                    skipToNextPlayable()
                     return@launch
                 }
                 Log.d(TAG, "Playing song: ${song.name}, url: $url")
@@ -137,8 +145,27 @@ class PlaybackService : MediaSessionService() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error playing song: ${e.message}", e)
+                skipToNextPlayable()
             }
         }
+    }
+
+    /** 连续不可播计数（会员歌/取链失败/播放错误），超过队列长度则停止 */
+    private var consecutiveFailures = 0
+
+    /** 当前歌曲不可播：跳下一首；整轮都失败则停止并提示 */
+    private fun skipToNextPlayable() {
+        val size = PlaybackStateManager.playlist.value.size
+        consecutiveFailures++
+        if (size <= 0 || consecutiveFailures >= size) {
+            Log.e(TAG, "no playable song in queue, stopping")
+            Toast.makeText(applicationContext, "没有可播放的歌曲", Toast.LENGTH_SHORT).show()
+            player?.pause()
+            PlaybackStateManager.updatePlayingState(false)
+            consecutiveFailures = 0
+            return
+        }
+        playNext()
     }
 
     private fun togglePlayPause() {
@@ -188,6 +215,9 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_READY) {
+                consecutiveFailures = 0   // 成功开播，重置连续失败计数
+            }
             if (playbackState == Player.STATE_ENDED) {
                 Log.d(TAG, "onPlaybackStateChanged: STATE_ENDED")
                 when (PlaybackStateManager.playMode.value) {

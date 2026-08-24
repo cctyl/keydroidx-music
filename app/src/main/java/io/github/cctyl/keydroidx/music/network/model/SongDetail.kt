@@ -18,7 +18,9 @@ data class SongItem(
     @SerializedName("name") val name: String,
     @SerializedName("ar") val artists: List<ArtistItem>?,
     @SerializedName("al") val album: AlbumItem?,
-    @SerializedName("dt") val duration: Long? = null
+    @SerializedName("dt") val duration: Long? = null,
+    /** 网易云 fee 字段：1=VIP 歌曲，0/null=免费 */
+    @SerializedName("fee") val fee: Int? = null
 )
 
 data class SongDetailResponse(
