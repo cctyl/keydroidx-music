@@ -60,6 +60,7 @@ class MainActivity : NokiaBaseActivity() {
     private lateinit var tabContents: List<View>
 
     // ── 我的 Tab ──
+    private lateinit var mineUserHeader: LinearLayout
     private lateinit var mineFixedRoots: List<LinearLayout>
     private lateinit var minePlaylistRoots: MutableList<LinearLayout>
     private var realPlaylists: List<PlaylistApi.PlaylistInfo> = emptyList()
@@ -189,6 +190,7 @@ class MainActivity : NokiaBaseActivity() {
         val mineRoot = findViewById<View>(R.id.content_mine)
 
         // 3 个固定入口
+        mineUserHeader = mineRoot.findViewById(R.id.layout_user_header)
         mineFixedRoots = listOf(
             mineRoot.findViewById(R.id.item_favorites),
             mineRoot.findViewById(R.id.item_history),
@@ -286,9 +288,9 @@ class MainActivity : NokiaBaseActivity() {
             }
         }
 
-        // 当前在「我的」tab 时刷新焦点列表
+        // 当前在「我的」tab 时刷新焦点列表（用户头部为第 0 项，保证方向键可滚回顶部）
         if (currentTab == TAB_MINE) {
-            focusItems = mineFixedRoots + minePlaylistRoots
+            focusItems = mineFocusItems()
             focusIdx = focusIdx.coerceAtMost((focusItems.size - 1).coerceAtLeast(0))
             applyFocus()
         }
@@ -451,7 +453,7 @@ class MainActivity : NokiaBaseActivity() {
                 setPageTitle("我的音乐库")
                 setTitleIcon(NokiaIcons.ICON_LIBRARY_MUSIC)
                 setSoftKeys("选项", "播放/查看", "正在播放")
-                focusItems = mineFixedRoots + minePlaylistRoots
+                focusItems = mineFocusItems()
             }
             TAB_DISCOVER -> {
                 setPageTitle("发现音乐")
@@ -587,13 +589,28 @@ class MainActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     //  "我的" Tab 选中处理
     // ══════════════════════════════════════════════════════════
+    /**
+     * 「我的」Tab 焦点条目：用户信息头部（头像/昵称，第 0 项）+ 固定入口 + 歌单列表。
+     * 头部必须纳入焦点体系：applyFocus() 的 requestFocus() 才能在按 UP 时
+     * 把被顶出屏幕的头部滚回可视区（见 NOKIA_DEVELOPMENT_RULES.md 焦点滚动规范）。
+     */
+    private fun mineFocusItems(): List<LinearLayout> =
+        listOf(mineUserHeader) + mineFixedRoots + minePlaylistRoots
+
     private fun onSelectMineItem() {
-        val itemCount = mineFixedRoots.size + minePlaylistRoots.size
+        val itemCount = 1 + mineFixedRoots.size + minePlaylistRoots.size
         if (focusIdx < 0 || focusIdx >= itemCount) return
 
+        // ── 用户信息头部：刷新个人资料 ──
+        if (focusIdx == 0) {
+            loadUserProfile()
+            return
+        }
+
         // ── 自建/收藏歌单（真实数据，按 ID 打开）──
-        if (focusIdx >= mineFixedRoots.size) {
-            val view = minePlaylistRoots.getOrNull(focusIdx - mineFixedRoots.size) ?: return
+        val fixedCount = mineFixedRoots.size
+        if (focusIdx >= 1 + fixedCount) {
+            val view = minePlaylistRoots.getOrNull(focusIdx - 1 - fixedCount) ?: return
             val plId = view.tag as? Long ?: return
             val name = view.findViewById<TextView>(R.id.tv_playlist_name).text.toString()
             PlaylistDetailActivity.start(this, plId, name, NokiaIcons.ICON_QUEUE_MUSIC)
@@ -601,7 +618,7 @@ class MainActivity : NokiaBaseActivity() {
         }
 
         // ── 固定入口 ──
-        when (focusIdx) {
+        when (focusIdx - 1) {
             0 -> {
                 // 我喜欢的音乐 → specialType=5 真实歌单；无则退回 mock
                 val favId = favPlaylistId
