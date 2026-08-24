@@ -76,9 +76,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private var layoutLyricFullscreen: View? = null
     private var scrollLyricFull: ScrollView? = null
     private var lyricFullContainer: LinearLayout? = null
-    private var tvMetaLyricist: TextView? = null
-    private var tvMetaComposer: TextView? = null
-    private var tvMetaArranger: TextView? = null
     private val lyricFullTextViews = mutableListOf<TextView>()
     private var focusLyricIndex = -1   // 全屏下用户浏览光标（-1=跟随当前播放行）
 
@@ -130,9 +127,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         layoutLyricFullscreen = findViewById(R.id.layout_lyric_fullscreen)
         scrollLyricFull = findViewById(R.id.scroll_lyric_full)
         lyricFullContainer = findViewById(R.id.layout_lyric_full_list)
-        tvMetaLyricist = findViewById(R.id.tv_meta_lyricist)
-        tvMetaComposer = findViewById(R.id.tv_meta_composer)
-        tvMetaArranger = findViewById(R.id.tv_meta_arranger)
 
         // ── 设置图标（使用 NokiaIcons 矢量字体）──────────────
         // 唱片中心图标：始终显示 ♪ music_note
@@ -725,11 +719,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         container.removeAllViews()
         lyricFullTextViews.clear()
 
-        // 演示元数据
-        tvMetaLyricist?.text = "作词：邹念慈"
-        tvMetaComposer?.text = "作曲：邹念慈"
-        tvMetaArranger?.text = "编曲：徐秋凡"
-
         if (lrcLines.isEmpty()) {
             val tv = buildFullscreenLyricTextView().apply {
                 text = getString(R.string.no_lyric)
@@ -828,9 +817,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     }
 
     private fun accumulateFullscreenTop(index: Int): Int {
-        // 累加元数据区高度 + 前 index 行高度
-        val meta = findViewById<View>(R.id.layout_lyric_meta)
-        var top = meta.height
+        // 累加前 index 行高度（元数据头已移除，内容顶即容器顶）
+        var top = 0
         val container = lyricFullContainer ?: return top
         for (i in 0 until index) {
             if (i < container.childCount) top += container.getChildAt(i).height

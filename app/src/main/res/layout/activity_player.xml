@@ -405,41 +405,7 @@
                 android:paddingLeft="14dp"
                 android:paddingRight="14dp"
                 android:paddingTop="10dp"
-                android:paddingBottom="10dp">
-
-                <!-- 元数据头（作词/作曲/编曲） -->
-                <LinearLayout
-                    android:id="@+id/layout_lyric_meta"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="left"
-                    android:layout_marginBottom="8dp">
-
-                    <TextView
-                        android:id="@+id/tv_meta_lyricist"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="10sp"
-                        android:textColor="#64748B"
-                        android:includeFontPadding="false" />
-
-                    <TextView
-                        android:id="@+id/tv_meta_composer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="10sp"
-                        android:textColor="#64748B"
-                        android:includeFontPadding="false" />
-
-                    <TextView
-                        android:id="@+id/tv_meta_arranger"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="10sp"
-                        android:textColor="#64748B"
-                        android:includeFontPadding="false" />
-                </LinearLayout>
+                android:paddingBottom="36dp">
 
                 <!-- 歌词行容器（动态填充） -->
                 <LinearLayout
