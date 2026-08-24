@@ -142,7 +142,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_next), NokiaIcons.ICON_SKIP_NEXT)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_lyrics), NokiaIcons.ICON_SUBTITLES)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_mode), NokiaIcons.ICON_REPEAT)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_options), NokiaIcons.ICON_MENU)
+        NokiaIcons.setIcon(findViewById(R.id.icon_guide_playpause), NokiaIcons.ICON_PLAY)
 
         // ── 文本兜底 ───────────────────────────────────────
         tvCurrentTime?.text = getString(R.string.unknown_time)
@@ -384,8 +384,12 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 else
                     getString(R.string.play_status_pause)
 
-                // 联动黑胶唱片旋转
+                // 联动黑胶唱片旋转 + 中间指南条播放/暂停图标
                 if (playing) startVinylRotation() else stopVinylRotation()
+                NokiaIcons.setIcon(
+                    findViewById(R.id.icon_guide_playpause),
+                    if (playing) NokiaIcons.ICON_PAUSE else NokiaIcons.ICON_PLAY
+                )
             }
         }
 

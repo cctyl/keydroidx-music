@@ -251,6 +251,32 @@
             android:paddingRight="2dp">
 
             <LinearLayout
+                android:id="@+id/guide_lyrics"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/icon_guide_lyrics"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textColor="#FDE047"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textColor="#FDE047"
+                    android:textStyle="bold"
+                    android:text="@string/guide_lyrics"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/guide_prev"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -272,6 +298,31 @@
                     android:textSize="8sp"
                     android:textColor="#94A3B8"
                     android:text="@string/guide_prev"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/guide_playpause"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/icon_guide_playpause"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textColor="#CBD5E1"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textColor="#94A3B8"
+                    android:text="@string/guide_playpause"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -301,32 +352,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/guide_lyrics"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
-
-                <TextView
-                    android:id="@+id/icon_guide_lyrics"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textColor="#FDE047"
-                    android:includeFontPadding="false" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="8sp"
-                    android:textColor="#FDE047"
-                    android:textStyle="bold"
-                    android:text="@string/guide_lyrics"
-                    android:includeFontPadding="false" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/guide_mode"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -349,31 +374,6 @@
                     android:textColor="#FDE047"
                     android:textStyle="bold"
                     android:text="@string/guide_mode"
-                    android:includeFontPadding="false" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/guide_options"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
-
-                <TextView
-                    android:id="@+id/icon_guide_options"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textColor="@color/music_accent"
-                    android:includeFontPadding="false" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="8sp"
-                    android:textColor="#94A3B8"
-                    android:text="@string/guide_options"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>

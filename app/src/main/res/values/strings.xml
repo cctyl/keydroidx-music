@@ -74,6 +74,7 @@
     <string name="guide_next">→ 下曲</string>
     <string name="guide_lyrics">* 歌词</string>
     <string name="guide_mode"># 模式</string>
+    <string name="guide_playpause">播放/暂停</string>
 
     <!-- ── 音质选择 ── -->
     <string name="option_quality">音质设置</string>
