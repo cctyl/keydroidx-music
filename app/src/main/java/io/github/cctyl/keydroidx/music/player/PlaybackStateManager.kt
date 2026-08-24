@@ -33,6 +33,10 @@ object PlaybackStateManager {
     private val _currentIndex = MutableStateFlow(-1)
     val currentIndex: StateFlow<Int> = _currentIndex.asStateFlow()
 
+    /** 私人 FM 模式：队列播到末尾时自动向服务端拉取下一批歌曲续上 */
+    private val _isPersonalFm = MutableStateFlow(false)
+    val isPersonalFm: StateFlow<Boolean> = _isPersonalFm.asStateFlow()
+
     fun updatePlayingState(playing: Boolean) {
         _isPlaying.value = playing
     }
@@ -56,6 +60,16 @@ object PlaybackStateManager {
         if (index in list.indices) {
             _currentSong.value = list[index]
         }
+    }
+
+    fun setPersonalFm(enabled: Boolean) {
+        _isPersonalFm.value = enabled
+    }
+
+    /** FM 续批：追加歌曲到队列末尾，返回追加后的队列大小 */
+    fun appendPlaylist(list: List<SongItem>): Int {
+        _playlist.value = _playlist.value + list
+        return _playlist.value.size
     }
 
     fun togglePlayMode(): PlaybackMode {

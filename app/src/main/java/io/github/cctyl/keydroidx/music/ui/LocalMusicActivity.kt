@@ -599,6 +599,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         }
         val safeIndex = startIndex.coerceIn(0, queue.lastIndex)
 
+        PlaybackStateManager.setPersonalFm(false)  // 本地播放，退出 FM 模式
         PlaybackStateManager.updatePlaylist(queue, safeIndex)
         val playIntent = Intent(this, PlaybackService::class.java).apply {
             action = PlaybackService.ACTION_PLAY_INDEX

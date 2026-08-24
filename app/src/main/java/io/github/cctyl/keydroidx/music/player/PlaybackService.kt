@@ -21,6 +21,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.library.LibraryManager
+import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -202,6 +203,8 @@ class PlaybackService : MediaSessionService() {
         val playlist = PlaybackStateManager.playlist.value
         if (playlist.isEmpty()) return
         val current = PlaybackStateManager.currentIndex.value
+        // FM 模式手动切歌到队尾时也可能需要续批
+        if (current >= playlist.size - 1) maybeFetchMoreFm()
         val mode = PlaybackStateManager.playMode.value
 
         val nextIndex = when (mode) {
@@ -252,6 +255,44 @@ class PlaybackService : MediaSessionService() {
                     }
                     else -> playNext()
                 }
+            }
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            super.onMediaItemTransition(mediaItem, reason)
+            maybeFetchMoreFm()
+        }
+    }
+
+    /**
+     * 私人 FM 续批：当前是最后一首且剩余不足 2 首时，
+     * 异步拉取一批新歌追加到队列（去重后追加）。
+     */
+    private var fetchingFm = false
+    private fun maybeFetchMoreFm() {
+        if (!PlaybackStateManager.isPersonalFm.value || fetchingFm) return
+        val playlist = PlaybackStateManager.playlist.value
+        val index = PlaybackStateManager.currentIndex.value
+        if (playlist.isEmpty() || index < playlist.size - 2) return
+
+        fetchingFm = true
+        Log.d(TAG, "FM stock low (index=$index/${playlist.size}), fetching more")
+        serviceScope.launch {
+            try {
+                val batch = PlaylistApi.getPersonalFm()
+                if (batch.isNotEmpty()) {
+                    // 按歌曲 id 去重后追加
+                    val existingIds = PlaybackStateManager.playlist.value.mapTo(mutableSetOf()) { it.id }
+                    val fresh = batch.filter { existingIds.add(it.id) }
+                    if (fresh.isNotEmpty()) {
+                        PlaybackStateManager.appendPlaylist(fresh)
+                        Log.d(TAG, "FM appended ${fresh.size} songs, total ${PlaybackStateManager.playlist.value.size}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "FM fetch more failed", e)
+            } finally {
+                fetchingFm = false
             }
         }
     }

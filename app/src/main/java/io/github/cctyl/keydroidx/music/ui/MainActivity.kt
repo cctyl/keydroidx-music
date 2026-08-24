@@ -27,6 +27,8 @@ import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
+import io.github.cctyl.keydroidx.music.player.PlaybackService
+import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
 import io.github.cctyl.keydroidx.music.ui.SongDisplayItem
 import androidx.lifecycle.lifecycleScope
@@ -655,10 +657,44 @@ class MainActivity : NokiaBaseActivity() {
      */
     private fun onSelectDiscoverItem() {
         when (focusIdx) {
-            0 -> {
-                android.widget.Toast.makeText(this, "私人 FM 敬请期待", Toast.LENGTH_SHORT).show()
-            }
+            0 -> openPersonalFm()
             1 -> openDailyRecommend()
+        }
+    }
+
+    /**
+     * 私人 FM：拉取一批电台歌曲开始播放，队列耗尽时由
+     * PlaybackService 自动续批（isPersonalFm 标记）。需要登录。
+     */
+    private fun openPersonalFm() {
+        if (RetrofitClient.getCookie().isNullOrEmpty()) {
+            Toast.makeText(this, "私人 FM 需要先登录网易云账号", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "正在开启私人 FM…", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val songs = PlaylistApi.getPersonalFm()
+                Log.d("MainActivity", "personal fm loaded: ${songs.size} songs")
+                if (isDestroyed || isFinishing) return@launch
+                if (songs.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "暂无私人 FM 数据，请确认已登录", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                PlaybackStateManager.setPersonalFm(true)
+                PlaybackStateManager.updatePlaylist(songs, 0)
+                val playIntent = Intent(this@MainActivity, PlaybackService::class.java).apply {
+                    action = PlaybackService.ACTION_PLAY_INDEX
+                    putExtra(PlaybackService.EXTRA_INDEX, 0)
+                }
+                startService(playIntent)
+                startActivity(Intent(this@MainActivity, MusicPlayerActivity::class.java))
+            } catch (e: Exception) {
+                Log.e("MainActivity", "openPersonalFm failed", e)
+                if (!isDestroyed && !isFinishing) {
+                    Toast.makeText(this@MainActivity, "私人 FM 获取失败：${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

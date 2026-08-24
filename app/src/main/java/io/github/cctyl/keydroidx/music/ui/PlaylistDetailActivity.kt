@@ -496,7 +496,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         }
         val safeIndex = startIndex.coerceIn(0, queue.lastIndex.coerceAtLeast(0))
 
-        // 2. 推入全局播放状态管理器
+        // 2. 推入全局播放状态管理器（普通歌单播放，退出 FM 模式）
+        PlaybackStateManager.setPersonalFm(false)
         PlaybackStateManager.updatePlaylist(queue, safeIndex)
 
         // 3. 启动后台播放服务，按索引加载并播放
