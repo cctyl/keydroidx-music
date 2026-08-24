@@ -148,11 +148,24 @@ object PlaylistApi {
 
         val playlistObj = json.optJSONObject("playlist") ?: return@withContext emptyList()
 
+        // 解析权限表 (privileges)
+        val privilegeMap = mutableMapOf<Long, Boolean>() // songId -> noCopyright
+        val privilegesArray = playlistObj.optJSONArray("privileges") ?: json.optJSONArray("privileges")
+        if (privilegesArray != null) {
+            for (i in 0 until privilegesArray.length()) {
+                val p = privilegesArray.getJSONObject(i)
+                val id = p.optLong("id")
+                val st = p.optInt("st", 0)
+                // st < 0 表示无版权或已下架
+                privilegeMap[id] = (st < 0)
+            }
+        }
+
         val tracksMap = mutableMapOf<Long, SongItem>()
         val trackArray = playlistObj.optJSONArray("tracks")
         if (trackArray != null) {
             for (i in 0 until trackArray.length()) {
-                val song = parseSongTrack(trackArray.getJSONObject(i))
+                val song = parseSongTrack(trackArray.getJSONObject(i), privilegeMap)
                 tracksMap[song.id] = song
             }
         }
@@ -181,7 +194,8 @@ object PlaylistApi {
         allIds.mapNotNull { tracksMap[it] }
     }
 
-    private fun parseSongTrack(track: JSONObject): SongItem {
+    private fun parseSongTrack(track: JSONObject, privilegeMap: Map<Long, Boolean>? = null): SongItem {
+        val songId = track.optLong("id")
         val artistArray = track.optJSONArray("ar")
         val artists: List<ArtistItem>? = artistArray?.let {
             (0 until it.length()).map { j ->
@@ -192,13 +206,16 @@ object PlaylistApi {
         val album: AlbumItem? = albumJson?.let {
             AlbumItem(id = it.optLong("id"), name = it.optString("name"), picUrl = it.optString("picUrl"))
         }
+        val st = track.optInt("st", 0)
+        val noCopyright = privilegeMap?.get(songId) ?: (st < 0)
         return SongItem(
-            id = track.optLong("id"),
+            id = songId,
             name = track.optString("name"),
             artists = artists,
             album = album,
             duration = track.optLong("dt"),
-            fee = track.optInt("fee", 0)
+            fee = track.optInt("fee", 0),
+            noCopyright = noCopyright
         )
     }
 
@@ -211,9 +228,20 @@ object PlaylistApi {
             try {
                 val response = RetrofitClient.eapiPost("/eapi/v3/song/detail", payload)
                 val body = response.body?.string() ?: return@repeat
-                val songArray = JSONObject(body).optJSONArray("songs") ?: return@repeat
+                val respJson = JSONObject(body)
+                val songArray = respJson.optJSONArray("songs") ?: return@repeat
+                val privilegesArray = respJson.optJSONArray("privileges")
+                val privMap = mutableMapOf<Long, Boolean>()
+                if (privilegesArray != null) {
+                    for (i in 0 until privilegesArray.length()) {
+                        val p = privilegesArray.getJSONObject(i)
+                        val id = p.optLong("id")
+                        val st = p.optInt("st", 0)
+                        privMap[id] = (st < 0)
+                    }
+                }
                 return@withContext (0 until songArray.length()).map { i ->
-                    parseSongTrack(songArray.getJSONObject(i))
+                    parseSongTrack(songArray.getJSONObject(i), privMap)
                 }
             } catch (e: Exception) {
                 lastError = e

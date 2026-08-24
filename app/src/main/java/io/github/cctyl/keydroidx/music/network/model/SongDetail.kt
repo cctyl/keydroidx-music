@@ -20,8 +20,13 @@ data class SongItem(
     @SerializedName("al") val album: AlbumItem?,
     @SerializedName("dt") val duration: Long? = null,
     /** 网易云 fee 字段：1=VIP 歌曲，0/null=免费 */
-    @SerializedName("fee") val fee: Int? = null
-)
+    @SerializedName("fee") val fee: Int? = null,
+    /** 网易云版权/状态：st < 0（如 -200）表示无版权/已下架 */
+    @SerializedName("noCopyright") var noCopyright: Boolean = false
+) {
+    /** 是否可播放（非下架/无版权歌曲） */
+    val isPlayable: Boolean get() = !noCopyright
+}
 
 data class SongDetailResponse(
     @SerializedName("songs") val songs: List<SongDetail>

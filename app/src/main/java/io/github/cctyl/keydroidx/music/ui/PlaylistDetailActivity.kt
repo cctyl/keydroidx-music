@@ -168,7 +168,16 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         val cached = PlaylistSongCache.load(this, playlistId)
         if (cached.isNotEmpty()) {
             Log.d(TAG_DETAIL, "playlist $playlistId show cached: ${cached.size} songs")
-            songs = cached.map { SongDisplayItem(it.id, it.title, it.artist, isFav = allFav, isVip = it.isVip) }
+            songs = cached.map {
+                SongDisplayItem(
+                    it.id,
+                    it.title,
+                    it.artist,
+                    isFav = allFav,
+                    isVip = it.isVip,
+                    noCopyright = it.noCopyright
+                )
+            }
             finishSetup()
         }
 
@@ -183,12 +192,13 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         s.name,
                         s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
                         isFav = allFav,
-                        isVip = (s.fee ?: 0) == 1
+                        isVip = (s.fee ?: 0) == 1,
+                        noCopyright = s.noCopyright
                     )
                 }
                 PlaylistSongCache.save(
                     this@PlaylistDetailActivity, playlistId,
-                    songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist, it.isVip) }
+                    songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist, it.isVip, it.noCopyright) }
                 )
             } catch (e: Exception) {
                 if (cached.isEmpty()) {
@@ -270,8 +280,14 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
             tvArtist.text = song.artist
 
-            // 会员歌曲：灰显 + 「需要会员」标记
-            if (song.isVip) {
+            // 会员歌曲 / 无权限歌曲：灰显 + 提示标记
+            if (song.noCopyright) {
+                val gray = Color.parseColor("#9CA3AF")
+                tvIndex.setTextColor(gray)
+                tvTitle.setTextColor(gray)
+                tvArtist.text = "${song.artist} · 无权限"
+                tvArtist.setTextColor(gray)
+            } else if (song.isVip) {
                 val gray = Color.parseColor("#9CA3AF")
                 tvIndex.setTextColor(gray)
                 tvTitle.setTextColor(gray)
@@ -430,11 +446,23 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private fun playSong(song: SongDisplayItem) {
         var startIndex = if (focusIdx == 0) 0 else focusIdx - 1
 
-        // 会员歌不可播：从选中处向后找第一个可播的（环形）
-        if (song.isVip) {
+        // 无权限/下架歌不可播：从选中处向后找第一个可播的（环形）
+        if (song.noCopyright) {
             val alt = (1..songs.size).firstOrNull { off ->
                 val cand = songs[(startIndex + off) % songs.size]
-                !cand.isVip
+                !cand.noCopyright && !cand.isVip
+            }?.let { (startIndex + it) % songs.size }
+            if (alt == null) {
+                Toast.makeText(this, "歌单内全部歌曲都无权限，无法播放", Toast.LENGTH_SHORT).show()
+                return
+            }
+            Toast.makeText(this, "《${song.title}》无权限播放，已跳过", Toast.LENGTH_SHORT).show()
+            startIndex = alt
+        } else if (song.isVip) {
+            // 会员歌不可播：从选中处向后找第一个可播的（环形）
+            val alt = (1..songs.size).firstOrNull { off ->
+                val cand = songs[(startIndex + off) % songs.size]
+                !cand.noCopyright && !cand.isVip
             }?.let { (startIndex + it) % songs.size }
             if (alt == null) {
                 Toast.makeText(this, "歌单内全部歌曲都需要会员，无法播放", Toast.LENGTH_SHORT).show()
@@ -454,7 +482,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 ),
                 album = AlbumItem(name = null, picUrl = null),
                 duration = null,
-                fee = if (display.isVip) 1 else 0
+                fee = if (display.isVip) 1 else 0,
+                noCopyright = display.noCopyright
             )
         }
         val safeIndex = startIndex.coerceIn(0, queue.lastIndex.coerceAtLeast(0))
@@ -490,5 +519,6 @@ data class SongDisplayItem(
     val title: String,
     val artist: String,
     val isFav: Boolean = false,
-    val isVip: Boolean = false
+    val isVip: Boolean = false,
+    val noCopyright: Boolean = false
 ) : Serializable

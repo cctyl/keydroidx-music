@@ -120,6 +120,12 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun loadAndPlaySong(song: SongItem) {
+        // 无版权/已下架歌曲直接跳过
+        if (song.noCopyright) {
+            Log.w(TAG, "No copyright song skipped: ${song.name}")
+            skipToNextPlayable()
+            return
+        }
         // 会员歌直接跳过（fee=1）
         if ((song.fee ?: 0) == 1) {
             Log.w(TAG, "VIP song skipped: ${song.name}")
@@ -212,6 +218,11 @@ class PlaybackService : MediaSessionService() {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             PlaybackStateManager.updatePlayingState(isPlaying)
             Log.d(TAG, "onIsPlayingChanged: $isPlaying")
+        }
+
+        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            Log.e(TAG, "onPlayerError: ${error.message}", error)
+            skipToNextPlayable()
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
