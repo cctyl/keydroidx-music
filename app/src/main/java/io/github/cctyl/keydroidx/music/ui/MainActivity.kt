@@ -565,10 +565,10 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SELECT -> {
-                if (currentTab == TAB_MINE) {
-                    onSelectMineItem()
-                } else {
-                    // 其他 Tab 暂不处理
+                when (currentTab) {
+                    TAB_MINE -> onSelectMineItem()
+                    TAB_DISCOVER -> onSelectDiscoverItem()
+                    else -> { /* 其他 Tab 暂不处理 */ }
                 }
                 true
             }
@@ -646,6 +646,61 @@ class MainActivity : NokiaBaseActivity() {
             2 -> {
                 // 本地音乐
                 LocalMusicActivity.start(this)
+            }
+        }
+    }
+
+    /**
+     * 发现 Tab 选中处理：0=私人FM（暂未实现），1=每日推荐，2+=推荐歌单
+     */
+    private fun onSelectDiscoverItem() {
+        when (focusIdx) {
+            0 -> {
+                android.widget.Toast.makeText(this, "私人 FM 敬请期待", Toast.LENGTH_SHORT).show()
+            }
+            1 -> openDailyRecommend()
+        }
+    }
+
+    /**
+     * 每日推荐：拉取网易云每日推荐歌曲，成功后用歌单详情页展示。
+     * 需要登录（Cookie），未登录或拉取失败给出提示。
+     */
+    private fun openDailyRecommend() {
+        if (RetrofitClient.getCookie().isNullOrEmpty()) {
+            Toast.makeText(this, "每日推荐需要先登录网易云账号", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "正在获取每日推荐…", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val songs = PlaylistApi.getDailyRecommendSongs()
+                Log.d("MainActivity", "daily recommend loaded: ${songs.size} songs")
+                if (isDestroyed || isFinishing) return@launch
+                if (songs.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "暂无每日推荐数据，请确认已登录", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val displayItems = ArrayList(songs.map { s ->
+                    SongDisplayItem(
+                        id = s.id,
+                        title = s.name,
+                        artist = s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
+                        isVip = (s.fee ?: 0) == 1,
+                        noCopyright = s.noCopyright
+                    )
+                })
+                PlaylistDetailActivity.start(
+                    this@MainActivity,
+                    getString(R.string.discover_daily_title),
+                    NokiaIcons.ICON_TODAY,
+                    displayItems
+                )
+            } catch (e: Exception) {
+                Log.e("MainActivity", "openDailyRecommend failed", e)
+                if (!isDestroyed && !isFinishing) {
+                    Toast.makeText(this@MainActivity, "获取每日推荐失败：${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

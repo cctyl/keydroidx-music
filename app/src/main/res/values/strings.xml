@@ -42,6 +42,7 @@
     <string name="discover_fm">私人 FM</string>
     <string name="discover_fm_sub">个性化随心听</string>
     <string name="discover_daily">每日推荐</string>
+    <string name="discover_daily_title">每日推荐歌曲</string>
     <string name="discover_daily_sub">每天 06:00 更新</string>
     <string name="discover_playlist">歌单广场</string>
     <string name="discover_playlist_sub">流行/ACG/古风</string>

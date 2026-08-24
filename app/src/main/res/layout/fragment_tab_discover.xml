@@ -42,10 +42,10 @@
 
                     <TextView
                         android:id="@+id/icon_grid_fm"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:gravity="center"
-                        android:textSize="18sp"
+                        android:textSize="24sp"
                         android:textColor="@color/music_accent"
                         android:includeFontPadding="false" />
 
@@ -90,10 +90,10 @@
 
                     <TextView
                         android:id="@+id/icon_grid_daily"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:gravity="center"
-                        android:textSize="18sp"
+                        android:textSize="24sp"
                         android:textColor="@color/music_accent"
                         android:includeFontPadding="false" />
 
@@ -148,10 +148,10 @@
 
                     <TextView
                         android:id="@+id/icon_grid_playlist"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:gravity="center"
-                        android:textSize="18sp"
+                        android:textSize="24sp"
                         android:textColor="@color/music_accent"
                         android:includeFontPadding="false" />
 
@@ -196,10 +196,10 @@
 
                     <TextView
                         android:id="@+id/icon_grid_chart"
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:gravity="center"
-                        android:textSize="18sp"
+                        android:textSize="24sp"
                         android:textColor="@color/music_accent"
                         android:includeFontPadding="false" />
 
