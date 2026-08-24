@@ -739,6 +739,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             container.addView(tv)
             lyricFullTextViews.add(tv)
         }
+        adjustFullscreenLyricPadding()
         // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
         NokiaFontManager.applyToViewTree(container)
     }
@@ -767,8 +768,26 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     }
 
     /**
-     * 全屏歌词高亮：当前播放行 = 青色圆角背景 + 白字加粗；
-     * 光标行（用户浏览）= 淡背景；其余 = 透明白字。
+     * 动态调整全屏歌词容器的上下 padding，保证首行和末行滚动时都能完美停在视口正中央，
+     * 绝不贴边或被标题栏/软键栏遮挡。
+     */
+    private fun adjustFullscreenLyricPadding() {
+        val sv = scrollLyricFull ?: return
+        val wrapper = findViewById<LinearLayout>(R.id.layout_lyric_full_wrapper) ?: return
+        val h = sv.height
+        if (h <= 0) return
+        val targetPadding = ((h / 2) - dp(18)).coerceAtLeast(dp(60))
+        if (wrapper.paddingTop != targetPadding || wrapper.paddingBottom != targetPadding) {
+            wrapper.setPadding(wrapper.paddingLeft, targetPadding, wrapper.paddingRight, targetPadding)
+        }
+    }
+
+    /**
+     * 全屏歌词高亮：
+     * - 当前播放行且光标选中：青色圆角高亮框 + 白字加粗
+     * - 用户方向键选中的光标行（非播放行）：深蓝焦点框 + 白字加粗
+     * - 正在播放行（光标在别处）：青色圆角播放框 + 青字加粗（清晰提示正在唱这句）
+     * - 普通歌词行：透明背景 + 灰字正常
      */
     private fun updateFullscreenLyricHighlight(posMs: Long) {
         Log.d(TAG, "[lyric-tick] full=$isLyricFull lines=${lrcLines.size} views=${lyricFullTextViews.size} pos=$posMs")
@@ -784,24 +803,46 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         // 否则它会被冻结在第一次的 playing 值上，导致滚动目标永远停在某行（表现为歌词界面一直停在顶部）。
 
         val cyanBg = resources.getDrawable(R.drawable.bg_lyric_current)
+        val focusBg = resources.getDrawable(R.drawable.bg_focused_item)
         val white = Color.parseColor("#FFFFFF")
+        val cyan = Color.parseColor("#38BDF8")
         val normal = Color.parseColor("#B0B0B0")
+
+        val cursor = if (focusLyricIndex in lyricFullTextViews.indices) focusLyricIndex else playing
+
         lyricFullTextViews.forEachIndexed { i, tv ->
-            if (i == playing) {
-                tv.background = cyanBg
-                tv.setTextColor(white)
-                tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                tv.textSize = 14f
-            } else if (i == focusLyricIndex && focusLyricIndex != playing) {
-                tv.background = null
-                tv.setTextColor(white)
-                tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                tv.textSize = 13f
-            } else {
-                tv.background = null
-                tv.setTextColor(normal)
-                tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                tv.textSize = 13f
+            val isCursor = (i == cursor)
+            val isPlaying = (i == playing)
+
+            when {
+                // 1. 光标正好停在当前播放行（或默认跟随模式下的播放行）
+                isCursor && isPlaying -> {
+                    tv.background = cyanBg
+                    tv.setTextColor(white)
+                    tv.setTypeface(null, android.graphics.Typeface.BOLD)
+                    tv.textSize = 14f
+                }
+                // 2. 用户方向键选中的光标行（但不是当前播放行）
+                isCursor && !isPlaying -> {
+                    tv.background = focusBg
+                    tv.setTextColor(white)
+                    tv.setTypeface(null, android.graphics.Typeface.BOLD)
+                    tv.textSize = 14f
+                }
+                // 3. 当前播放行（但用户光标移到了其他行）
+                !isCursor && isPlaying -> {
+                    tv.background = cyanBg
+                    tv.setTextColor(cyan)
+                    tv.setTypeface(null, android.graphics.Typeface.BOLD)
+                    tv.textSize = 14f
+                }
+                // 4. 普通歌词行
+                else -> {
+                    tv.background = null
+                    tv.setTextColor(normal)
+                    tv.setTypeface(null, android.graphics.Typeface.NORMAL)
+                    tv.textSize = 13f
+                }
             }
         }
 
@@ -811,10 +852,12 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         if (target in lyricFullTextViews.indices) {
             scrollLyricFull?.post {
                 val sv = scrollLyricFull ?: return@post
+                adjustFullscreenLyricPadding()
                 val tv = lyricFullTextViews[target]
-                val top = accumulateFullscreenTop(target)
-                val center = top + tv.height / 2
-                val dest = (center - sv.height / 2).coerceAtLeast(0)
+                val wrapper = findViewById<LinearLayout>(R.id.layout_lyric_full_wrapper)
+                val wrapperPadTop = wrapper?.paddingTop ?: 0
+                val tvCenterInScrollView = wrapperPadTop + tv.top + tv.height / 2
+                val dest = (tvCenterInScrollView - sv.height / 2).coerceAtLeast(0)
                 sv.smoothScrollTo(0, dest)
             }
         }

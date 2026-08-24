@@ -398,14 +398,16 @@
             android:overScrollMode="never">
 
             <LinearLayout
+                android:id="@+id/layout_lyric_full_wrapper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center_horizontal"
                 android:paddingLeft="14dp"
                 android:paddingRight="14dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="36dp">
+                android:paddingTop="120dp"
+                android:paddingBottom="120dp"
+                android:clipToPadding="false">
 
                 <!-- 歌词行容器（动态填充） -->
                 <LinearLayout
