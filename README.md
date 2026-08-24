@@ -50,3 +50,7 @@ keydroidx-music/
 - **生态接入与移植指南**: [AGENTS.md](./AGENTS.md)
 - **KeydroidX 生态通用开发规范**: [NOKIA_DEVELOPMENT_RULES.md](./NOKIA_DEVELOPMENT_RULES.md)
 
+
+
+## 致谢
+- [Ncrust](https://github.com/GuitaristRin/Ncrust)：本项目底层的核心音乐播放与网易云请求逻辑移植自 Ncrust，感谢其开源贡献。
