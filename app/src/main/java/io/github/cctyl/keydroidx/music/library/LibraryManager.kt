@@ -106,6 +106,14 @@ object LibraryManager {
         saveRecent()
     }
 
+    fun removeRecentSong(songId: Long) {
+        val currentList = _recentSongs.value.toMutableList()
+        if (currentList.removeAll { it.id == songId }) {
+            _recentSongs.value = currentList
+            saveRecent()
+        }
+    }
+
     private fun saveRecent() {
         prefs?.edit()?.putString(KEY_RECENT_SONGS, gson.toJson(_recentSongs.value))?.apply()
     }

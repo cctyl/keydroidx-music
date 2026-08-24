@@ -982,15 +982,18 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         val accent = Color.parseColor("#38BDF8")
         val normal = Color.parseColor("#B0B0B0")
+        val fontScale = NokiaFontManager.getFontScale()
+        val customTf = NokiaFontManager.getTypeface(this)
+
         lyricTextViews.forEachIndexed { i, tv ->
             if (i == idx) {
                 tv.setTextColor(accent)
-                tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                tv.textSize = 13f
+                tv.setTypeface(customTf, android.graphics.Typeface.BOLD)
+                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
             } else {
                 tv.setTextColor(normal)
-                tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                tv.textSize = 11f
+                tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
+                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11f * fontScale)
             }
         }
 

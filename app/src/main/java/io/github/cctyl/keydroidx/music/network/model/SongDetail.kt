@@ -26,6 +26,8 @@ data class SongItem(
 ) {
     /** 是否可播放（非下架/无版权歌曲） */
     val isPlayable: Boolean get() = !noCopyright
+
+    val artistName: String get() = artists?.joinToString("/") { it.name } ?: "未知艺术家"
 }
 
 data class SongDetailResponse(

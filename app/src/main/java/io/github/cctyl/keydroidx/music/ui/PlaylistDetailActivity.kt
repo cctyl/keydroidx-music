@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
+import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
@@ -22,6 +23,8 @@ import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import java.io.Serializable
 import kotlinx.coroutines.launch
 
@@ -42,22 +45,25 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         private const val EXTRA_PLAYLIST_ID = "playlist_id"
         private const val EXTRA_PLAYLIST_ICON = "playlist_icon"
         private const val EXTRA_ALL_FAV = "all_fav"
+        private const val EXTRA_IS_HISTORY = "is_history"
         private const val EXTRA_SONGS = "songs"
         private const val NO_ID = -1L
 
         /**
-         * 启动歌单详情页（本地歌曲列表，mock 数据用）
+         * 启动歌单详情页（本地歌曲列表，mock 数据用或历史记录）
          */
         fun start(
             context: Context,
             playlistName: String,
             playlistIcon: String,
-            songs: ArrayList<SongDisplayItem>
+            songs: ArrayList<SongDisplayItem>,
+            isHistory: Boolean = false
         ) {
             val intent = Intent(context, PlaylistDetailActivity::class.java).apply {
                 putExtra(EXTRA_PLAYLIST_NAME, playlistName)
                 putExtra(EXTRA_PLAYLIST_ICON, playlistIcon)
                 putExtra(EXTRA_SONGS, songs)
+                putExtra(EXTRA_IS_HISTORY, isHistory)
             }
             context.startActivity(intent)
         }
@@ -89,6 +95,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private var playlistId: Long = NO_ID
     /** 「我喜欢的音乐」等全收藏歌单：所有歌曲红心 */
     private var allFav = false
+    private var isHistory = false
     private var songs: List<SongDisplayItem> = emptyList()
 
     // ── UI 控件 ──
@@ -125,6 +132,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: NokiaIcons.ICON_QUEUE_MUSIC
         playlistId = intent.getLongExtra(EXTRA_PLAYLIST_ID, NO_ID)
         allFav = intent.getBooleanExtra(EXTRA_ALL_FAV, false)
+        isHistory = intent.getBooleanExtra(EXTRA_IS_HISTORY, false)
         @Suppress("UNCHECKED_CAST")
         songs = (intent.getSerializableExtra(EXTRA_SONGS) as? ArrayList<SongDisplayItem>) ?: emptyList()
 
@@ -432,7 +440,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                // TODO: 呼出 NokiaOptionsDialog
+                showOptionsMenu()
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
@@ -501,6 +509,88 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         // 4. 跳转播放详情页
         val playerIntent = Intent(this, MusicPlayerActivity::class.java)
         startActivity(playerIntent)
+    }
+
+    private fun showOptionsMenu() {
+        val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
+        val actions = mutableListOf<() -> Unit>()
+        val iconColor = android.graphics.Color.WHITE
+        val iconSize = (18 * resources.displayMetrics.density).toInt()
+
+        if (isHistory) {
+            dialog.addItem(1, getString(R.string.menu_clear_all_history), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+            actions.add { showClearHistoryConfirmDialog() }
+
+            if (focusIdx > 0) {
+                val songIdx = focusIdx - 1
+                if (songIdx in songs.indices) {
+                    val targetSong = songs[songIdx]
+                    dialog.addItem(2, getString(R.string.menu_remove_from_history), NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor))
+                    actions.add {
+                        LibraryManager.removeRecentSong(targetSong.id)
+                        val updated = songs.toMutableList()
+                        updated.removeAt(songIdx)
+                        songs = updated
+                        tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
+                        focusIdx = focusIdx.coerceAtMost(songs.size)
+                        finishSetup(preserveFocus = true)
+                        Toast.makeText(this, getString(R.string.toast_history_removed), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } else {
+            if (focusIdx > 0) {
+                val songIdx = focusIdx - 1
+                if (songIdx in songs.indices) {
+                    val targetSong = songs[songIdx]
+                    dialog.addItem(1, getString(R.string.menu_play_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PLAY, iconSize, iconColor))
+                    actions.add { playSong(targetSong) }
+                }
+            }
+        }
+
+        dialog.addItem(actions.size + 1, getString(R.string.opt_refresh), NokiaIcons.createDrawable(this, NokiaIcons.ICON_REFRESH, iconSize, iconColor))
+        actions.add {
+            if (isHistory) {
+                songs = LibraryManager.recentSongs.value.map { song ->
+                    SongDisplayItem(
+                        id = song.id,
+                        title = song.name,
+                        artist = song.artistName,
+                        isFav = LibraryManager.isFavorite(song.id),
+                        isVip = song.fee == 1,
+                        noCopyright = song.noCopyright
+                    )
+                }
+                tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
+                focusIdx = 0
+                finishSetup(preserveFocus = false)
+                Toast.makeText(this, "已刷新", Toast.LENGTH_SHORT).show()
+            } else if (playlistId != NO_ID) {
+                fetchRealSongs()
+            }
+        }
+
+        dialog.setOnOptionSelectedListener { index, _ ->
+            if (index in actions.indices) {
+                actions[index].invoke()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showClearHistoryConfirmDialog() {
+        NokiaConfirmDialog(this, getString(R.string.dialog_clear_history_title), getString(R.string.dialog_clear_history_msg))
+            .setPositiveButton(getString(R.string.dialog_confirm)) {
+                LibraryManager.clearRecent()
+                songs = emptyList()
+                tvPlayAllSub.text = "共 0 首歌曲"
+                focusIdx = 0
+                finishSetup(preserveFocus = false)
+                Toast.makeText(this, getString(R.string.toast_history_cleared), Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(getString(R.string.dialog_cancel), null)
+            .show()
     }
 
     // ══════════════════════════════════════════════════════════

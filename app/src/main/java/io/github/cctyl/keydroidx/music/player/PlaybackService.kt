@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -149,6 +150,8 @@ class PlaybackService : MediaSessionService() {
                     p.prepare()
                     p.play()
                 }
+                // 成功准备播放，记录到最近播放历史
+                LibraryManager.addRecentSong(song)
             } catch (e: Exception) {
                 Log.e(TAG, "Error playing song: ${e.message}", e)
                 skipToNextPlayable()

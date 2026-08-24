@@ -56,7 +56,7 @@
     <string name="menu_scan_media">刷新音乐库</string>
     <string name="menu_about">关于</string>
 
-    <!-- ── 歌单详情 ── -->
+    <!-- ── 歌单详情 / 历史选项 ── -->
     <string name="song_list">歌曲列表</string>
     <string name="play_all">播放全部歌曲</string>
     <string name="play_mode_list">列表循环</string>
@@ -64,6 +64,18 @@
     <string name="play_mode_shuffle">随机播放</string>
     <string name="softkey_play_selected">播放选中</string>
     <string name="softkey_back_to_list">返回列表</string>
+    <string name="menu_play_song">播放歌曲</string>
+    <string name="menu_toggle_fav">收藏 / 取消收藏</string>
+    <string name="opt_refresh">刷新</string>
+    <string name="menu_remove_from_history">从历史记录中移除</string>
+    <string name="menu_clear_all_history">清空全部播放历史</string>
+    <string name="dialog_clear_history_title">清空历史记录</string>
+    <string name="dialog_clear_history_msg">确定要清空全部最近播放历史记录吗？</string>
+    <string name="dialog_confirm">确定</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="toast_history_cleared">已清空播放历史</string>
+    <string name="toast_history_removed">已从历史中移除</string>
+    <string name="toast_history_empty">暂无播放历史</string>
 
     <!-- ── 正在播放 ── -->
     <string name="title_now_playing">正在播放</string>

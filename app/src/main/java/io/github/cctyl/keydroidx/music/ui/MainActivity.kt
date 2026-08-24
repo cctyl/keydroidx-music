@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
@@ -98,6 +99,16 @@ class MainActivity : NokiaBaseActivity() {
     //  NokiaBaseActivity 回调
     // ══════════════════════════════════════════════════════════
     override fun getContentLayoutRes(): Int = R.layout.activity_music_main
+
+    override fun onResume() {
+        super.onResume()
+        // 刷新最近播放记录数量展示
+        findViewById<View>(R.id.content_mine)?.let { mineRoot ->
+            val recentCount = LibraryManager.recentSongs.value.size
+            mineRoot.findViewById<TextView>(R.id.tv_history_sub)?.text = "${recentCount} 首播放记录"
+            mineRoot.findViewById<TextView>(R.id.badge_history)?.text = "$recentCount"
+        }
+    }
 
     override fun onInitViews() {
         // 响应式 Tab 栏高度：HTML 原型 tab 栏 = 40px / 340px ≈ 11.76% 屏幕高度
@@ -190,10 +201,11 @@ class MainActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_local), NokiaIcons.ICON_SD_CARD)
 
         // 副文字 / badge
-        mineRoot.findViewById<TextView>(R.id.tv_favorites_sub).text = "496 首歌曲 · 云端已同步"
-        mineRoot.findViewById<TextView>(R.id.badge_favorites).text = "496"
-        mineRoot.findViewById<TextView>(R.id.tv_history_sub).text = "100 首播放记录"
-        mineRoot.findViewById<TextView>(R.id.badge_history).text = "100"
+        mineRoot.findViewById<TextView>(R.id.tv_favorites_sub).text = "0 首歌曲"
+        mineRoot.findViewById<TextView>(R.id.badge_favorites).text = "0"
+        val recentCount = LibraryManager.recentSongs.value.size
+        mineRoot.findViewById<TextView>(R.id.tv_history_sub).text = "${recentCount} 首播放记录"
+        mineRoot.findViewById<TextView>(R.id.badge_history).text = "$recentCount"
 
         // 在固定入口之间插入虚线分割线
         // mineRoot 是 ScrollView，其第一个子 View 是根 LinearLayout
@@ -600,8 +612,19 @@ class MainActivity : NokiaBaseActivity() {
                 }
             }
             1 -> {
-                // 最近播放历史（暂用 mock，后续接真实接口）
-                PlaylistDetailActivity.start(this, getString(R.string.mine_history), NokiaIcons.ICON_HISTORY, getHistorySongs())
+                // 最近播放历史
+                val recentDisplayItems = getHistorySongs()
+                if (recentDisplayItems.isEmpty()) {
+                    android.widget.Toast.makeText(this, getString(R.string.toast_history_empty), android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    PlaylistDetailActivity.start(
+                        this,
+                        getString(R.string.mine_history),
+                        NokiaIcons.ICON_HISTORY,
+                        recentDisplayItems,
+                        isHistory = true
+                    )
+                }
             }
             2 -> {
                 android.widget.Toast.makeText(this, "扫描本地音乐中…", android.widget.Toast.LENGTH_SHORT).show()
@@ -625,11 +648,17 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     private fun getHistorySongs(): ArrayList<SongDisplayItem> {
-        return arrayListOf(
-            SongDisplayItem(101, "海屿你", "马也", isFav = true),
-            SongDisplayItem(102, "无题", "姜云升", isFav = true),
-            SongDisplayItem(103, "Emily", "房东的猫", isFav = false)
-        )
+        val songs = LibraryManager.recentSongs.value
+        return ArrayList(songs.map { song ->
+            SongDisplayItem(
+                id = song.id,
+                title = song.name,
+                artist = song.artistName,
+                isFav = LibraryManager.isFavorite(song.id),
+                isVip = song.fee == 1,
+                noCopyright = song.noCopyright
+            )
+        })
     }
 
     private fun getPlaylistSongs(index: Int): ArrayList<SongDisplayItem> {
