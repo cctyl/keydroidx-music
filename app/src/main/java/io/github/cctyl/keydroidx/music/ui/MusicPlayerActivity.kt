@@ -691,7 +691,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     private fun enterFullscreenLyric() {
         isLyricFull = true
-        focusLyricIndex = currentLyricIndex   // 光标默认跟随当前播放行
+        // 约定：-1 = 光标跟随当前播放行；手动上下浏览时才设为具体行号
+        focusLyricIndex = -1
+        Log.d(TAG, "[lyric-debug] enter fullscreen: lines=${lrcLines.size} views=${lyricFullTextViews.size}")
         layoutLyricFullscreen?.visibility = View.VISIBLE
         setPageTitle(getString(R.string.title_lyric_browse))
         setTitleIcon(NokiaIcons.ICON_LYRICS)
@@ -776,6 +778,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
      * 光标行（用户浏览）= 淡背景；其余 = 透明白字。
      */
     private fun updateFullscreenLyricHighlight(posMs: Long) {
+        Log.d(TAG, "[lyric-tick] full=$isLyricFull lines=${lrcLines.size} views=${lyricFullTextViews.size} pos=$posMs")
         if (!isLyricFull || lrcLines.isEmpty() || lyricFullTextViews.isEmpty()) return
 
         // 当前播放行
@@ -783,8 +786,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         for (i in lrcLines.indices) {
             if (lrcLines[i].timeMs <= posMs) playing = i else break
         }
-        // 光标跟随：未手动浏览时始终 = 播放行
-        if (focusLyricIndex < 0) focusLyricIndex = playing
+        // 光标跟随：focusLyricIndex < 0 表示「跟随当前播放行」。
+        // 注意：此处只读不改，绝不能把 playing 写进 focusLyricIndex，
+        // 否则它会被冻结在第一次的 playing 值上，导致滚动目标永远停在某行（表现为歌词界面一直停在顶部）。
 
         val cyanBg = resources.getDrawable(R.drawable.bg_lyric_current)
         val white = Color.parseColor("#FFFFFF")
@@ -810,13 +814,15 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         // 滚动使光标行居中（光标 = 播放行时跟随，否则跟随光标）
         val target = if (focusLyricIndex in lyricFullTextViews.indices) focusLyricIndex else playing
+        Log.d(TAG, "[lyric-scroll] check: focus=$focusLyricIndex playing=$playing target=$target")
         if (target in lyricFullTextViews.indices) {
             scrollLyricFull?.post {
                 val sv = scrollLyricFull ?: return@post
                 val tv = lyricFullTextViews[target]
                 val top = accumulateFullscreenTop(target)
                 val center = top + tv.height / 2
-                sv.smoothScrollTo(0, (center - sv.height / 2).coerceAtLeast(0))
+                val dest = (center - sv.height / 2).coerceAtLeast(0)
+                sv.smoothScrollTo(0, dest)
             }
         }
     }
