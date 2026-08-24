@@ -25,6 +25,7 @@ import io.github.cctyl.keydroidx.music.lyric.LrcParser
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import io.github.cctyl.keydroidx.music.player.PlaybackMode
+import io.github.cctyl.keydroidx.music.player.PlaybackPrefs
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
@@ -530,8 +531,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             demoPos = targetMs
             PlaybackStateManager.updateProgress(targetMs, DEMO_DURATION_MS)
         } else {
-            // 真实模式：发 seek 给 Service（未实现）
-            Toast.makeText(this, "跳转至 ${formatTime(targetMs)}", Toast.LENGTH_SHORT).show()
+            // 真实模式：发 seek 给 Service
+            sendServiceAction(PlaybackService.ACTION_SEEK, targetMs)
         }
         // 回正后光标重新跟随当前播放行
         focusLyricIndex = -1
@@ -590,11 +591,16 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             )
             .addItem(
                 3,
+                getString(R.string.option_quality),
+                NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
+            )
+            .addItem(
+                4,
                 getString(R.string.softkey_now_playing),
                 NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
             )
             .addItem(
-                4,
+                5,
                 getString(R.string.softkey_back),
                 NokiaIcons.createDrawable(this, NokiaIcons.ICON_ARROW_BACK, iconSize, iconColor)
             )
@@ -606,16 +612,67 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                         updateModeIcon(mode)
                         showModeToast(mode)
                     }
-                    2 -> {                                       // 3. 歌曲详情（占位）
+                    2 -> {                                       // 3. 音质设置
+                        showQualityPicker()
+                    }
+                    3 -> {                                       // 4. 歌曲详情（占位）
                         Toast.makeText(
                             this,
                             "曲目：${tvTitle?.text ?: ""} / ${tvArtist?.text ?: ""}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
-                    3 -> finish()                                // 4. 返回
+                    4 -> finish()                                // 5. 返回
                 }
             }
+        dialog.show()
+    }
+
+    /**
+     * 音质选择二级弹窗：标准/较高/极高/无损/Hi-Res。
+     * 当前档位置顶显示，切换后持久化，下一首播放生效（当前曲目不打断）。
+     */
+    private fun showQualityPicker() {
+        val iconColor = android.graphics.Color.WHITE
+        val iconSize = (18 * resources.displayMetrics.density).toInt()
+        val current = PlaybackPrefs.qualityLevel(this)
+        val labels = mapOf(
+            "standard" to getString(R.string.quality_standard),
+            "higher" to getString(R.string.quality_higher),
+            "exhigh" to getString(R.string.quality_exhigh),
+            "lossless" to getString(R.string.quality_lossless),
+            "hires" to getString(R.string.quality_hires)
+        )
+
+        val dialog = NokiaOptionsDialog(this, getString(R.string.title_quality))
+        // 当前档位置顶
+        dialog.addItem(
+            0,
+            "● ${labels[current]}",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CHECK, iconSize, iconColor)
+        )
+        var seq = 1
+        for (level in PlaybackPrefs.QUALITY_LEVELS) {
+            if (level == current) continue
+            dialog.addItem(
+                seq++,
+                labels[level],
+                NokiaIcons.createDrawable(this, NokiaIcons.ICON_MUSIC_NOTE, iconSize, iconColor)
+            )
+        }
+        dialog.setOnOptionSelectedListener { index, _ ->
+            if (index > 0) {
+                // 跳过置顶的当前档位后，映射回实际 level
+                val others = PlaybackPrefs.QUALITY_LEVELS.filter { it != current }
+                val chosen = others.getOrNull(index - 1) ?: return@setOnOptionSelectedListener
+                PlaybackPrefs.setQualityLevel(this, chosen)
+                Toast.makeText(
+                    this,
+                    getString(R.string.quality_applied, labels[chosen]),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
         dialog.show()
     }
 
@@ -923,9 +980,10 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         return (value * resources.displayMetrics.density + 0.5f).toInt()
     }
 
-    private fun sendServiceAction(action: String) {
+    private fun sendServiceAction(action: String, positionMs: Long = -1L) {
         val intent = Intent(this, PlaybackService::class.java).apply {
             this.action = action
+            if (positionMs >= 0) putExtra(PlaybackService.EXTRA_SEEK_POSITION, positionMs)
         }
         startService(intent)
     }
@@ -942,7 +1000,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         private const val VOLUME_HIDE_DELAY_MS = 1800L
 
         // === 演示模式：硬编码真实 LRC + 模拟进度，方便 UI 验收 ===
-        private const val DEMO_MODE = true
+        private const val DEMO_MODE = false
         private const val DEMO_DURATION_MS = 255_000L  // 4:15
         private const val DEMO_TICK_MS = 1000L        // 每秒推进
         private const val DEMO_LRC = """[00:00.00]顺风顺水 - 邹念慈

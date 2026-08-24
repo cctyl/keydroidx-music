@@ -526,6 +526,7 @@ class MainActivity : NokiaBaseActivity() {
     //  按键处理（NokiaBaseActivity 通过 onAction 分发）
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
+        Log.d("MainActivity", "onAction=$action tab=$currentTab focusIdx=$focusIdx items=${focusItems.size} favId=$favPlaylistId")
         return when (action) {
             NokiaKeyAction.UP -> {
                 if (focusItems.isNotEmpty() && focusIdx > 0) {

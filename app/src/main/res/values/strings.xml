@@ -74,6 +74,16 @@
     <string name="guide_next">→ 下曲</string>
     <string name="guide_lyrics">* 歌词</string>
     <string name="guide_mode"># 模式</string>
+
+    <!-- ── 音质选择 ── -->
+    <string name="option_quality">音质设置</string>
+    <string name="title_quality">音质选择</string>
+    <string name="quality_standard">标准 (MP3 128k)</string>
+    <string name="quality_higher">较高 (MP3 192k)</string>
+    <string name="quality_exhigh">极高 (MP3 320k)</string>
+    <string name="quality_lossless">无损 (FLAC)</string>
+    <string name="quality_hires">Hi-Res</string>
+    <string name="quality_applied">音质已切换：%s\n下一首播放生效</string>
     <string name="guide_options">左软:选项</string>
     <string name="lyric_hint">[按 * 全屏]</string>
     <string name="play_status_pause">[OK 播放/暂停]</string>

@@ -56,6 +56,15 @@ class PlaybackService : MediaSessionService() {
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
+            .setMediaSourceFactory(
+                androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                        .setAllowCrossProtocolRedirects(true)   // 网易云外链会 302 跳转
+                        .setConnectTimeoutMs(10_000)
+                        .setReadTimeoutMs(10_000)
+                        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                )
+            )
             .build()
             .apply {
                 addListener(PlayerListener())
@@ -92,6 +101,10 @@ class PlaybackService : MediaSessionService() {
             ACTION_TOGGLE_MODE -> {
                 PlaybackStateManager.togglePlayMode()
             }
+            ACTION_SEEK -> {
+                val pos = intent.getLongExtra(EXTRA_SEEK_POSITION, 0L)
+                player?.seekTo(pos)
+            }
         }
         return super.onStartCommand(intent, flags, startId)
     }
@@ -109,7 +122,7 @@ class PlaybackService : MediaSessionService() {
         serviceScope.launch {
             try {
                 Log.d(TAG, "Fetching song url for id: ${song.id}")
-                val result = SongUrlFetcher.fetch(song.id)
+                val result = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
         val url = result.url
                 if (url.isNullOrEmpty()) {
                     Log.e(TAG, "Failed to get song url for: ${song.name}")
@@ -217,6 +230,8 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_NEXT = "io.github.cctyl.keydroidx.music.ACTION_NEXT"
         const val ACTION_PREV = "io.github.cctyl.keydroidx.music.ACTION_PREV"
         const val ACTION_TOGGLE_MODE = "io.github.cctyl.keydroidx.music.ACTION_TOGGLE_MODE"
+        const val ACTION_SEEK = "io.github.cctyl.keydroidx.music.ACTION_SEEK"
         const val EXTRA_INDEX = "extra_index"
+        const val EXTRA_SEEK_POSITION = "extra_seek_position"
     }
 }

@@ -3,5 +3,11 @@
     <style name="Theme.KeydroidX.Music" parent="Theme.NokiaKeyCore">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/music_bg</item>
+
+        <!-- 禁用启动预览快照：
+             快照会显示上一次退出的画面，用户误以为界面已就绪而提前按键，
+             此时真实窗口尚未创建，按键会被系统丢弃（表现为第一次按确认无反应）。 -->
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowContentOverlay">@null</item>
     </style>
 </resources>

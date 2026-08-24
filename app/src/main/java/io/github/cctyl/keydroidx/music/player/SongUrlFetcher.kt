@@ -24,24 +24,27 @@ object SongUrlFetcher {
         }
 
         for (tryLevel in fallbackLevels) {
-            try {
-                val payload = buildPayload(songId, tryLevel)
-                val response = RetrofitClient.eapiPost(SONG_URL_PATH, payload, useInterface = true)
-                val body = response.body?.string() ?: continue
-                Log.d(TAG, "eapi response ($tryLevel): $body")
-                val json = JSONObject(body)
-                val data = json.optJSONArray("data") ?: continue
-                if (data.length() > 0) {
-                    val obj = data.getJSONObject(0)
-                    val url = obj.optString("url")
-                    val actualLevel = obj.optString("level", tryLevel)
-                    if (!url.isNullOrEmpty() && url != "null") {
-                        Log.d(TAG, "got url: $url  actualLevel: $actualLevel  requested: $level")
-                        return@withContext SongUrlResult(url, actualLevel)
+            // 双主机回退：interface3 与 music.163 都试一遍
+            for (useIf in listOf(true, false)) {
+                try {
+                    val payload = buildPayload(songId, tryLevel)
+                    val response = RetrofitClient.eapiPost(SONG_URL_PATH, payload, useInterface = useIf)
+                    val body = response.body?.string() ?: continue
+                    Log.d(TAG, "eapi response (if=$useIf, $tryLevel): $body")
+                    val json = JSONObject(body)
+                    val data = json.optJSONArray("data") ?: continue
+                    if (data.length() > 0) {
+                        val obj = data.getJSONObject(0)
+                        val url = obj.optString("url")
+                        val actualLevel = obj.optString("level", tryLevel)
+                        if (!url.isNullOrEmpty() && url != "null") {
+                            Log.d(TAG, "got url: $url  actualLevel: $actualLevel  requested: $level")
+                            return@withContext SongUrlResult(url, actualLevel)
+                        }
                     }
+                } catch (e: Exception) {
+                    Log.w(TAG, "fetch failed for level=$tryLevel if=$useIf", e)
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "fetch failed for level=$tryLevel", e)
             }
         }
 
