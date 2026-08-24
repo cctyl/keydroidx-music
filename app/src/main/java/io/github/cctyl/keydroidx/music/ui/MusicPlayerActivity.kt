@@ -7,19 +7,20 @@ import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.Animation
 import android.view.animation.LinearInterpolator
-import android.view.animation.RotateAnimation
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.lyric.LrcLine
 import io.github.cctyl.keydroidx.music.lyric.LrcParser
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
@@ -86,7 +87,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private var isPlaying = false
     private var isLyricFull = false
     private var currentMode = PlaybackMode.LIST_LOOP
-    private var vinylRotateAnim: RotateAnimation? = null
+    private var vinylRotateAnim: ValueAnimator? = null
 
     // ── 歌词数据 ─────────────────────────────────────────────
     private var lrcLines: List<LrcLine> = emptyList()
@@ -282,34 +283,26 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         vinylRotateAnim?.cancel()
         disk.clearAnimation()
 
-        val anim = RotateAnimation(
-            0f, 360f,
-            Animation.RELATIVE_TO_SELF, 0.5f,
-            Animation.RELATIVE_TO_SELF, 0.5f
-        ).apply {
+        // 启用硬件层：整张唱片（含音符 TextView）只栅格化一次，
+        // 之后每帧由 GPU 矩阵变换旋转，消除文本逐帧取整带来的抖动
+        disk.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        disk.pivotX = disk.width / 2f
+        disk.pivotY = disk.height / 2f
+
+        val anim = ObjectAnimator.ofFloat(disk, View.ROTATION, 0f, 360f).apply {
             duration = 8000L           // 8 秒一圈，匀速
-            repeatCount = Animation.INFINITE
+            repeatCount = ValueAnimator.INFINITE
             interpolator = LinearInterpolator()
-            fillAfter = true
         }
         vinylRotateAnim = anim
-        disk.startAnimation(anim)
+        anim.start()
     }
 
     private fun stopVinylRotation() {
         val disk = vinylDisk ?: return
         vinylRotateAnim?.cancel()
-        // 保留当前旋转角度，平滑减速后静止
-        val anim = RotateAnimation(
-            disk.rotation, disk.rotation,
-            Animation.RELATIVE_TO_SELF, 0.5f,
-            Animation.RELATIVE_TO_SELF, 0.5f
-        ).apply {
-            duration = 400L
-            fillAfter = true
-        }
-        vinylRotateAnim = anim
-        disk.startAnimation(anim)
+        // 属性动画取消后 rotation 保持在当前角度自然静止；释放硬件层
+        disk.setLayerType(View.LAYER_TYPE_NONE, null)
     }
 
     // ─────────────────────────────────────────────────────────
@@ -579,17 +572,20 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         val iconColor = android.graphics.Color.WHITE
         val iconSize = (18 * resources.displayMetrics.density).toInt()
 
-        // 标准诺基亚选项弹窗（按 1~4 数字键也可直达触发）
+        // 选项菜单：播放列表、收藏/取消收藏、音质设置、返回
+        val currentSong = PlaybackStateManager.currentSong.value
+        val isFav = currentSong != null && LibraryManager.isFavorite(currentSong.id)
+
         val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
             .addItem(
                 1,
-                getString(R.string.guide_lyrics),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_LYRICS, iconSize, iconColor)
+                getString(R.string.option_play_queue),
+                NokiaIcons.createDrawable(this, NokiaIcons.ICON_QUEUE_MUSIC, iconSize, iconColor)
             )
             .addItem(
                 2,
-                getString(R.string.guide_mode),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_REPEAT, iconSize, iconColor)
+                if (isFav) "取消收藏" else getString(R.string.softkey_favorite),
+                NokiaIcons.createDrawable(this, if (isFav) NokiaIcons.ICON_FAVORITE_BORDER else NokiaIcons.ICON_FAVORITE, iconSize, iconColor)
             )
             .addItem(
                 3,
@@ -598,36 +594,57 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             )
             .addItem(
                 4,
-                getString(R.string.softkey_now_playing),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
-            )
-            .addItem(
-                5,
                 getString(R.string.softkey_back),
                 NokiaIcons.createDrawable(this, NokiaIcons.ICON_ARROW_BACK, iconSize, iconColor)
             )
             .setOnOptionSelectedListener { index, _ ->
                 when (index) {
-                    0 -> toggleLyricFull()                       // 1. 全屏歌词
-                    1 -> {                                       // 2. 切换播放模式
-                        val mode = PlaybackStateManager.togglePlayMode()
-                        updateModeIcon(mode)
-                        showModeToast(mode)
-                    }
-                    2 -> {                                       // 3. 音质设置
-                        showQualityPicker()
-                    }
-                    3 -> {                                       // 4. 歌曲详情（占位）
-                        Toast.makeText(
-                            this,
-                            "曲目：${tvTitle?.text ?: ""} / ${tvArtist?.text ?: ""}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    4 -> finish()                                // 5. 返回
+                    0 -> openCurrentQueue()                      // 1. 播放列表
+                    1 -> toggleFavorite()                        // 2. 收藏 / 取消收藏
+                    2 -> showQualityPicker()                     // 3. 音质设置
+                    3 -> finish()                                // 4. 返回
                 }
             }
         dialog.show()
+    }
+
+    /**
+     * 打开当前播放队列列表
+     */
+    private fun openCurrentQueue() {
+        val playlist = PlaybackStateManager.playlist.value
+        if (playlist.isEmpty()) {
+            Toast.makeText(this, getString(R.string.toast_queue_empty), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val displaySongs = ArrayList(playlist.map { song ->
+            SongDisplayItem(
+                id = song.id,
+                title = song.name,
+                artist = song.artistName,
+                isFav = LibraryManager.isFavorite(song.id),
+                isVip = song.fee == 1,
+                noCopyright = song.noCopyright
+            )
+        })
+        PlaylistDetailActivity.start(
+            this,
+            getString(R.string.title_current_queue),
+            NokiaIcons.ICON_QUEUE_MUSIC,
+            displaySongs
+        )
+    }
+
+    /**
+     * 收藏 / 取消收藏当前正在播放的歌曲
+     */
+    private fun toggleFavorite() {
+        val current = PlaybackStateManager.currentSong.value ?: return
+        lifecycleScope.launch {
+            val isFavNow = LibraryManager.toggleFavorite(this@MusicPlayerActivity, current)
+            val msg = if (isFavNow) "已收藏到「我喜欢的音乐」" else "已取消收藏"
+            Toast.makeText(this@MusicPlayerActivity, msg, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
