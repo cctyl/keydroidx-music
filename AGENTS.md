@@ -41,11 +41,21 @@
 
 ##  应用架构（本仓库代码速览）
 
-- **纯 Activity 架构，无 Fragment**：所有界面继承 `keydroidx-core` 的 `NokiaBaseActivity`。基类骨架自带「顶栏 + 内容区 + 三段式软键栏」，按键经 `NokiaKeyBinding.resolveAction` 解析为语义动作后回调 `onAction(action)`；子类只需覆写 `onAction` 处理动作，并通过 `setSoftKeys(左, 中, 右)`、`setTitleText`、`setStatusBarVisible` 等装配 UI。顶栏/软键栏主题、点阵字体、电池/信号由基类自动应用。
-- **播放状态总线**：`player/PlaybackStateManager.kt` 为全局单例（Kotlin StateFlow），UI 订阅它渲染播放态；Activity 通过给 `PlaybackService` 发 Intent action（`ACTION_PLAY_INDEX` / `PLAY_PAUSE` / `NEXT` / `PREV` / `TOGGLE_MODE` / `SEEK`）下发控制。`PlaybackService` 是 Media3 `MediaSessionService` + ExoPlayer，已内置 VIP 歌曲（fee=1）自动跳过、取链失败自动跳下一首。
+- **宿主 Activity + Fragment 页面体系**：
+  - **宿主 `MainActivity`**（继承 `keydroidx-core` 的 `NokiaBaseActivity`）：纯轻量宿主，管理顶栏 Tab 指示器与 `supportFragmentManager`（`add`/`show`/`hide` 保活模式，切 Tab 零重载）；通过 `getCurrentPage()` 自动将软键与标题栏代理给当前 Fragment，并将按键事件（`onAction`）精准分发到当前页面。
+  - **四大主 Tab 页面（`ui/fragment/`）**：
+    - `MineTabFragment : NokiaPageFragment`（我的音乐库：用户信息、喜欢/历史/本地入口、自建与收藏歌单列表、`NokiaOptionsDialog` 与 `NokiaConfirmDialog` 选项）
+    - `DiscoverTabFragment : NokiaPageFragment`（发现音乐：私人 FM、每日推荐、今日推荐歌单动态拉取）
+    - `ChartTabFragment : NokiaListPageFragment`（云音乐排行榜：10 大官方榜单单列循环列表，继承基类自动滚动与焦点高亮）
+    - `SearchTabFragment : NokiaPageFragment`（歌曲搜索：`NokiaInputDialog` 拼音搜索弹窗、热门搜索词、云端搜索结果列表与一键播放）
+  - **二级与独立页面**：
+    - `ui/PlaylistDetailActivity`（歌单歌曲列表，接入 `NokiaListFocusHelper` 管理歌曲焦点与自动平滑滚动，懒加载分页）
+    - `ui/LocalMusicActivity`（本地音乐扫描与播放，接入 `NokiaListFocusHelper`）
+    - `ui/MusicPlayerActivity`（黑胶唱机详情页，含全屏歌词、音量浮层、独立返回栈与通知栏入口）
+    - `ui/WebLoginActivity`（网易云 WebView 登录）
+- **播放状态总线**：`player/PlaybackStateManager.kt` 为全局单例（Kotlin StateFlow），UI 订阅它渲染播放态；Activity/Fragment 通过给 `PlaybackService` 发 Intent action（`ACTION_PLAY_INDEX` / `PLAY_PAUSE` / `NEXT` / `PREV` / `TOGGLE_MODE` / `SEEK`）下发控制。`PlaybackService` 是 Media3 `MediaSessionService` + ExoPlayer，已内置 VIP 歌曲（fee=1）自动跳过、取链失败自动跳下一首。
 - **网络层**：`network/RetrofitClient.kt` 封装网易云两套协议 —— ① Retrofit 普通 GET/POST（`NcmApi`：搜索/歌词/详情等公开接口）；② eapi 加密接口（`eapiPost` + `network/crypto/EapiCrypto`：歌单/取链/账号等，走 interface3 与 music.163 双主机回退）。`player/SongUrlFetcher` 按音质 5 级降级取链。`network/PlaylistApi` 提供歌单/用户资料/红心等业务接口（JSON 手解析）。
 - **数据/本地层**：`auth/`（Cookie 持久化、用户资料缓存）、`cache/`（Content/PlaylistSong 内存缓存）、`library/`（收藏与最近播放，SharedPreferences + Gson）、`lyric/LrcParser`（LRC 解析）、`warmup/AppWarmup`。
-- **UI 页面**：`ui/MainActivity`（四 Tab：我的/发现/榜单/搜索）、`ui/PlaylistDetailActivity`（歌单歌曲列表，懒加载分页）、`ui/MusicPlayerActivity`（黑胶唱机详情页，含全屏歌词、音量浮层）、`ui/WebLoginActivity`（网易云 WebView 登录）。
 
 ##  构建与运行
 
@@ -56,17 +66,26 @@
 - 单元测试：`gradlew.bat testDebugUnitTest`。当前 `app/src/test` 为空；已配置 junit4 + org.json，`PlaylistApi`、`LrcParser` 等纯解析逻辑可写 JVM 单测。
 - 测试设备（`adb devices`）：`4a24ecf` = 240×320（Android 4.4，可直装）；tcpip 连接设备 = 320×480（可直装）；`jz5dauzlu8euw4e6` = 小米 16:9 长屏（**不支持 adb 直装**，需 push 到 /sdcard/Download 手动安装）。
 
-## 开发核心约束 (NOKIA_DEVELOPMENT_RULES.md)
+## 开发核心约束与页面架构规范 (NOKIA_DEVELOPMENT_RULES.md)
 在进行任何 UI 实现或按键映射时，必须严格遵循以下原则：
 
-- **按键解耦**：严禁硬编码 `keyCode`，必须复用 `keydroidx-core` 中的 `NokiaKeyBinding` 来解析物理按键交互。
+- **页面基类与焦点管理（必须遵守）**：
+  - **单列列表页面**：优先继承 `NokiaListPageFragment`，或在 Activity/Fragment 中使用 `NokiaListFocusHelper` 托管焦点。严禁在业务页面重复手写 `focusIdx` 移动或硬编码高亮逻辑。
+  - **长内容/文档滚动页面**：优先继承 `NokiaScrollPageFragment`。
+  - **独立功能页面**：继承 `NokiaPageFragment`，通过 `getPageTitle()` 与 `getSoftLeftText()` / `getSoftCenterText()` / `getSoftRightText()` 声明式装配软键栏与标题栏。
+- **防出界滚动规范（血泪教训）**：
+  - 布局中每个可聚焦的列表项根 View **必须在 XML 声明 `android:focusable="true"`**。
+  - 焦点变更时必须由基类或 `NokiaListFocusHelper` 自动调用 `smoothScrollToVisible(scroll, target)`（采用祖先节点坐标累加算法，杜绝在多层嵌套中直接调用 `getTop()` 导致的滚动错位）。
+- **按键解耦与事件分发**：
+  - 严禁硬编码 `keyCode`，必须复用 `keydroidx-core` 中的 `NokiaKeyBinding` 来解析物理按键交互。
+  - 宿主 `MainActivity` 通过 `getCurrentPage()` 自动将 `onAction`（方向、确定、软键）分发给当前活跃的 Fragment 处理。
 - **UI 规范**：
   - 必须使用内置矢量字体 `MaterialIcons`，禁止新增 PNG/XML 图标。
   - 严禁硬编码主题颜色，必须通过 `NokiaTheme` 系列工具生成适配主题的 drawable。
-- **生命周期安全**：在异步回调或 Fragment 更新中，必须守护 Context，防止出现 `IllegalStateException` 导致的黑屏或崩溃。
-- **日志与提交**：在应该加日志的地方尽可能多加日志输出，方便排查问题；未经允许不得私自提交 git。
-- 按键机开发约束文档： ./NOKIA_DEVELOPMENT_RULES.md ，必须遵守，若与其他文档有冲突，应该向我询问
-  - ⚠️ **适用边界**：该文档为 KeydroidX Launcher（包名 `ru.playsoftware.j2meloader`）编写，其中 Fragment 基类体系（`NokiaPageFragment`/`NokiaListPageFragment`/`NokiaScrollPageFragment`）、`NokiaDesktopActivity`、网格行数预算、240dp 根宽规范等在本项目**不存在**（本项目无 Fragment，全部为 Activity，但是后续可以参考）。本项目适用的部分（MaterialIcons 图标、`NokiaKeyBinding` 按键解耦、软键栏禁止高亮、Android 4.4 兼容、生命周期守卫）大多已由 `NokiaBaseActivity` 内置，业务代码只需遵守「覆写 `onAction` + 声明式装配 UI + 不硬编码 keyCode / 颜色 / 图标」。
+- **生命周期安全**：
+  - 在异步回调或 Fragment 更新中，必须守护 Context 与生命周期（`if (!isAdded || isDetached) return`），防止出现 `IllegalStateException` 导致的黑屏或崩溃。
+- **日志与提交**：
+  - 在关键节点多加日志输出，方便排查问题；未经允许不得私自提交 git。
 
 ## 按键交互与 UI 设计标准
 详细的 UI 布局规范、全套按键交互状态机以及页面设计详见专项文档：
