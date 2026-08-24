@@ -286,8 +286,14 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         // 启用硬件层：整张唱片（含音符 TextView）只栅格化一次，
         // 之后每帧由 GPU 矩阵变换旋转，消除文本逐帧取整带来的抖动
         disk.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        disk.pivotX = disk.width / 2f
-        disk.pivotY = disk.height / 2f
+        // 圆心必须在布局完成后按实际尺寸设置：若在 measure 之前启动动画，
+        // width=0 会把 pivot 设成 (0,0)，转盘绕左上角转而“消失一部分”
+        if (disk.width > 0) {
+            disk.pivotX = disk.width / 2f
+            disk.pivotY = disk.height / 2f
+        } else {
+            disk.addOnLayoutChangeListener(vinylPivotFixListener)
+        }
 
         val anim = ObjectAnimator.ofFloat(disk, View.ROTATION, 0f, 360f).apply {
             duration = 8000L           // 8 秒一圈，匀速
@@ -296,6 +302,19 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         }
         vinylRotateAnim = anim
         anim.start()
+    }
+
+    /** 布局完成后校正转盘圆心并移除自身监听 */
+    private val vinylPivotFixListener: View.OnLayoutChangeListener = object : View.OnLayoutChangeListener {
+        override fun onLayoutChange(
+            v: View, left: Int, top: Int, right: Int, bottom: Int,
+            oldLeft: Int, oldTop: Int, oldRight: Int, oldBottom: Int
+        ) {
+            v.pivotX = v.width / 2f
+            v.pivotY = v.height / 2f
+            v.removeOnLayoutChangeListener(this)
+            Log.d(TAG, "vinyl pivot fixed: ${v.width}x${v.height}")
+        }
     }
 
     private fun stopVinylRotation() {
