@@ -14,6 +14,7 @@ import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
+import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
@@ -48,6 +49,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         private const val EXTRA_ALL_FAV = "all_fav"
         private const val EXTRA_IS_HISTORY = "is_history"
         private const val EXTRA_SONGS = "songs"
+        private const val EXTRA_SEARCH_KEYWORD = "search_keyword"
+        /** 搜索结果每页条数（与接口 limit 一致） */
+        private const val SEARCH_PAGE_SIZE = 30
         private const val NO_ID = -1L
 
         /**
@@ -88,6 +92,18 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             }
             context.startActivity(intent)
         }
+
+        /**
+         * 启动搜索结果页（按关键词异步搜索，滚动到底自动加载下一页）
+         */
+        fun start(context: Context, keyword: String) {
+            val intent = Intent(context, PlaylistDetailActivity::class.java).apply {
+                putExtra(EXTRA_PLAYLIST_NAME, "搜索：$keyword")
+                putExtra(EXTRA_PLAYLIST_ICON, NokiaIcons.ICON_SEARCH)
+                putExtra(EXTRA_SEARCH_KEYWORD, keyword)
+            }
+            context.startActivity(intent)
+        }
     }
 
     // ── 数据 ──
@@ -98,6 +114,13 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private var allFav = false
     private var isHistory = false
     private var songs: List<SongDisplayItem> = emptyList()
+
+    // ── 搜索模式（网络分页）──
+    /** 非空表示本页为搜索结果页，按关键词分页拉取 */
+    private var searchKeyword: String? = null
+    private var searchLoading = false
+    /** 服务端是否还有更多结果（上一页返回满 SEARCH_PAGE_SIZE 条时认为可能有） */
+    private var searchHasMore = true
 
     // ── UI 控件 ──
     private lateinit var llPlayAll: LinearLayout
@@ -137,6 +160,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         isHistory = intent.getBooleanExtra(EXTRA_IS_HISTORY, false)
         @Suppress("UNCHECKED_CAST")
         songs = (intent.getSerializableExtra(EXTRA_SONGS) as? ArrayList<SongDisplayItem>) ?: emptyList()
+        searchKeyword = intent.getStringExtra(EXTRA_SEARCH_KEYWORD)
 
         // 设置标题栏
         setPageTitle(playlistName)
@@ -174,13 +198,80 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
         // 设置播放全部行
         NokiaIcons.setIcon(findViewById(R.id.icon_play_all), NokiaIcons.ICON_PLAY_CIRCLE)
-        tvPlayAllSub.text = if (playlistId != NO_ID && songs.isEmpty()) "加载中…" else "共 ${songs.size} 首歌曲"
+        tvPlayAllSub.text = when {
+            searchKeyword != null && songs.isEmpty() -> "搜索中…"
+            playlistId != NO_ID && songs.isEmpty() -> "加载中…"
+            else -> "共 ${songs.size} 首歌曲" + if (searchKeyword != null && searchHasMore) "（下滑加载更多）" else ""
+        }
 
-        // 真实歌单：异步拉取歌曲列表；本地歌单：直接用传入数据
+        // 真实歌单：异步拉取歌曲列表；搜索：分页拉取；本地歌单：直接用传入数据
         if (playlistId != NO_ID && songs.isEmpty()) {
             fetchRealSongs()
+        } else if (searchKeyword != null && songs.isEmpty()) {
+            loadMoreSearch(initial = true)
         } else {
             finishSetup()
+        }
+    }
+
+    /**
+     * 搜索下一页结果并追加到列表。
+     * @param initial 首页：完成后 finishSetup 渲染整页；否则只追加新条目视图
+     */
+    private fun loadMoreSearch(initial: Boolean) {
+        val kw = searchKeyword ?: return
+        if (searchLoading || !searchHasMore) return
+        searchLoading = true
+        lifecycleScope.launch {
+            try {
+                val offset = songs.size
+                Log.d(TAG_DETAIL, "search '$kw' page offset=$offset")
+                val response = RetrofitClient.api.search(keyword = kw, offset = offset)
+                val pageSongs = response.result?.songs ?: emptyList()
+                if (isDestroyed || isFinishing) return@launch
+
+                // 按 ID 去重后追加
+                val existIds = songs.map { it.id }.toSet()
+                val mapped = pageSongs
+                    .filter { it.id !in existIds }
+                    .map { s ->
+                        SongDisplayItem(
+                            id = s.id,
+                            title = s.name,
+                            artist = s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
+                            isVip = (s.fee ?: 0) == 1,
+                            noCopyright = s.noCopyright
+                        )
+                    }
+                // 返回不足一页 → 已到底；去重后为空也视为到底
+                searchHasMore = pageSongs.size >= SEARCH_PAGE_SIZE && mapped.isNotEmpty()
+
+                if (initial) {
+                    songs = mapped
+                    if (songs.isEmpty()) {
+                        Toast.makeText(this@PlaylistDetailActivity, "未找到与「$kw」相关的歌曲", Toast.LENGTH_SHORT).show()
+                    }
+                    finishSetup()
+                } else {
+                    if (mapped.isEmpty()) {
+                        Toast.makeText(this@PlaylistDetailActivity, "没有更多搜索结果了", Toast.LENGTH_SHORT).show()
+                    } else {
+                        songs = songs + mapped
+                        appendSongs(PAGE_SIZE)
+                        focusHelper.setItems(getFocusableViews())
+                    }
+                }
+                tvPlayAllSub.text = "共 ${songs.size} 首歌曲" +
+                        if (searchHasMore) "（下滑加载更多）" else ""
+                Log.d(TAG_DETAIL, "search '$kw' loaded ${mapped.size}, total=${songs.size}, hasMore=$searchHasMore")
+            } catch (e: Exception) {
+                Log.e(TAG_DETAIL, "loadMoreSearch failed", e)
+                if (!isDestroyed && !isFinishing) {
+                    Toast.makeText(this@PlaylistDetailActivity, "加载失败：${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                searchLoading = false
+            }
         }
     }
 
@@ -428,10 +519,15 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             }
             NokiaKeyAction.DOWN -> {
                 // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
-                if (renderedCount < songs.size && focusHelper.focusIndex >= renderedCount - 2) {
-                    appendSongs(PAGE_SIZE)
-                    focusHelper.setItems(getFocusableViews())
-                    Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
+                if (focusHelper.focusIndex >= renderedCount - 2) {
+                    if (renderedCount < songs.size) {
+                        appendSongs(PAGE_SIZE)
+                        focusHelper.setItems(getFocusableViews())
+                        Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
+                    } else if (searchKeyword != null) {
+                        // 视图已全部渲染且还有更多 → 拉取搜索下一页
+                        loadMoreSearch(initial = false)
+                    }
                 }
                 focusHelper.onDirection(action)
                 true

@@ -14,7 +14,8 @@ interface NcmApi {
     suspend fun search(
         @Field("s") keyword: String,
         @Field("type") type: Int = 1,
-        @Field("limit") limit: Int = 30
+        @Field("limit") limit: Int = 30,
+        @Field("offset") offset: Int = 0
     ): SearchResponse
 
     @FormUrlEncoded

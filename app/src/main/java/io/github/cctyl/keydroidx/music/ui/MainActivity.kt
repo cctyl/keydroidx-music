@@ -575,40 +575,10 @@ class MainActivity : NokiaBaseActivity() {
      */
     private fun performSearch(keyword: String) {
         Toast.makeText(this, "正在搜索「$keyword」…", Toast.LENGTH_SHORT).show()
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.api.search(keyword = keyword, type = 1)
-                if (isDestroyed || isFinishing) return@launch
-                val songs = response.result?.songs ?: emptyList()
-                Log.d("MainActivity", "search '$keyword': ${songs.size} songs")
-                SearchHistoryManager.addHistory(keyword)
-                renderSearchKeywords()
-                if (songs.isEmpty()) {
-                    Toast.makeText(this@MainActivity, "未找到与「$keyword」相关的歌曲", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                val displayItems = ArrayList(songs.map { s ->
-                    SongDisplayItem(
-                        id = s.id,
-                        title = s.name,
-                        artist = s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
-                        isVip = (s.fee ?: 0) == 1,
-                        noCopyright = s.noCopyright
-                    )
-                })
-                PlaylistDetailActivity.start(
-                    this@MainActivity,
-                    getString(R.string.tab_search) + "：" + keyword,
-                    NokiaIcons.ICON_SEARCH,
-                    displayItems
-                )
-            } catch (e: Exception) {
-                Log.e("MainActivity", "performSearch failed", e)
-                if (!isDestroyed && !isFinishing) {
-                    Toast.makeText(this@MainActivity, "搜索失败：${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        SearchHistoryManager.addHistory(keyword)
+        renderSearchKeywords()
+        // 结果页自带分页加载（滚到底自动拉下一页）
+        PlaylistDetailActivity.start(this, keyword)
     }
 
     // ══════════════════════════════════════════════════════════
