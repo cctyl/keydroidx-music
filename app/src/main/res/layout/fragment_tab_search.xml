@@ -11,9 +11,11 @@
     <!-- 搜索框                                              -->
     <!-- ═══════════════════════════════════════════════════ -->
     <LinearLayout
+        android:id="@+id/layout_search_field"
         android:layout_width="match_parent"
         android:layout_height="32dp"
         android:orientation="horizontal"
+        android:focusable="true"
         android:gravity="center_vertical"
         android:layout_marginLeft="6dp"
         android:layout_marginRight="6dp"
@@ -33,17 +35,26 @@
             android:textColor="@color/music_accent"
             android:includeFontPadding="false" />
 
-        <!-- 输入内容（非真实 EditText，展示用） -->
-        <TextView
-            android:id="@+id/tv_search_input"
+        <!-- 输入内容（真实 EditText，持焦后可直接物理键入） -->
+        <EditText
+            android:id="@+id/et_search_input"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginLeft="6dp"
+            android:background="@null"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:textColorHint="@color/music_search_hint"
             android:textColor="@color/music_item_normal_text"
             android:textSize="12sp"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
             android:singleLine="true"
-            android:includeFontPadding="false" />
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:includeFontPadding="false"
+            android:hint="@string/search_hint" />
 
         <!-- 输入法标签 -->
         <TextView
@@ -90,6 +101,7 @@
     <!-- 搜索词条列表（代码动态填充）                        -->
     <!-- ═══════════════════════════════════════════════════ -->
     <ScrollView
+        android:id="@+id/scroll_search"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"

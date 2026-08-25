@@ -11,6 +11,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -19,6 +20,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.library.LibraryManager
+import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
@@ -93,6 +95,7 @@ class MainActivity : NokiaBaseActivity() {
     private lateinit var chartItemRoots: MutableList<LinearLayout>
 
     // ── 搜索 Tab ──
+    private lateinit var searchFieldRoot: LinearLayout
     private lateinit var searchKeywordRoots: MutableList<LinearLayout>
 
     // ── 当前焦点状态 ──
@@ -517,29 +520,93 @@ class MainActivity : NokiaBaseActivity() {
     private fun setupSearchTab() {
         val searchRoot = findViewById<View>(R.id.content_search)
 
+        // 搜索框：纳入焦点体系，持焦后直接在 EditText 里物理键入
+        searchFieldRoot = searchRoot.findViewById(R.id.layout_search_field)
         NokiaIcons.setIcon(searchRoot.findViewById(R.id.icon_search_field), NokiaIcons.ICON_SEARCH)
-        searchRoot.findViewById<TextView>(R.id.tv_search_input).text = "周杰伦"
 
-        // 关键词列表
-        data class Keyword(val iconCode: String, val text: String)
-        val keywords = listOf(
-            Keyword(NokiaIcons.ICON_HISTORY, "顺风顺水 邹念慈"),
-            Keyword(NokiaIcons.ICON_HISTORY, "仙剑奇侠传 经典配乐"),
-            Keyword(NokiaIcons.ICON_STAR, "姜云升 无题"),
-            Keyword(NokiaIcons.ICON_STAR, "房东的猫 Emily")
+        renderSearchKeywords()
+    }
+
+    /** 搜索框内嵌 EditText（原地输入，不弹窗） */
+    private fun searchEditText(): EditText? =
+        findViewById<EditText>(R.id.et_search_input)
+
+    /**
+     * 渲染搜索历史/热门关键词列表（真实历史优先，无历史时给默认推荐词）。
+     */
+    private fun renderSearchKeywords() {
+        val searchRoot = findViewById<View>(R.id.content_search) ?: return
+        val container = searchRoot.findViewById<LinearLayout>(R.id.ll_search_keywords) ?: return
+        container.removeAllViews()
+
+        val history = SearchHistoryManager.history.value
+        val keywords = if (history.isNotEmpty()) history else listOf(
+            "周杰伦",
+            "房东的猫",
+            "仙剑奇侠传 经典配乐"
         )
 
         searchKeywordRoots = mutableListOf()
-        val container = searchRoot.findViewById<LinearLayout>(R.id.ll_search_keywords)
-        keywords.forEachIndexed { i, kw ->
+        keywords.forEachIndexed { i, text ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_search_keyword, container, false) as LinearLayout
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_keyword), kw.iconCode)
-            itemView.findViewById<TextView>(R.id.tv_keyword).text = kw.text
+            NokiaIcons.setIcon(
+                itemView.findViewById(R.id.icon_keyword),
+                if (history.isNotEmpty()) NokiaIcons.ICON_HISTORY else NokiaIcons.ICON_STAR
+            )
+            itemView.findViewById<TextView>(R.id.tv_keyword).text = text
+            itemView.tag = text
             container.addView(itemView)
             searchKeywordRoots.add(itemView)
             if (i < keywords.size - 1) {
                 container.addView(makeDivider(8, 8))
+            }
+        }
+        // 若当前正处于搜索 Tab，刷新焦点链（保持焦点在搜索框上）
+        if (currentTab == TAB_SEARCH) {
+            focusItems = listOf(searchFieldRoot) + searchKeywordRoots
+            applyFocus()
+        }
+    }
+
+    /**
+     * 执行云端搜索：结果转 SongDisplayItem 后交给 PlaylistDetailActivity 展示/播放。
+     * 同时写入搜索历史并刷新关键词列表。
+     */
+    private fun performSearch(keyword: String) {
+        Toast.makeText(this, "正在搜索「$keyword」…", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.api.search(keyword = keyword, type = 1)
+                if (isDestroyed || isFinishing) return@launch
+                val songs = response.result?.songs ?: emptyList()
+                Log.d("MainActivity", "search '$keyword': ${songs.size} songs")
+                SearchHistoryManager.addHistory(keyword)
+                renderSearchKeywords()
+                if (songs.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "未找到与「$keyword」相关的歌曲", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val displayItems = ArrayList(songs.map { s ->
+                    SongDisplayItem(
+                        id = s.id,
+                        title = s.name,
+                        artist = s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
+                        isVip = (s.fee ?: 0) == 1,
+                        noCopyright = s.noCopyright
+                    )
+                })
+                PlaylistDetailActivity.start(
+                    this@MainActivity,
+                    getString(R.string.tab_search) + "：" + keyword,
+                    NokiaIcons.ICON_SEARCH,
+                    displayItems
+                )
+            } catch (e: Exception) {
+                Log.e("MainActivity", "performSearch failed", e)
+                if (!isDestroyed && !isFinishing) {
+                    Toast.makeText(this@MainActivity, "搜索失败：${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -588,8 +655,8 @@ class MainActivity : NokiaBaseActivity() {
             TAB_SEARCH -> {
                 setPageTitle("歌曲搜索")
                 setTitleIcon(NokiaIcons.ICON_SEARCH)
-                setSoftKeys("清空", "搜索", "正在播放")
-                focusItems = searchKeywordRoots
+                setSoftKeys("选项", "搜索", "删除")
+                focusItems = listOf(searchFieldRoot) + searchKeywordRoots
             }
         }
         focusIdx = 0
@@ -622,10 +689,24 @@ class MainActivity : NokiaBaseActivity() {
             TAB_MINE -> findViewById<ScrollView>(R.id.content_mine)
             TAB_DISCOVER -> findViewById<ScrollView>(R.id.content_discover)
             TAB_CHART -> findViewById<ScrollView>(R.id.content_chart)
+            TAB_SEARCH -> findViewById<ScrollView>(R.id.scroll_search)
             else -> null
         }
         if (currentScroll != null && focusedView != null) {
             smoothScrollToVisible(currentScroll, focusedView)
+        }
+        // 搜索框特殊处理：光标落在第 0 项时让内嵌 EditText 持焦，
+        // 字符键直接进入输入框原地编辑（不弹独立输入窗口）。
+        if (currentTab == TAB_SEARCH) {
+            val et = searchEditText()
+            if (et != null) {
+                if (focusIdx == 0) {
+                    et.isFocusableInTouchMode = true
+                    et.requestFocus()
+                } else {
+                    et.clearFocus()
+                }
+            }
         }
     }
 
@@ -703,23 +784,24 @@ class MainActivity : NokiaBaseActivity() {
                 when (currentTab) {
                     TAB_MINE -> onSelectMineItem()
                     TAB_DISCOVER -> onSelectDiscoverItem()
+                    TAB_SEARCH -> onSelectSearchItem()
                     else -> { /* 其他 Tab 暂不处理 */ }
                 }
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                // 左软键按各 Tab 标签执行：搜索 Tab = 清空搜索词；其余 = 选项菜单
-                if (currentTab == TAB_SEARCH) {
-                    clearSearchInput()
-                } else {
-                    showOptionsDialog()
-                }
+                // 左软键：各 Tab 统一唤出选项菜单
+                showOptionsDialog()
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
-                // 右侧软键：进入正在播放界面
-                val intent = Intent(this, MusicPlayerActivity::class.java)
-                startActivity(intent)
+                // 搜索 Tab 右软键=「删除」：删选中历史词条/清空输入框；其余 Tab 进入正在播放
+                if (currentTab == TAB_SEARCH) {
+                    onDeleteSearchItem()
+                } else {
+                    val intent = Intent(this, MusicPlayerActivity::class.java)
+                    startActivity(intent)
+                }
                 true
             }
             else -> super.onAction(action)
@@ -730,15 +812,50 @@ class MainActivity : NokiaBaseActivity() {
      * 搜索 Tab 左软键「清空」：清空搜索输入框并回占位提示。
      */
     private fun clearSearchInput() {
-        val input = findViewById<TextView>(R.id.tv_search_input) ?: return
-        if (input.text.isNullOrBlank()) {
+        val et = searchEditText() ?: return
+        if (et.text.isNullOrBlank()) {
             Toast.makeText(this, "搜索词已为空", Toast.LENGTH_SHORT).show()
             return
         }
-        input.text = ""
-        input.hint = "搜索歌曲 / 歌手"
+        et.setText("")
         Log.d("MainActivity", "search input cleared")
         Toast.makeText(this, "已清空搜索词", Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * 搜索 Tab 右软键「删除」：焦点在搜索框 → 清空输入；焦点在历史词条 → 删除该条历史。
+     */
+    private fun onDeleteSearchItem() {
+        if (focusIdx == 0) {
+            clearSearchInput()
+            return
+        }
+        val kw = searchKeywordRoots.getOrNull(focusIdx - 1)?.tag as? String ?: return
+        SearchHistoryManager.removeHistory(kw)
+        Log.d("MainActivity", "search history removed: $kw")
+        Toast.makeText(this, "已删除「$kw」", Toast.LENGTH_SHORT).show()
+        renderSearchKeywords()
+    }
+
+    /**
+     * 搜索 Tab 选中处理：0=搜索框（确认即用当前内容搜索）；1+=历史/热门词条（直接搜）。
+     * 输入直接发生在搜索框 EditText 中，无需弹窗。
+     */
+    private fun onSelectSearchItem() {
+        if (focusIdx == 0) {
+            val kw = searchEditText()?.text?.toString()?.trim().orEmpty()
+            if (kw.isEmpty()) {
+                Toast.makeText(this, "请先输入搜索词", Toast.LENGTH_SHORT).show()
+            } else {
+                performSearch(kw)
+            }
+            return
+        }
+        val kw = searchKeywordRoots.getOrNull(focusIdx - 1)?.tag as? String
+        if (!kw.isNullOrBlank()) {
+            searchEditText()?.setText(kw)
+            performSearch(kw)
+        }
     }
 
     // ══════════════════════════════════════════════════════════

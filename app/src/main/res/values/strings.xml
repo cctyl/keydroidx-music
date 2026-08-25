@@ -51,7 +51,7 @@
     <string name="discover_section_today">今日推荐歌单</string>
 
     <!-- ── 搜索 Tab ── -->
-    <string name="search_hint">周杰伦</string>
+    <string name="search_hint">搜索歌曲 / 歌手</string>
     <string name="search_pinyin">拼音/按键</string>
     <string name="search_hot_history">热门搜索 / 搜索历史</string>
 
