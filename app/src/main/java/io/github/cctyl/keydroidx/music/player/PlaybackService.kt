@@ -24,6 +24,7 @@ import io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.util.NetworkUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,11 +63,7 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setMediaSourceFactory(
                 androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
-                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .setAllowCrossProtocolRedirects(true)   // 网易云外链会 302 跳转
-                        .setConnectTimeoutMs(10_000)
-                        .setReadTimeoutMs(10_000)
-                        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    AudioCacheManager.createCacheDataSourceFactory(this)
                 )
             )
             .build()
@@ -157,6 +154,35 @@ class PlaybackService : MediaSessionService() {
             updateNotification()
             return
         }
+
+        // 网络歌曲播放
+        val isCached = AudioCacheManager.isSongCached(this, song.id)
+        val hasNetwork = NetworkUtils.isNetworkAvailable(this)
+
+        if (!hasNetwork && !isCached) {
+            Log.w(TAG, "No network and song not cached: ${song.name}")
+            showNoNetworkToast()
+            player?.pause()
+            PlaybackStateManager.updatePlayingState(false)
+            return
+        }
+
+        if (isCached) {
+            // 本地已有缓存，优先使用缓存播放（即便断网也能离线播）
+            Log.d(TAG, "Playing cached song: ${song.name}, id: ${song.id}")
+            val dummyUri = "https://music.163.com/song/media/${song.id}.mp3"
+            val mediaItem = buildMediaItem(song, dummyUri)
+            player?.let { p ->
+                p.setMediaItem(mediaItem)
+                p.prepare()
+                p.play()
+            }
+            updateNotification()
+            LibraryManager.addRecentSong(song)
+            return
+        }
+
+        // 无缓存但在网络可用时：联网取播放链接
         serviceScope.launch {
             try {
                 Log.d(TAG, "Fetching song url for id: ${song.id}")
@@ -164,7 +190,13 @@ class PlaybackService : MediaSessionService() {
                 val url = result.url
                 if (url.isNullOrEmpty()) {
                     Log.e(TAG, "Failed to get song url for: ${song.name}")
-                    skipToNextPlayable()
+                    if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
+                        showNoNetworkToast()
+                        player?.pause()
+                        PlaybackStateManager.updatePlayingState(false)
+                    } else {
+                        skipToNextPlayable()
+                    }
                     return@launch
                 }
                 Log.d(TAG, "Playing song: ${song.name}, url: $url")
@@ -179,7 +211,24 @@ class PlaybackService : MediaSessionService() {
                 LibraryManager.addRecentSong(song)
             } catch (e: Exception) {
                 Log.e(TAG, "Error playing song: ${e.message}", e)
-                skipToNextPlayable()
+                if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
+                    showNoNetworkToast()
+                    player?.pause()
+                    PlaybackStateManager.updatePlayingState(false)
+                } else {
+                    skipToNextPlayable()
+                }
+            }
+        }
+    }
+
+    private var lastToastTime = 0L
+    private fun showNoNetworkToast() {
+        val now = System.currentTimeMillis()
+        if (now - lastToastTime > 2500L) {
+            lastToastTime = now
+            handler.post {
+                Toast.makeText(applicationContext, "无网络连接，请开启Wi-Fi或移动数据", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -207,6 +256,16 @@ class PlaybackService : MediaSessionService() {
             if (it.isPlaying) {
                 it.pause()
             } else {
+                // 如果当前由于没有网络处于暂停状态，且仍然没有网络，且当前歌曲既不是本地歌曲也没有本地缓存
+                val currentSong = PlaybackStateManager.currentSong.value
+                val isLocal = !currentSong?.localPath.isNullOrBlank()
+                val isCached = currentSong != null && AudioCacheManager.isSongCached(this@PlaybackService, currentSong.id)
+                val isNetworkConnected = NetworkUtils.isNetworkAvailable(this@PlaybackService)
+
+                if (!isLocal && !isCached && !isNetworkConnected) {
+                    showNoNetworkToast()
+                    return
+                }
                 it.play()
             }
         }
@@ -253,7 +312,13 @@ class PlaybackService : MediaSessionService() {
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
             Log.e(TAG, "onPlayerError: ${error.message}", error)
-            skipToNextPlayable()
+            if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
+                showNoNetworkToast()
+                player?.pause()
+                PlaybackStateManager.updatePlayingState(false)
+            } else {
+                skipToNextPlayable()
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -333,9 +398,12 @@ class PlaybackService : MediaSessionService() {
             .setAlbumTitle(song.album?.name)
             .build()
 
+        val customCacheKey = AudioCacheManager.buildCacheKey(song.id)
+
         return MediaItem.Builder()
             .setMediaId(song.id.toString())
             .setUri(uriString)
+            .setCustomCacheKey(customCacheKey)
             .setMediaMetadata(metadata)
             .build()
     }
