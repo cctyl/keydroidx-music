@@ -1309,7 +1309,11 @@ class MainActivity : NokiaBaseActivity() {
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_VOLUME_UP, iconSize, iconColor)
         )
         dialog.addItem(
-            4, "退出应用",
+            4, getString(R.string.menu_about),
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
+        )
+        dialog.addItem(
+            5, "退出应用",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
@@ -1342,6 +1346,10 @@ class MainActivity : NokiaBaseActivity() {
                     moveTaskToBack(true)
                 }
                 3 -> {
+                    // 关于
+                    startActivity(Intent(this, AboutActivity::class.java))
+                }
+                4 -> {
                     // 退出应用：停止播放服务并结束任务
                     Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
                     stopService(Intent(this, PlaybackService::class.java))

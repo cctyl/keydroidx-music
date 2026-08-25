@@ -20,6 +20,7 @@
     <string name="softkey_now_playing">正在播放</string>
     <string name="softkey_enter">进入</string>
     <string name="softkey_back">返回</string>
+    <string name="softkey_open">打开</string>
     <string name="softkey_view_chart">查看榜单</string>
     <string name="softkey_clear">清空</string>
     <string name="softkey_search">搜索</string>
