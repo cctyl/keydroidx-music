@@ -83,7 +83,9 @@ class PlaybackService : MediaSessionService() {
                     Intent(this, MusicPlayerActivity::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 ))
-                .build()
+                .build().also { session ->
+                    addSession(session)
+                }
         }
 
         handler.post(progressRunnable)
@@ -146,12 +148,13 @@ class PlaybackService : MediaSessionService() {
         // 本地歌曲：直接读文件，不走网易云取链与 VIP/版权检查
         song.localPath?.let { path ->
             Log.d(TAG, "Playing local song: ${song.name}, path: $path")
-            val mediaItem = MediaItem.fromUri(android.net.Uri.parse(path))
+            val mediaItem = buildMediaItem(song, path)
             player?.let { p ->
                 p.setMediaItem(mediaItem)
                 p.prepare()
                 p.play()
             }
+            updateNotification()
             return
         }
         serviceScope.launch {
@@ -165,12 +168,13 @@ class PlaybackService : MediaSessionService() {
                     return@launch
                 }
                 Log.d(TAG, "Playing song: ${song.name}, url: $url")
-                val mediaItem = MediaItem.fromUri(android.net.Uri.parse(url))
+                val mediaItem = buildMediaItem(song, url)
                 player?.let { p ->
                     p.setMediaItem(mediaItem)
                     p.prepare()
                     p.play()
                 }
+                updateNotification()
                 // 成功准备播放，记录到最近播放历史
                 LibraryManager.addRecentSong(song)
             } catch (e: Exception) {
@@ -244,6 +248,7 @@ class PlaybackService : MediaSessionService() {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             PlaybackStateManager.updatePlayingState(isPlaying)
             Log.d(TAG, "onIsPlayingChanged: $isPlaying")
+            updateNotification()
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -310,12 +315,119 @@ class PlaybackService : MediaSessionService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "KeydroidX Music Playback",
+                "音乐播放控制",
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                description = "正在播放音乐控制通知"
+                setShowBadge(false)
+            }
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
+    }
+
+    private fun buildMediaItem(song: SongItem, uriString: String): MediaItem {
+        val metadata = androidx.media3.common.MediaMetadata.Builder()
+            .setTitle(song.name)
+            .setArtist(song.artistName)
+            .setAlbumTitle(song.album?.name)
+            .build()
+
+        return MediaItem.Builder()
+            .setMediaId(song.id.toString())
+            .setUri(uriString)
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    private fun updateNotification() {
+        val currentSong = PlaybackStateManager.currentSong.value
+        val isPlaying = player?.isPlaying ?: false
+        val title = currentSong?.name ?: "KeydroidX Music"
+        val artist = currentSong?.artistName ?: ""
+
+        val playPauseAction = if (isPlaying) {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_pause,
+                "暂停",
+                createActionPendingIntent(ACTION_PLAY_PAUSE, 101)
+            )
+        } else {
+            NotificationCompat.Action(
+                android.R.drawable.ic_media_play,
+                "播放",
+                createActionPendingIntent(ACTION_PLAY_PAUSE, 101)
+            )
+        }
+
+        val prevAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_previous,
+            "上一曲",
+            createActionPendingIntent(ACTION_PREV, 102)
+        )
+
+        val nextAction = NotificationCompat.Action(
+            android.R.drawable.ic_media_next,
+            "下一曲",
+            createActionPendingIntent(ACTION_NEXT, 103)
+        )
+
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MusicPlayerActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_music_launcher)
+            .setContentTitle(title)
+            .setContentText(artist)
+            .setContentIntent(contentIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(isPlaying)
+            .addAction(prevAction)
+            .addAction(playPauseAction)
+            .addAction(nextAction)
+            .setStyle(
+                androidx.media3.session.MediaStyleNotificationHelper.MediaStyle(mediaSession!!)
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
+        if (!isPlaying) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(false)
+            }
+        }
+    }
+
+    private fun createActionPendingIntent(action: String, requestCode: Int): PendingIntent {
+        val intent = Intent(this, PlaybackService::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getService(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     override fun onDestroy() {
@@ -330,6 +442,7 @@ class PlaybackService : MediaSessionService() {
     companion object {
         private const val TAG = "PlaybackService"
         const val CHANNEL_ID = "keydroidx_music_playback_channel"
+        private const val NOTIFICATION_ID = 1001
         const val ACTION_PLAY_INDEX = "io.github.cctyl.keydroidx.music.ACTION_PLAY_INDEX"
         const val ACTION_PLAY_PAUSE = "io.github.cctyl.keydroidx.music.ACTION_PLAY_PAUSE"
         const val ACTION_NEXT = "io.github.cctyl.keydroidx.music.ACTION_NEXT"
