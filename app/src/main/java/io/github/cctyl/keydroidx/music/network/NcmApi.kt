@@ -89,6 +89,9 @@ interface NcmApi {
         @Query("limit") limit: Int = 30
     ): PersonalizedResponse
 
+    @GET("api/toplist/detail")
+    suspend fun getToplist(): ToplistResponse
+
     @GET("api/album/new")
     suspend fun getNewAlbums(
         @Query("area") area: Int = 0,

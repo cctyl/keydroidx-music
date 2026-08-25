@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.network.model.ToplistBoard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -134,19 +135,46 @@ object PlaylistApi {
         )
     }
 
+    /** 云音乐官方榜单列表（飙升榜/新歌榜/热歌榜等），公开接口无需登录 */
+    suspend fun getToplists(): List<ToplistBoard> = withContext(Dispatchers.IO) {
+        val resp = RetrofitClient.api.getToplist()
+        if (resp.code != 200) throw Exception("API error: code=${resp.code}")
+        resp.list
+    }
+
     suspend fun getPlaylistDetail(playlistId: Long): List<SongItem> = withContext(Dispatchers.IO) {
-        val payload = mapOf(
-            "id" to playlistId.toString(),
-            "n" to "1000",
-            "s" to "0"
-        )
-        val response = RetrofitClient.eapiPost(PLAYLIST_DETAIL_PATH, payload)
-        val body = response.body?.string() ?: throw Exception("empty response")
+        // 优先 eapi（已登录场景体验更好）；失败时回退到公开 GET 接口
+        // （榜单等无 cookie 环境也能正常拉取完整曲目）
+        val body = try {
+            val payload = mapOf(
+                "id" to playlistId.toString(),
+                "n" to "1000",
+                "s" to "0"
+            )
+            val response = RetrofitClient.eapiPost(PLAYLIST_DETAIL_PATH, payload)
+            val b = response.body?.string() ?: ""
+            val code = JSONObject(b).optInt("code", -1)
+            if (code == 200) b else ""
+        } catch (e: Exception) {
+            Log.w(TAG, "getPlaylistDetail eapi failed, fallback to plain GET: ${e.message}")
+            ""
+        }
+
+        val finalBody = if (body.isBlank()) {
+            // 公开 GET 回退
+            val response = RetrofitClient.get("/api/v6/playlist/detail?id=$playlistId&n=1000")
+            response.body?.string() ?: throw Exception("empty response")
+        } else body
+
+        parsePlaylistDetail(finalBody)
+    }
+
+    private suspend fun parsePlaylistDetail(body: String): List<SongItem> {
         val json = JSONObject(body)
         val code = json.optInt("code", -1)
         if (code != 200) throw Exception("API error: code=$code")
 
-        val playlistObj = json.optJSONObject("playlist") ?: return@withContext emptyList()
+        val playlistObj = json.optJSONObject("playlist") ?: return emptyList()
 
         // 解析权限表 (privileges)
         val privilegeMap = mutableMapOf<Long, Boolean>() // songId -> noCopyright
@@ -178,7 +206,7 @@ object PlaylistApi {
             }
         }
 
-        if (allIds.isEmpty()) return@withContext tracksMap.values.toList()
+        if (allIds.isEmpty()) return tracksMap.values.toList()
 
         val missingIds = allIds.filter { it !in tracksMap }
         val batchSize = 500
@@ -191,7 +219,7 @@ object PlaylistApi {
             fetched.forEach { tracksMap[it.id] = it }
         }
 
-        allIds.mapNotNull { tracksMap[it] }
+        return allIds.mapNotNull { tracksMap[it] }
     }
 
     private fun parseSongTrack(track: JSONObject, privilegeMap: Map<Long, Boolean>? = null): SongItem {

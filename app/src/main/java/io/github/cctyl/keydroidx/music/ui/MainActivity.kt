@@ -31,6 +31,7 @@ import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
+import io.github.cctyl.keydroidx.music.network.model.ToplistBoard
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
@@ -93,6 +94,7 @@ class MainActivity : NokiaBaseActivity() {
 
     // ── 榜单 Tab ──
     private lateinit var chartItemRoots: MutableList<LinearLayout>
+    private var chartBoards: List<ToplistBoard> = emptyList()
 
     // ── 搜索 Tab ──
     private lateinit var searchFieldRoot: LinearLayout
@@ -476,42 +478,116 @@ class MainActivity : NokiaBaseActivity() {
     private fun setupChartTab() {
         val chartRoot = findViewById<View>(R.id.content_chart)
 
-        data class ChartItem(
-            val color: String,
-            val iconCode: String,
-            val name: String,
-            val update: String,
-            val topSong: String
-        )
+        // 先渲染占位提示，随后异步拉取真实榜单数据
+        chartItemRoots = mutableListOf()
+        renderChartPlaceholder(chartRoot.findViewById(R.id.ll_chart_list), "正在加载排行榜…")
+        loadChartBoards()
+    }
 
-        val charts = listOf(
-            ChartItem("#CC3333", NokiaIcons.ICON_LEADERBOARD, "飙升榜", "（刚刚更新）", "1. 无题 - 姜云升"),
-            ChartItem("#336633", NokiaIcons.ICON_MUSIC_NOTE, "新歌榜", "（刚刚更新）", "1. Emily - 房东的猫"),
-            ChartItem("#224488", NokiaIcons.ICON_STAR, "原创榜", "（每周四更新）", "1. 街头婚礼 - 周以希"),
-            ChartItem("#884422", NokiaIcons.ICON_FAVORITE, "热歌榜", "（更新11首）", "1. 海屿你 - 马也")
+    /** 榜单加载中/失败占位条目 */
+    private fun renderChartPlaceholder(container: LinearLayout, text: String) {
+        container.removeAllViews()
+        val itemView = LayoutInflater.from(this)
+            .inflate(R.layout.item_chart, container, false) as LinearLayout
+        itemView.findViewById<LinearLayout>(R.id.ll_chart_thumb)
+            .setBackgroundColor(Color.parseColor("#666666"))
+        NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), NokiaIcons.ICON_LEADERBOARD)
+        NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
+        itemView.findViewById<TextView>(R.id.tv_chart_name).text = "排行榜"
+        itemView.findViewById<TextView>(R.id.tv_chart_update).text = ""
+        itemView.findViewById<TextView>(R.id.tv_chart_song).text = text
+        container.addView(itemView)
+        chartItemRoots.add(itemView)
+        NokiaFontManager.applyToViewTree(container)
+    }
+
+    /** 拉取云音乐官方真实榜单数据（无需登录），失败时保留占位提示 */
+    private fun loadChartBoards() {
+        lifecycleScope.launch {
+            try {
+                val boards = PlaylistApi.getToplists().take(8)
+                Log.d("MainActivity", "toplist loaded: ${boards.size} boards")
+                if (isDestroyed || isFinishing) return@launch
+                if (boards.isEmpty()) {
+                    Log.w("MainActivity", "toplist empty, keep placeholder")
+                    return@launch
+                }
+                chartBoards = boards
+                renderChartBoards(boards)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "loadChartBoards failed", e)
+                if (isDestroyed || isFinishing) return@launch
+                val container = findViewById<LinearLayout?>(R.id.ll_chart_list) ?: return@launch
+                renderChartPlaceholder(container, "榜单加载失败：${e.message}")
+            }
+        }
+    }
+
+    /** 渲染真实榜单列表（取每个榜的第一首歌作为预览） */
+    private fun renderChartBoards(boards: List<ToplistBoard>) {
+        val chartRoot = findViewById<View?>(R.id.content_chart) ?: return
+        val container = chartRoot.findViewById<LinearLayout>(R.id.ll_chart_list) ?: return
+        container.removeAllViews()
+
+        // 主题色循环（与设计稿配色风格一致）
+        val colors = listOf("#CC3333", "#336633", "#224488", "#884422", "#6A1B9A", "#00695C", "#AD1457", "#37474F")
+        val icons = listOf(
+            NokiaIcons.ICON_LEADERBOARD, NokiaIcons.ICON_MUSIC_NOTE, NokiaIcons.ICON_STAR,
+            NokiaIcons.ICON_FAVORITE, NokiaIcons.ICON_TODAY, NokiaIcons.ICON_EXPLORE,
+            NokiaIcons.ICON_QUEUE_MUSIC, NokiaIcons.ICON_LEADERBOARD
         )
 
         chartItemRoots = mutableListOf()
-        val container = chartRoot.findViewById<LinearLayout>(R.id.ll_chart_list)
-        charts.forEachIndexed { i, chart ->
+        boards.forEachIndexed { i, board ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_chart, container, false) as LinearLayout
 
             itemView.findViewById<LinearLayout>(R.id.ll_chart_thumb)
-                .setBackgroundColor(Color.parseColor(chart.color))
+                .setBackgroundColor(Color.parseColor(colors[i % colors.size]))
 
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), chart.iconCode)
+            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), icons[i % icons.size])
             NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
-            itemView.findViewById<TextView>(R.id.tv_chart_name).text = chart.name
-            itemView.findViewById<TextView>(R.id.tv_chart_update).text = chart.update
-            itemView.findViewById<TextView>(R.id.tv_chart_song).text = chart.topSong
+            itemView.findViewById<TextView>(R.id.tv_chart_name).text = board.name
+            itemView.findViewById<TextView>(R.id.tv_chart_update).text =
+                board.updateFrequency?.let { "（$it）" } ?: ""
+            val firstTrack = board.tracks?.firstOrNull()
+            itemView.findViewById<TextView>(R.id.tv_chart_song).text =
+                if (firstTrack != null) {
+                    "1. ${firstTrack.previewText()}"
+                } else {
+                    // 该榜无预览曲目时显示总数，避免误显示“暂无曲目”
+                    board.trackCount?.takeIf { it > 0 }?.let { "共 $it 首" } ?: "点击查看"
+                }
 
             container.addView(itemView)
             chartItemRoots.add(itemView)
-            if (i < charts.size - 1) {
+            if (i < boards.size - 1) {
                 container.addView(makeDivider(6, 6))
             }
         }
+
+        NokiaFontManager.applyToViewTree(container)
+
+        // 当前正停留在榜单 Tab 时，刷新焦点体系并保持焦点位置
+        if (currentTab == TAB_CHART) {
+            focusItems = chartItemRoots
+            if (focusIdx >= focusItems.size) {
+                focusIdx = (focusItems.size - 1).coerceAtLeast(0)
+            }
+            applyFocus()
+        }
+    }
+
+    /**
+     * 榜单 Tab 选中处理：打开对应榜单歌曲列表。
+     * 榜单 id 即歌单 id，直接复用歌单详情页。
+     */
+    private fun onSelectChartItem() {
+        val board = chartBoards.getOrNull(focusIdx) ?: run {
+            Toast.makeText(this, "榜单尚未加载完成，请稍后再试", Toast.LENGTH_SHORT).show()
+            return
+        }
+        PlaylistDetailActivity.start(this, board.id, board.name, NokiaIcons.ICON_LEADERBOARD)
     }
 
     // ══════════════════════════════════════════════════════════
@@ -754,6 +830,7 @@ class MainActivity : NokiaBaseActivity() {
                 when (currentTab) {
                     TAB_MINE -> onSelectMineItem()
                     TAB_DISCOVER -> onSelectDiscoverItem()
+                    TAB_CHART -> onSelectChartItem()
                     TAB_SEARCH -> onSelectSearchItem()
                     else -> { /* 其他 Tab 暂不处理 */ }
                 }
