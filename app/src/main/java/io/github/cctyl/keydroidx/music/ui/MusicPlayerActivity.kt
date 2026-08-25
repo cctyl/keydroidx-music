@@ -68,10 +68,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private var layoutUpper: View? = null
     private var scrollLyric: ScrollView? = null
     private var lyricListContainer: LinearLayout? = null
-    private var layoutVolumePanel: View? = null
-    private var tvVolumeLabel: TextView? = null
-    private var iconVolume: TextView? = null
-    private var volumeFill: View? = null
 
     // ── 全屏歌词 ─────────────────────────────────────────────
     private var layoutLyricFullscreen: View? = null
@@ -96,15 +92,11 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     // ── 工具 ─────────────────────────────────────────────────
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val hideVolumeRunnable = Runnable { hideVolumePanel() }
 
     override fun getContentLayoutRes(): Int = R.layout.activity_player
 
     override fun onInitViews() {
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
-        // 首次进入若媒体音量为 0，自动提升到 50% 避免无声播放
-        ensureAudibleVolume()
 
         // ── 查找 View ───────────────────────────────────────
         vinylDisk = findViewById(R.id.vinyl_disk)
@@ -119,10 +111,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         layoutUpper = findViewById(R.id.layout_upper)
         scrollLyric = findViewById(R.id.scroll_lyric)
         lyricListContainer = findViewById(R.id.layout_lyric_list)
-        layoutVolumePanel = findViewById(R.id.layout_volume_panel)
-        tvVolumeLabel = findViewById(R.id.tv_volume_label)
-        iconVolume = findViewById(R.id.icon_volume)
-        volumeFill = findViewById(R.id.volume_fill)
 
         // 全屏歌词视图
         layoutLyricFullscreen = findViewById(R.id.layout_lyric_fullscreen)
@@ -132,7 +120,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         // ── 设置图标（使用 NokiaIcons 矢量字体）──────────────
         // 唱片中心图标：始终显示 ♪ music_note
         NokiaIcons.setIcon(ivPlayPause, NokiaIcons.ICON_MUSIC_NOTE)
-        NokiaIcons.setIcon(iconVolume, NokiaIcons.ICON_VOLUME_UP)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_prev), NokiaIcons.ICON_SKIP_PREVIOUS)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_next), NokiaIcons.ICON_SKIP_NEXT)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_lyrics), NokiaIcons.ICON_SUBTITLES)
@@ -143,7 +130,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         tvCurrentTime?.text = getString(R.string.unknown_time)
         tvTotalTime?.text = getString(R.string.unknown_time)
         tvPlayStatus?.text = getString(R.string.play_status_pause)
-        tvVolumeLabel?.text = getString(R.string.volume_label, currentVolumePercent())
 
         // ── 歌词区占位 ───────────────────────────────────────
         showLyricPlaceholder()
@@ -233,67 +219,6 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         populateLyricLines()
         populateFullscreenLyrics()
         Log.d(TAG, "[DEMO] loaded ${lrcLines.size} lyric lines")
-    }
-
-    // ─────────────────────────────────────────────────────────
-    //  音量工具
-    // ─────────────────────────────────────────────────────────
-
-    private fun currentVolumePercent(): Int {
-        val am = audioManager ?: return 0
-        val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        return if (max <= 0) 0 else (cur * 100 / max)
-    }
-
-    private fun ensureAudibleVolume() {
-        val am = audioManager ?: return
-        val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        if (cur == 0 && max > 0) {
-            // 提升到 50%，避免用户首听无声
-            am.setStreamVolume(AudioManager.STREAM_MUSIC, max / 2, 0)
-        }
-    }
-
-    private fun showVolumePanel() {
-        val am = audioManager ?: return
-        val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        val percent = if (max <= 0) 0 else (cur * 100 / max)
-
-        // 根据音量切换图标
-        val icon = if (cur == 0) NokiaIcons.ICON_VOLUME_OFF else NokiaIcons.ICON_VOLUME_UP
-        NokiaIcons.setIcon(iconVolume, icon)
-
-        tvVolumeLabel?.text = getString(R.string.volume_label, percent)
-
-        // 更新填充宽度
-        volumeFill?.let { fill ->
-            val parentWidth = (fill.parent as? View)?.width ?: 0
-            val lp = fill.layoutParams
-            lp.width = (parentWidth * percent / 100).coerceAtLeast(if (percent > 0) 1 else 0)
-            fill.layoutParams = lp
-        }
-
-        // 显示并自动隐藏
-        layoutVolumePanel?.let { panel ->
-            if (panel.visibility != View.VISIBLE) {
-                panel.alpha = 0f
-                panel.visibility = View.VISIBLE
-                panel.animate().alpha(1f).setDuration(180).start()
-            }
-        }
-        mainHandler.removeCallbacks(hideVolumeRunnable)
-        mainHandler.postDelayed(hideVolumeRunnable, VOLUME_HIDE_DELAY_MS)
-    }
-
-    private fun hideVolumePanel() {
-        layoutVolumePanel?.animate()
-            ?.alpha(0f)
-            ?.setDuration(220)
-            ?.withEndAction { layoutVolumePanel?.visibility = View.GONE }
-            ?.start()
     }
 
     // ─────────────────────────────────────────────────────────
@@ -520,18 +445,16 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 audioManager?.adjustStreamVolume(
                     AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_RAISE,
-                    0
+                    AudioManager.FLAG_SHOW_UI
                 )
-                showVolumePanel()
                 true
             }
             NokiaKeyAction.DOWN -> {
                 audioManager?.adjustStreamVolume(
                     AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_LOWER,
-                    0
+                    AudioManager.FLAG_SHOW_UI
                 )
-                showVolumePanel()
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
@@ -1094,14 +1017,12 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mainHandler.removeCallbacks(hideVolumeRunnable)
         mainHandler.removeCallbacks(demoRunnable)
         vinylRotateAnim?.cancel()
     }
 
     companion object {
         private const val TAG = "MusicPlayerActivity"
-        private const val VOLUME_HIDE_DELAY_MS = 1800L
 
         // === 演示模式：硬编码真实 LRC + 模拟进度，方便 UI 验收 ===
         private const val DEMO_MODE = false

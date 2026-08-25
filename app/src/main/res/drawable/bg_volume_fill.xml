@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 音量条填充段：纯主色，配合滚动条背景使用 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/music_accent" />
-    <corners android:radius="2dp" />
-</shape>

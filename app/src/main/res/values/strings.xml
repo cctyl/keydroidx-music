@@ -108,7 +108,6 @@
     <string name="play_status_playing">[正在播放]</string>
     <string name="no_lyric">暂无歌词</string>
     <string name="unknown_time">--:--</string>
-    <string name="volume_label">媒体音量 %1$d%%</string>
     <string name="mode_list_loop">列表循环</string>
     <string name="mode_single_loop">单曲循环</string>
     <string name="mode_shuffle">随机播放</string>
@@ -130,6 +129,19 @@
 
     <!-- Cookie 设置页 -->
     <string name="cookie_settings_title">网易云 Cookie 设置</string>
+    <!-- 关于页 -->
+    <string name="about_title">关于 KeydroidX 音乐</string>
+    <string name="about_desc"><![CDATA[KeydroidX 音乐是一款专为物理九键 / 全键盘 Android 按键机量身定制的轻量级音乐播放器，基于 KeydroidX 按键机生态构建，纯物理按键驱动，开箱即用获得生态能力。]]></string>
+    <string name="about_author_label">作者</string>
+    <string name="about_author">cctyl</string>
+    <string name="about_repo_label">开源地址</string>
+    <string name="about_repo_url">https://github.com/cctyl/keydroidx-music</string>
+    <string name="about_open_repo">浏览器打开</string>
+    <string name="about_copy_repo">复制地址</string>
+    <string name="about_return">返回</string>
+    <string name="about_copied">开源地址已复制</string>
+    <string name="about_no_browser">未找到可打开链接的浏览器</string>
+
     <string name="cookie_settings_help"><![CDATA[【获取方法】
 1. 电脑浏览器打开 music.163.com 并登录；
 2. 按 F12 打开开发者工具，切换到「网络/Network」或「应用/Application → Cookies」；

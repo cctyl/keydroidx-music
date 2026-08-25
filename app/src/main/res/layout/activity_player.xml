@@ -128,59 +128,6 @@
                 </LinearLayout>
             </ScrollView>
 
-            <!-- 音量条浮层 -->
-            <LinearLayout
-                android:id="@+id/layout_volume_panel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top|center_horizontal"
-                android:layout_marginTop="6dp"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:background="@drawable/bg_volume_panel"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:id="@+id/icon_volume"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="11sp"
-                        android:textColor="@color/music_accent"
-                        android:includeFontPadding="false" />
-
-                    <TextView
-                        android:id="@+id/tv_volume_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="4dp"
-                        android:textSize="9sp"
-                        android:textColor="#B0B0B0"
-                        android:includeFontPadding="false" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="120dp"
-                    android:layout_height="5dp"
-                    android:layout_marginTop="3dp"
-                    android:background="@drawable/bg_volume_track">
-
-                    <View
-                        android:id="@+id/volume_fill"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/bg_volume_fill" />
-                </FrameLayout>
-            </LinearLayout>
         </FrameLayout>
 
         <!-- ③ 进度条 + 时间行 -->
