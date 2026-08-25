@@ -100,7 +100,7 @@ items.add(new NokiaOptionsDialog.OptionItem(
 背景与原因（反复出现的 bug，最近一次：正在播放详情页 `MusicPlayerActivity`）：
 
 1. 在触屏设备上，新 Activity / Fragment 的窗口默认处于 **touch mode**。当窗口「没有任何 View 持有焦点」时，**第一个方向键（`KEYCODE_DPAD_UP/DOWN/LEFT/RIGHT/CENTER`）会被框架用于退出触摸模式并寻找焦点目标，事件被吞掉，不会派发给 `Activity.dispatchKeyEvent`**，自然也到不了 `onAction`。第二次起窗口已脱离触摸模式，方向键才正常派发到 `onAction`。
-2. **列表页不受影响**：列表页的条目根布局都声明了 `android:focusable="true"`，且 `applyFocus()` / `NokiaListFocusHelper` 会调用 `requestFocus()` 让某个条目持有焦点，窗口始终「有焦点视图」。首个方向键的「退出触摸模式」动作恰好落在第一个列表项上（高亮第一项），这是期望行为，所以列表页「第一次按方向键就有反应」。
+2. **列表页也会中招，除非条目能在 touch mode 下持焦**：列表页的条目根布局声明了 `android:focusable="true"`，且 `applyFocus()` / `NokiaListFocusHelper` 会调用 `requestFocus()` 让某个条目持焦。但 **`focusable="true"` 单凭不足以在 touch mode 下获焦**——`View.requestFocus()` 在窗口处于 touch mode 时，只对 `focusableInTouchMode=true` 的视图返回 true；只 `focusable=true` 的条目 `requestFocus()` 会静默失败，窗口仍无焦点视图，首个方向键照样被吞。本次「我的」Tab（`MineTabFragment` 一类的 `NokiaPageFragment` 手写条目）就中了招：条目只声明 `focusable="true"`，`applyFocus()` 里 `requestFocus()` 在 touch mode 下失败，首键被吞，第二键才生效。**修复：在 `applyFocus()` 给当前焦点条目 `layout.isFocusableInTouchMode = true` 再 `requestFocus()`**（见下）。
 3. **纯按键驱动页（无列表项）则必中招**：如 `MusicPlayerActivity` 的内容区只有唱片、歌词 `ScrollView`、进度条、按键指南条，**没有任何持焦点的可聚焦 View**。进入后第一个方向键被框架吞掉，`onAction(UP/DOWN/...)` 不执行（音量不调、不切歌、不播放暂停），用户感知「第一次按没反应」。
 4. **`*` / `#` / 左右软键不受影响**：它们不是方向键（`KEYCODE_STAR` / `KEYCODE_POUND` / `KEYCODE_MENU` / `KEYCODE_BACK` 或自定义软键码），不触发「退出触摸模式」的吞键逻辑，所以第一次按就生效——这正是判断本 bug 的特征：**只有方向键/确认键第一次无效，其余键正常**。
 5. **不要因为某台设备「没复现」就认为没问题**：纯按键机（无触摸屏）的窗口永不进入 touch mode，不会复现；带触摸屏的按键机（测试机多为这类）必复现。验证必须在带触摸屏的真机上进行。
@@ -122,13 +122,32 @@ items.add(new NokiaOptionsDialog.OptionItem(
   ```
 - **把页面内非业务性的 `ScrollView` 设为不可聚焦**：`android:focusable="false"` + `android:focusableInTouchMode="false"`。否则框架「退出触摸模式」时焦点可能落到 `ScrollView` 上，后续方向键被它用于滚动而再次吞键（表现为「按上下变成滚动歌词」而非触发 `onAction`）。
 - **列表页不要误改**：列表页的条目 `focusable="true"` + `requestFocus()` 是其正常工作前提，本规范只针对「内容区无可聚焦列表项」的纯按键驱动页。
+  - **例外/补充（2026-08 实测 bug）**：手写焦点条目的列表页（如 `MainActivity` 的「我的」Tab，不是 `NokiaListPageFragment`）条目仅 `focusable="true"` 时，`applyFocus()` 里 `requestFocus()` 在 touch mode 下会失败 → 窗口无焦点视图 → 首键被吞。修复是在 `applyFocus()` 中给当前焦点条目额外打开 `isFocusableInTouchMode = true` 再 `requestFocus()`，让它能在 touch mode 下持焦（持焦后窗口即脱离无焦点态，首键正常派发）。动态填充的条目（`item_playlist` 等）无需逐个改 XML，只要焦点切到它时 `applyFocus` 会设上。
+    ```kotlin
+    private fun applyFocus() {
+        focusItems.forEachIndexed { i, layout ->
+            if (i == focusIdx) {
+                layout.setBackgroundResource(R.drawable.bg_focused_item)
+                setChildTextColors(layout, true)
+                layout.isFocusableInTouchMode = true  // 关键：让 requestFocus 在 touch mode 下成功
+                layout.requestFocus()
+            } else { ... }
+        }
+    }
+    ```
+- **`onResume` 必须重新 `requestFocus`（2026-08 实测 bug，重要）**：返回桌面后再回到本页，窗口会重新进入 touch mode（桌面上的触屏操作会把本窗口重置为 touch mode），而 `onInitViews()` / `switchTab()` / `onPageCreated()` 不会在 `onResume` 重跑，原先持焦的视图会失焦 → 首个方向键被吞。表现：第一次进页面正常，返回桌面再回来后首键又无效。修复：在 `onResume` 末尾重新让焦点视图持焦（调 `applyFocus()` 或直接 `requestFocus()`，并 `post {}` 兜底）。
+    - `MainActivity.onResume`：`applyFocus()` + `focusItems.getOrNull(focusIdx)?.post { applyFocus() }`。
+    - `MusicPlayerActivity.onResume`：`findViewById(R.id.layout_player_root).requestFocus()` + `post { requestFocus() }`。
 - **自查特征**：若某页面报「第一次按方向键/确认没反应，第二次才有」，直接套用本修复；不要去改 `NokiaBaseActivity.dispatchKeyEvent` 的去抖/分发逻辑（那套逻辑是对的，问题在窗口焦点状态）。
 
 关键认知：
 
 - 「方向键第一次无效、其余键正常」**= 窗口无焦点视图导致首个方向键被触摸模式吞掉**，而非按键分发逻辑有 bug。
-- 纯按键驱动页必须自让根视图持焦；列表页靠条目 `requestFocus()` 天然规避。
-- 已修复案例：`MusicPlayerActivity`（根 `layout_player_root` 加 `focusable` + `requestFocus()`，两个歌词 `ScrollView` 加 `focusable="false"`）。
+- 纯按键驱动页必须自让根视图持焦；列表页靠条目 `requestFocus()` 天然规避——**但条目必须在 touch mode 下能持焦**（`focusableInTouchMode`），否则同样被吞。
+- **进入页面与从桌面返回（onResume）两条路径都要持焦**：只在 `onInitViews`/`onCreate` 持焦不够，`onResume` 必须重新持焦，否则返回桌面再回来首键仍被吞。
+- 已修复案例：
+  - `MusicPlayerActivity`（根 `layout_player_root` 加 `focusable` + `requestFocus()`，两个歌词 `ScrollView` 加 `focusable="false"`；`onResume` 重新 `requestFocus`）。
+  - `MainActivity`「我的」Tab（`applyFocus()` 给当前焦点条目 `isFocusableInTouchMode = true` 再 `requestFocus()`；`onResume` 重新 `applyFocus()`）——手写条目的列表页同样要遵守。
 
 ## 软键栏（底部左右菜单）禁止加高亮 / 焦点逻辑（重要）
 
@@ -510,6 +529,8 @@ public void fixMidContentHeight(final View content, final boolean topAlign) {
 - [ ] 网格行高均分拉伸，非写死固定 dp
 - [ ] scale 走 `getScale()`（响应式模式下恒为 1.0f）
 - [ ] 纯按键驱动页（内容区无列表项）根视图已声明 `focusable` + `focusableInTouchMode` 并在初始化末尾 `requestFocus()`，页面内非业务 `ScrollView` 设为 `focusable="false"`（避免首个方向键被触摸模式吞掉，见「进入界面后首个方向键被吞规范」）
+- [ ] 手写焦点条目的列表页（非 `NokiaListPageFragment`）在 `applyFocus()` 里给当前焦点条目 `isFocusableInTouchMode = true` 再 `requestFocus()`（条目仅 `focusable="true"` 在 touch mode 下 `requestFocus()` 会失败）
+- [ ] 纯按键页与列表页都在 `onResume` 末尾重新 `requestFocus()`（或 `applyFocus()`）+ `post {}` 兑底；否则返回桌面再回来首键被吞
 - [ ] 在 **240×320（4a24ecf）** 和 **320×480（tcpip）** 两台真机上截图验证
 - [ ] 验证重点：原生矢量清晰无模糊、无横向溢出与右侧缝隙、图标保持 1:1 正比例、列表最后一项不被底栏遮挡、弹窗比例合适、网格行不裁切也不留白
 

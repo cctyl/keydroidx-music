@@ -127,6 +127,14 @@ class MainActivity : NokiaBaseActivity() {
             mineRoot.findViewById<TextView>(R.id.tv_history_sub)?.text = "${recentCount} 首播放记录"
             mineRoot.findViewById<TextView>(R.id.badge_history)?.text = "$recentCount"
         }
+        // 返回桌面后再回到本页，窗口可能重新进入 touch mode（在桌面上的触屏操作
+        // 会让本窗口重置为 touch mode），而 switchTab / onInitViews 不会在 onResume
+        // 重跑，当前焦点条目会失焦 → 首个方向键被触摸模式吞掉。这里重新让当前
+        // 条目持焦（applyFocus 已把焦点条目设为 focusableInTouchMode=true），
+        // 并 post 一次应对窗口焦点稍后才就绪的情况。
+        // 详见 NOKIA_DEVELOPMENT_RULES.md「进入界面后首个方向键被吞规范」。
+        applyFocus()
+        focusItems.getOrNull(focusIdx)?.post { applyFocus() }
     }
 
     override fun onInitViews() {
@@ -597,6 +605,12 @@ class MainActivity : NokiaBaseActivity() {
             if (i == focusIdx) {
                 layout.setBackgroundResource(R.drawable.bg_focused_item)
                 setChildTextColors(layout, true)
+                // 必须让当前焦点条目 focusableInTouchMode=true，否则在触屏设备上
+                // 窗口处于 touch mode 时 requestFocus() 会失败（条目仅 focusable=true
+                // 不足以在 touch mode 下获焦）→ 窗口无焦点视图 → 首个方向键被
+                // Android 焦点框架用于退出触摸模式而被吞掉，第二个方向键才生效。
+                // 详见 NOKIA_DEVELOPMENT_RULES.md「进入界面后首个方向键被吞规范」。
+                layout.isFocusableInTouchMode = true
                 layout.requestFocus()
                 focusedView = layout
             } else {

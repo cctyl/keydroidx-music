@@ -177,6 +177,19 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         if (DEMO_MODE) startDemoPlayback()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 返回桌面后再回到本页，窗口可能重新进入 touch mode（桌面上的触屏操作
+        // 会把本窗口重置为 touch mode），而 onInitViews 只在 onCreate 跑一次、
+        // 不会在 onResume 重跑，根视图会失焦 → 首个方向键被触摸模式吞掉。
+        // 这里重新让根视图持焦（XML 已声明 focusable + focusableInTouchMode），
+        // 并 post 一次应对窗口焦点稍后才就绪的情况。
+        // 详见 NOKIA_DEVELOPMENT_RULES.md「进入界面后首个方向键被吞规范」。
+        val playerRoot = findViewById<View>(R.id.layout_player_root)
+        playerRoot.requestFocus()
+        playerRoot.post { playerRoot.requestFocus() }
+    }
+
     // ─────────────────────────────────────────────────────────
     //  演示播放（硬编码歌词 + 模拟进度推进）
     // ─────────────────────────────────────────────────────────
