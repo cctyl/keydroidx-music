@@ -93,6 +93,43 @@ items.add(new NokiaOptionsDialog.OptionItem(
 - 新增 / 修改任何按键分发、底部栏视觉反馈逻辑时，以「输入事件完整配对」为标准自查，而不是按某个机型打补丁。
 
 
+## 进入界面后首个方向键被吞规范（重要）
+
+**任何「纯按键驱动、内容区无可聚焦列表项」的页面（如正在播放详情页、设置详情页等），进入界面后第一个方向键（UP / DOWN / LEFT / RIGHT / SELECT）必须立即生效；若出现「第一次按无效、第二次起才生效」的现象，根因几乎都是：窗口处于「无焦点视图」状态，首个方向键被 Android 焦点框架用于「退出触摸模式 + 寻找焦点目标」而吞掉，根本到不了 `NokiaBaseActivity.dispatchKeyEvent → onAction`。**
+
+背景与原因（反复出现的 bug，最近一次：正在播放详情页 `MusicPlayerActivity`）：
+
+1. 在触屏设备上，新 Activity / Fragment 的窗口默认处于 **touch mode**。当窗口「没有任何 View 持有焦点」时，**第一个方向键（`KEYCODE_DPAD_UP/DOWN/LEFT/RIGHT/CENTER`）会被框架用于退出触摸模式并寻找焦点目标，事件被吞掉，不会派发给 `Activity.dispatchKeyEvent`**，自然也到不了 `onAction`。第二次起窗口已脱离触摸模式，方向键才正常派发到 `onAction`。
+2. **列表页不受影响**：列表页的条目根布局都声明了 `android:focusable="true"`，且 `applyFocus()` / `NokiaListFocusHelper` 会调用 `requestFocus()` 让某个条目持有焦点，窗口始终「有焦点视图」。首个方向键的「退出触摸模式」动作恰好落在第一个列表项上（高亮第一项），这是期望行为，所以列表页「第一次按方向键就有反应」。
+3. **纯按键驱动页（无列表项）则必中招**：如 `MusicPlayerActivity` 的内容区只有唱片、歌词 `ScrollView`、进度条、按键指南条，**没有任何持焦点的可聚焦 View**。进入后第一个方向键被框架吞掉，`onAction(UP/DOWN/...)` 不执行（音量不调、不切歌、不播放暂停），用户感知「第一次按没反应」。
+4. **`*` / `#` / 左右软键不受影响**：它们不是方向键（`KEYCODE_STAR` / `KEYCODE_POUND` / `KEYCODE_MENU` / `KEYCODE_BACK` 或自定义软键码），不触发「退出触摸模式」的吞键逻辑，所以第一次按就生效——这正是判断本 bug 的特征：**只有方向键/确认键第一次无效，其余键正常**。
+5. **不要因为某台设备「没复现」就认为没问题**：纯按键机（无触摸屏）的窗口永不进入 touch mode，不会复现；带触摸屏的按键机（测试机多为这类）必复现。验证必须在带触摸屏的真机上进行。
+
+正确做法（已修复 `MusicPlayerActivity`，新页面照抄）：
+
+- **给内容区根视图一个焦点**：根布局 XML 声明 `android:focusable="true"` + `android:focusableInTouchMode="true"`，并在 `onInitViews()` / `onPageCreated()` 末尾主动 `root.requestFocus()`（再 `root.post { root.requestFocus() }` 兜底，应对窗口焦点稍后才就绪）。
+  ```kotlin
+  val playerRoot = findViewById<View>(R.id.layout_player_root)
+  playerRoot.requestFocus()
+  playerRoot.post { playerRoot.requestFocus() }
+  ```
+  ```xml
+  <LinearLayout android:id="@+id/layout_player_root"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:focusable="true"
+      android:focusableInTouchMode="true" ... >
+  ```
+- **把页面内非业务性的 `ScrollView` 设为不可聚焦**：`android:focusable="false"` + `android:focusableInTouchMode="false"`。否则框架「退出触摸模式」时焦点可能落到 `ScrollView` 上，后续方向键被它用于滚动而再次吞键（表现为「按上下变成滚动歌词」而非触发 `onAction`）。
+- **列表页不要误改**：列表页的条目 `focusable="true"` + `requestFocus()` 是其正常工作前提，本规范只针对「内容区无可聚焦列表项」的纯按键驱动页。
+- **自查特征**：若某页面报「第一次按方向键/确认没反应，第二次才有」，直接套用本修复；不要去改 `NokiaBaseActivity.dispatchKeyEvent` 的去抖/分发逻辑（那套逻辑是对的，问题在窗口焦点状态）。
+
+关键认知：
+
+- 「方向键第一次无效、其余键正常」**= 窗口无焦点视图导致首个方向键被触摸模式吞掉**，而非按键分发逻辑有 bug。
+- 纯按键驱动页必须自让根视图持焦；列表页靠条目 `requestFocus()` 天然规避。
+- 已修复案例：`MusicPlayerActivity`（根 `layout_player_root` 加 `focusable` + `requestFocus()`，两个歌词 `ScrollView` 加 `focusable="false"`）。
+
 ## 软键栏（底部左右菜单）禁止加高亮 / 焦点逻辑（重要）
 
 **底部软键栏的左右两个文字，就只是物理左 / 右软键的标签，禁止给它加任何"选中态高亮"或"焦点切换"机制。** 这是反复踩过的坑，务必遵守。
@@ -441,6 +478,7 @@ public void fixMidContentHeight(final View content, final boolean topAlign) {
 - [ ] 网格页面行数走实测 panelH 反推（`getMidPanelHeight()`），非估算公式
 - [ ] 网格行高均分拉伸，非写死固定 dp
 - [ ] scale 走 `getScale()`（响应式模式下恒为 1.0f）
+- [ ] 纯按键驱动页（内容区无列表项）根视图已声明 `focusable` + `focusableInTouchMode` 并在初始化末尾 `requestFocus()`，页面内非业务 `ScrollView` 设为 `focusable="false"`（避免首个方向键被触摸模式吞掉，见「进入界面后首个方向键被吞规范」）
 - [ ] 在 **240×320（4a24ecf）** 和 **320×480（tcpip）** 两台真机上截图验证
 - [ ] 验证重点：原生矢量清晰无模糊、无横向溢出与右侧缝隙、图标保持 1:1 正比例、列表最后一项不被底栏遮挡、弹窗比例合适、网格行不裁切也不留白
 

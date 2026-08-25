@@ -160,6 +160,16 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         setStatusBarVisible(true)
         registerBatteryReceiver()
 
+        // 让根视图持有焦点：本页无列表项可获焦，若窗口处于「无焦点视图」
+        // 状态（触屏设备新窗口默认 touch mode），首个方向键会被 Android
+        // 焦点框架用于退出触摸模式而被吞掉，到不了 onAction。
+        // 窗口持有焦点视图后，第一个方向键即可正常派发。XML 已声明
+        // focusable + focusableInTouchMode，这里主动 requestFocus 兜底，
+        // 并 post 一次应对窗口焦点稍后才就绪的情况。
+        val playerRoot = findViewById<View>(R.id.layout_player_root)
+        playerRoot.requestFocus()
+        playerRoot.post { playerRoot.requestFocus() }
+
         // 监听播放状态
         observePlaybackState()
 

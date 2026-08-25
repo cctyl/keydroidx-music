@@ -19,7 +19,9 @@
         android:id="@+id/layout_player_root"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
 
         <!-- ① 上部固定区（* 键可整体隐藏） -->
         <LinearLayout
@@ -109,7 +111,9 @@
                 android:layout_height="match_parent"
                 android:fillViewport="true"
                 android:scrollbars="none"
-                android:overScrollMode="never">
+                android:overScrollMode="never"
+                android:focusable="false"
+                android:focusableInTouchMode="false">
 
                 <LinearLayout
                     android:id="@+id/layout_lyric_list"
@@ -395,7 +399,9 @@
             android:layout_height="match_parent"
             android:fillViewport="true"
             android:scrollbars="none"
-            android:overScrollMode="never">
+            android:overScrollMode="never"
+            android:focusable="false"
+            android:focusableInTouchMode="false">
 
             <LinearLayout
                 android:id="@+id/layout_lyric_full_wrapper"
