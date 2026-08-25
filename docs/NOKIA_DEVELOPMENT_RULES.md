@@ -302,6 +302,37 @@ items.add(new NokiaOptionsDialog.OptionItem(
   ```
 - 计算出正确的 `itemTop` 与 `itemBottom` 后，再与 `scrollView.getScrollY()` 及 `scrollView.getHeight()` 比较执行 `scrollView.smoothScrollTo(0, ...)`。
 
+#### 累加行高必须用 getTop()，禁止用 getHeight() 求和（血泪教训）
+
+**在 `ScrollView -> LinearLayout` 的逐行列表里计算「第 idx 行相对 ScrollView 内容顶部的 top」时，必须直接用 `childView.top`（`getTop()`，布局后真实位置），禁止用 `Σ getChildAt(i).height` 手动累加。**
+
+背景与原因（2026-08 实测 bug：正在播放页非全屏歌词滚动跟不上进度，定位永远在中间、手动滚到底会被下一个进度 tick 拉回中间）：
+
+1. `View.getHeight()` **不含 margin**。歌词行 `TextView` 普遍带 `topMargin` / `bottomMargin`（如各 3dp），用 `Σ getChildAt(i).height` 累加前 idx 行会**逐行漏算 margin**（idx=19 时漏算约 19×6dp ≈ 114px），末尾行算出的 top 比真实位置偏小一大截。
+2. 偏小的 top → `targetCenter = top + height/2` 偏小 → `scrollTarget = targetCenter - svH/2` 偏小 → `smoothScrollTo` 定位在**中间而非末尾**。表现就是「已播到末尾行、歌词还停在中间」。
+3. 因为下一行 `idx` 变化时 `onAction` 会重新 `smoothScrollTo` 到那个偏小的位置，**用户手动滚到底也会被下一个进度 tick 拉回中间**，看起来像「滚动被重置」。
+4. **全屏歌词页用的是 `tv.top`（正确），只有非全屏页用 `accumulateTop()` 求和（错误）**——同一套界面两种实现，错的那个踩坑，是典型的「半边对半边错」。
+
+正确做法：
+
+```kotlin
+sv.post {
+    // 直接取布局后的真实 top（含 marginTop + 容器 paddingTop），
+    // 不要手动累加 getHeight()
+    val targetTop = target.top
+    val targetCenter = targetTop + target.height / 2
+    val maxScroll = (container.height - sv.height).coerceAtLeast(0)
+    val scrollTarget = (targetCenter - sv.height / 2).coerceIn(0, maxScroll)
+    sv.smoothScrollTo(0, scrollTarget)
+}
+```
+
+要点：
+- **用 `view.top`（`getTop()`）**，它已经是 LinearLayout 布局后该子项相对父容器的真实坐标，自带 margin 与容器 padding；手写累加 `getHeight()` 既漏 margin 又易错。
+- **务必 clamp 上界**：`coerceIn(0, containerHeight - svHeight)`，末尾行 center 算出来可能超过 maxScroll，ScrollView 虽会自己 clamp，但显式 clamp 可让日志值与实际一致、便于排查。
+- 在 `sv.post { }` 里取 `view.top`：`post` 在下一轮 measure/layout 后执行，`getTop()` 已有效。
+- 已修复案例：`MusicPlayerActivity.updateLyricHighlight`（删掉 `accumulateTop()`，改用 `target.top` + `coerceIn`）。全屏 `updateFullscreenLyricHighlight` 本就用 `tv.top`，保持不变。
+
 #### 焦点滚动：ScrollView 内焦点移动必须调用 requestFocus()（重要）
 
 **当焦点在 ScrollView 内移动时（如 `onAction(UP/DOWN)` 切换 focusIdx），`applyFocus()` 中必须调用 `layout.requestFocus()`，否则 ScrollView 不会自动滚动到焦点项。**

@@ -1048,30 +1048,23 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             val sv = scrollLyric ?: return
             val target = lyricTextViews[idx]
             sv.post {
-                val targetTop = accumulateTop(idx)
+                // 必须用 target.top（getTop()，含 marginTop/容器 paddingTop，
+                // 是布局后真实位置），不能用累加 getHeight() 的方式——
+                // getHeight() 不含 margin，每行漏算 topMargin+bottomMargin，
+                // 末尾行会偏小，导致滚动定位在中间而非末尾（手动滚到底会被下一行 tick 拉回中间）。
+                val targetTop = target.top
                 val targetCenter = targetTop + target.height / 2
-                val scrollTarget = (targetCenter - sv.height / 2).coerceAtLeast(0)
-                Log.d(TAG, "[lyric-scroll-plain] idx=$idx targetTop=$targetCenter dest=$scrollTarget before=${sv.scrollY} max=${sv.height - (lyricListContainer?.height ?: 0)}")
+                val containerH = lyricListContainer?.height ?: 0
+                val maxScroll = (containerH - sv.height).coerceAtLeast(0)
+                val scrollTarget = (targetCenter - sv.height / 2)
+                    .coerceIn(0, maxScroll)
+                Log.d(TAG, "[lyric-scroll-plain] idx=$idx top=$targetTop center=$targetCenter svH=${sv.height} cH=$containerH dest=$scrollTarget before=${sv.scrollY}")
                 sv.smoothScrollTo(0, scrollTarget)
                 sv.postDelayed({
                     Log.d(TAG, "[lyric-scroll-plain] after idx=$idx scrollY=${scrollLyric?.scrollY}")
                 }, 600)
             }
         }
-    }
-
-    /**
-     * 累加第 [index] 行之前所有兄弟项的高度，计算相对于 ScrollView 内容顶部的 top。
-     */
-    private fun accumulateTop(index: Int): Int {
-        val container = lyricListContainer ?: return 0
-        var top = 0
-        for (i in 0 until index) {
-            if (i < container.childCount) {
-                top += container.getChildAt(i).height
-            }
-        }
-        return top
     }
 
     private fun dp(value: Int): Int {
