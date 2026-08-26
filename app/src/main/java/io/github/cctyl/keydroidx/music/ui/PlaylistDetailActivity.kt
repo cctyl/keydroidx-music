@@ -116,6 +116,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private var allFav = false
     private var isHistory = false
     private var songs: List<SongDisplayItem> = emptyList()
+    /** 当前已渲染列表的歌曲 id 序列，用于刷新后 diff，避免无变化时重绘导致光标跳动 */
+    private var renderedSongIds: List<Long> = emptyList()
 
     // ── 搜索模式（网络分页）──
     /** 非空表示本页为搜索结果页，按关键词分页拉取 */
@@ -302,7 +304,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             finishSetup()
         }
 
-        // ② 后台刷新最新数据（完成后重建列表，但保留光标位置）
+        // ② 后台刷新最新数据（完成后重建列表，但按歌曲 id 锚定光标位置）
         lifecycleScope.launch {
             try {
                 val result = PlaylistApi.getPlaylistDetail(playlistId)
@@ -317,10 +319,19 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         noCopyright = s.noCopyright
                     )
                 }
+                // diff：内容没变化就不重绘，避免用户正在浏览时列表闪烁、光标跳动
+                val newIds = songs.map { it.id }
+                if (newIds == renderedSongIds) {
+                    Log.d(TAG_DETAIL, "playlist $playlistId refresh: unchanged (${newIds.size} songs), skip re-render")
+                    return@launch
+                }
+                val anchorSongId = if (focusIdx > 0) songs.getOrNull(focusIdx - 1)?.id else null
                 PlaylistSongCache.save(
                     this@PlaylistDetailActivity, playlistId,
                     songs.map { PlaylistSongCache.Entry(it.id, it.title, it.artist, it.isVip, it.noCopyright) }
                 )
+                finishSetup(preserveFocus = true, anchorSongId = anchorSongId)
+                return@launch
             } catch (e: Exception) {
                 if (cached.isEmpty()) {
                     // 无缓存且拉取失败才报错；有缓存则静默保留旧数据
@@ -330,13 +341,14 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     Log.w(TAG_DETAIL, "refresh failed, keep cache: ${e.message}")
                 }
             }
-            if (!isDestroyed && !isFinishing && songs.isNotEmpty()) {
-                finishSetup(preserveFocus = true)
+            // 刷新失败且无缓存时才走到这里重建
+            if (!isDestroyed && !isFinishing && songs.isNotEmpty() && renderedSongIds.isEmpty()) {
+                finishSetup()
             }
         }
     }
 
-    private fun finishSetup(preserveFocus: Boolean = false) {
+    private fun finishSetup(preserveFocus: Boolean = false, anchorSongId: Long? = null) {
         // 设置播放全部行副文字
         tvPlayAllSub.text = "共 ${songs.size} 首歌曲"
 
@@ -347,8 +359,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         val views = getFocusableViews()
         focusHelper.setItems(views)
         if (preserveFocus) {
-            val targetIdx = focusHelper.focusIndex.coerceIn(0, (views.size - 1).coerceAtLeast(0))
-            focusHelper.setFocusIndex(targetIdx, true)
+            // 优先按锚定歌曲 id 恢复光标（数据增删后索引可能指错歌）；找不到再退回 clamp 后的原索引
+            val targetIdx = anchorSongId?.let { id ->
+                songs.indexOfFirst { it.id == id }.takeIf { it >= 0 }?.plus(1)
+            } ?: focusHelper.focusIndex
+            focusHelper.setFocusIndex(targetIdx.coerceIn(0, (views.size - 1).coerceAtLeast(0)), true)
         } else {
             focusHelper.setFocusIndex(0, true)
         }
@@ -358,6 +373,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     //  填充歌曲列表（懒加载：每次只渲染一页，焦点到底部时追加）
     // ══════════════════════════════════════════════════════════
     private fun populateSongs() {
+        // 每次重建列表时同步已渲染的 id 序列，供后续刷新 diff 使用
+        renderedSongIds = songs.map { it.id }
         llSongContainer.removeAllViews()
         songItemViews.clear()
         renderedCount = 0
