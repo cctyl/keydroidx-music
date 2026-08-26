@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:focusable="true"
+    android:paddingLeft="8dp"
+    android:paddingRight="8dp"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <!-- 状态小图标 / 序号 -->
+    <TextView
+        android:id="@+id/tv_task_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:textColor="@color/music_accent"
+        android:includeFontPadding="false" />
+
+    <!-- 歌曲名称 + 状态/艺术家 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginLeft="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_task_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_task_sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="@color/music_subtext"
+            android:textSize="10sp"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- 右侧进度/大小/状态标识 -->
+    <TextView
+        android:id="@+id/tv_task_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="6dp"
+        android:textColor="@color/music_subtext"
+        android:textSize="10sp"
+        android:includeFontPadding="false" />
+
+</LinearLayout>

@@ -21,6 +21,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity
+import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.model.SongItem
@@ -130,18 +131,6 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun loadAndPlaySong(song: SongItem) {
-        // 无版权/已下架歌曲直接跳过
-        if (song.noCopyright) {
-            Log.w(TAG, "No copyright song skipped: ${song.name}")
-            skipToNextPlayable()
-            return
-        }
-        // 会员歌直接跳过（fee=1）
-        if ((song.fee ?: 0) == 1) {
-            Log.w(TAG, "VIP song skipped: ${song.name}")
-            skipToNextPlayable()
-            return
-        }
         // 本地歌曲：直接读文件，不走网易云取链与 VIP/版权检查
         song.localPath?.let { path ->
             Log.d(TAG, "Playing local song: ${song.name}, path: $path")
@@ -152,6 +141,35 @@ class PlaybackService : MediaSessionService() {
                 p.play()
             }
             updateNotification()
+            return
+        }
+
+        // 已下载歌曲优先直连本地文件（断网/飞行模式 100% 离线秒播）
+        val downloadedTask = DownloadManager.getDownloadedSong(song.id)
+        if (downloadedTask != null && !downloadedTask.audioPath.isNullOrBlank()) {
+            val audioPath = downloadedTask.audioPath!!
+            Log.d(TAG, "Playing downloaded song: ${song.name}, path: $audioPath")
+            val mediaItem = buildMediaItem(song, audioPath)
+            player?.let { p ->
+                p.setMediaItem(mediaItem)
+                p.prepare()
+                p.play()
+            }
+            updateNotification()
+            LibraryManager.addRecentSong(song)
+            return
+        }
+
+        // 无版权/已下架歌曲直接跳过
+        if (song.noCopyright) {
+            Log.w(TAG, "No copyright song skipped: ${song.name}")
+            skipToNextPlayable()
+            return
+        }
+        // 会员歌直接跳过（fee=1）
+        if ((song.fee ?: 0) == 1) {
+            Log.w(TAG, "VIP song skipped: ${song.name}")
+            skipToNextPlayable()
             return
         }
 
@@ -259,10 +277,11 @@ class PlaybackService : MediaSessionService() {
                 // 如果当前由于没有网络处于暂停状态，且仍然没有网络，且当前歌曲既不是本地歌曲也没有本地缓存
                 val currentSong = PlaybackStateManager.currentSong.value
                 val isLocal = !currentSong?.localPath.isNullOrBlank()
+                val isDownloaded = currentSong != null && DownloadManager.isDownloaded(currentSong.id)
                 val isCached = currentSong != null && AudioCacheManager.isSongCached(this@PlaybackService, currentSong.id)
                 val isNetworkConnected = NetworkUtils.isNetworkAvailable(this@PlaybackService)
 
-                if (!isLocal && !isCached && !isNetworkConnected) {
+                if (!isLocal && !isDownloaded && !isCached && !isNetworkConnected) {
                     showNoNetworkToast()
                     return
                 }
@@ -519,5 +538,18 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_SEEK = "io.github.cctyl.keydroidx.music.ACTION_SEEK"
         const val EXTRA_INDEX = "extra_index"
         const val EXTRA_SEEK_POSITION = "extra_seek_position"
+
+        fun startPlay(context: Context, songs: List<SongItem>, index: Int = 0) {
+            PlaybackStateManager.updatePlaylist(songs, index)
+            val intent = Intent(context, PlaybackService::class.java).apply {
+                action = ACTION_PLAY_INDEX
+                putExtra(EXTRA_INDEX, index)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 }

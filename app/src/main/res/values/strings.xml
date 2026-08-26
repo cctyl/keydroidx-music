@@ -31,6 +31,9 @@
     <!-- ── 我的 Tab ── -->
     <string name="mine_favorites">我喜欢的音乐</string>
     <string name="mine_history">最近播放历史</string>
+    <string name="mine_download">下载管理</string>
+    <string name="mine_download_sub">0 首已下载 · 0 首下载中</string>
+    <string name="mine_download_badge">下载</string>
     <string name="mine_local">本地音乐</string>
     <string name="mine_local_sub">内部存储与 TF 卡</string>
     <string name="mine_local_badge">本地</string>
@@ -70,6 +73,12 @@
     <string name="play_mode_shuffle">随机播放</string>
     <string name="softkey_play_selected">播放选中</string>
     <string name="softkey_back_to_list">返回列表</string>
+    <string name="menu_download_song">下载歌曲</string>
+    <string name="menu_delete_download">删除下载</string>
+    <string name="menu_pause_download">暂停下载</string>
+    <string name="menu_resume_download">继续下载</string>
+    <string name="dialog_delete_download_title">删除已下载歌曲</string>
+    <string name="dialog_delete_download_msg">确定要删除本地歌曲文件及歌词吗？</string>
     <string name="menu_play_song">播放歌曲</string>
     <string name="menu_toggle_fav">收藏 / 取消收藏</string>
     <string name="opt_refresh">刷新</string>

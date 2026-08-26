@@ -23,6 +23,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.download.DownloadManager
+import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
@@ -263,17 +265,19 @@ class MainActivity : NokiaBaseActivity() {
     private fun setupMineTab() {
         val mineRoot = findViewById<View>(R.id.content_mine)
 
-        // 3 个固定入口
+        // 4 个固定入口
         mineUserHeader = mineRoot.findViewById(R.id.layout_user_header)
         mineFixedRoots = listOf(
             mineRoot.findViewById(R.id.item_favorites),
             mineRoot.findViewById(R.id.item_history),
+            mineRoot.findViewById(R.id.item_download),
             mineRoot.findViewById(R.id.item_local)
         )
 
         // 图标
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_favorites), NokiaIcons.ICON_FAVORITE)
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_history), NokiaIcons.ICON_HISTORY)
+        NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_download), NokiaIcons.ICON_DOWNLOAD)
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_local), NokiaIcons.ICON_SD_CARD)
 
         // 副文字 / badge
@@ -283,17 +287,28 @@ class MainActivity : NokiaBaseActivity() {
         mineRoot.findViewById<TextView>(R.id.tv_history_sub).text = "${recentCount} 首播放记录"
         mineRoot.findViewById<TextView>(R.id.badge_history).text = "$recentCount"
 
+        // 监听下载任务更新下载入口副标题
+        lifecycleScope.launch {
+            DownloadManager.tasks.collect { tasks ->
+                val completed = tasks.count { it.status == DownloadStatus.COMPLETED }
+                val downloading = tasks.count { it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.PENDING }
+                mineRoot.findViewById<TextView>(R.id.tv_download_sub)?.text = "${completed} 首已下载 · ${downloading} 首下载中"
+                mineRoot.findViewById<TextView>(R.id.badge_download)?.text = "$completed"
+            }
+        }
+
         // 在固定入口之间插入虚线分割线
         // mineRoot 是 ScrollView，其第一个子 View 是根 LinearLayout
         val mineListRoot = (mineRoot as? android.widget.ScrollView)?.getChildAt(0) as? LinearLayout
         if (mineListRoot != null) {
             val favIdx = mineListRoot.indexOfChild(mineFixedRoots[0])
             val histIdx = mineListRoot.indexOfChild(mineFixedRoots[1])
-            if (favIdx >= 0 && histIdx > favIdx) {
-                mineListRoot.addView(makeDivider(6, 6), favIdx + 1)
-                // 插入第一个分割线后，history 的索引 +1
-                val newHistIdx = mineListRoot.indexOfChild(mineFixedRoots[1])
-                mineListRoot.addView(makeDivider(6, 6), newHistIdx + 1)
+            val dlIdx = mineListRoot.indexOfChild(mineFixedRoots[2])
+            if (favIdx >= 0 && histIdx > favIdx && dlIdx > histIdx) {
+                // 从后往前插入分割线，防止影响前面条目的索引
+                mineListRoot.addView(makeDivider(6, 6), dlIdx + 1)
+                mineListRoot.addView(makeDivider(6, 6), dlIdx)
+                mineListRoot.addView(makeDivider(6, 6), histIdx)
             }
         }
 
@@ -1088,6 +1103,11 @@ class MainActivity : NokiaBaseActivity() {
                 }
             }
             2 -> {
+                // 下载管理
+                val intent = Intent(this, DownloadActivity::class.java)
+                startActivity(intent)
+            }
+            3 -> {
                 // 本地音乐
                 LocalMusicActivity.start(this)
             }

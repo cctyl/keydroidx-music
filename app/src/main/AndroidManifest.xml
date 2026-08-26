@@ -54,6 +54,12 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
+        <!-- 下载管理页 -->
+        <activity
+            android:name="io.github.cctyl.keydroidx.music.ui.DownloadActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true" />
+
         <!-- 网易云 WebView 登录页 -->
         <activity
             android:name="io.github.cctyl.keydroidx.music.ui.WebLoginActivity"
