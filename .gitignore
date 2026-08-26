@@ -30,3 +30,6 @@ app/test.jks
 Thumbs.db
 screen_debug.png
 bug清单（不要读取）.txt
+*.key
+feedback_priv.key
+

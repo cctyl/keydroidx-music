@@ -31,6 +31,7 @@ import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaTheme
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
+import io.github.cctyl.nokia.keycore.ui.NokiaFeedbackActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
@@ -1451,7 +1452,7 @@ class MainActivity : NokiaBaseActivity() {
             )
         }
 
-        // 公共项：Cookie 设置 / 后台播放 / 退出应用（所有 Tab 一致）
+        // 公共项：Cookie 设置 / 后台播放 / 意见反馈 / 关于 / 退出应用（所有 Tab 一致）
         // 注：「正在播放」由右软键直达，不进菜单避免重复
         dialog.addItem(
             2, "网易云 Cookie 设置",
@@ -1462,11 +1463,15 @@ class MainActivity : NokiaBaseActivity() {
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_VOLUME_UP, iconSize, iconColor)
         )
         dialog.addItem(
-            4, getString(R.string.menu_about),
+            4, "意见反馈",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_EDIT, iconSize, iconColor)
+        )
+        dialog.addItem(
+            5, getString(R.string.menu_about),
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
         )
         dialog.addItem(
-            5, "退出应用",
+            6, "退出应用",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
@@ -1499,10 +1504,14 @@ class MainActivity : NokiaBaseActivity() {
                     moveTaskToBack(true)
                 }
                 3 -> {
+                    // 意见反馈
+                    startActivity(Intent(this, NokiaFeedbackActivity::class.java))
+                }
+                4 -> {
                     // 关于
                     startActivity(Intent(this, AboutActivity::class.java))
                 }
-                4 -> {
+                5 -> {
                     // 退出应用：停止播放服务并结束任务
                     Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
                     stopService(Intent(this, PlaybackService::class.java))

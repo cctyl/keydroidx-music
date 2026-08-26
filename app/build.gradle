@@ -3,9 +3,23 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Read KDFB feedback config from local.properties (not in git)
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+def kdfbHost = localProperties.getProperty('KDFB_SERVER_HOST', '127.0.0.1')
+def kdfbPort = localProperties.getProperty('KDFB_SERVER_PORT', '9421')
+def kdfbKey = localProperties.getProperty('KDFB_PRIVATE_KEY', '')
+
 android {
     namespace 'io.github.cctyl.keydroidx.music'
     compileSdk rootProject.ext.COMPILE_SDK
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId "io.github.cctyl.keydroidx.music"
@@ -13,6 +27,10 @@ android {
         targetSdk rootProject.ext.TARGET_SDK
         versionCode 1
         versionName "1.0.0"
+
+        buildConfigField "String", "KDFB_SERVER_HOST", "\"${kdfbHost}\""
+        buildConfigField "int", "KDFB_SERVER_PORT", "${kdfbPort}"
+        buildConfigField "String", "KDFB_PRIVATE_KEY", "\"${kdfbKey}\""
     }
 
     signingConfigs {
