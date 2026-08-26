@@ -32,6 +32,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
 import io.github.cctyl.keydroidx.music.auth.UserProfileCache
+import io.github.cctyl.keydroidx.music.cache.DiscoverCache
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.cache.ToplistCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
@@ -41,6 +42,7 @@ import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.ui.PlaylistDetailActivity
 import io.github.cctyl.keydroidx.music.ui.SongDisplayItem
+import io.github.cctyl.keydroidx.music.util.NetworkUtils
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -150,11 +152,10 @@ class MainActivity : NokiaBaseActivity() {
         applyFocus()
         focusItems.getOrNull(focusIdx)?.post { applyFocus() }
 
-        // 返回应用后若榜单仍空（之前断网加载失败），联网状态下重试一次
-        if (chartBoards.isEmpty() && !chartLoading &&
-            io.github.cctyl.keydroidx.music.util.NetworkUtils.isNetworkAvailable(this)
-        ) {
-            loadChartBoards()
+        // 返回应用后若榜单/发现页仍空（之前断网加载失败），联网状态下重试一次
+        if (!chartLoading && NetworkUtils.isNetworkAvailable(this)) {
+            if (chartBoards.isEmpty()) loadChartBoards()
+            if (discoverPlaylists.isEmpty()) loadDiscoverPlaylists()
         }
     }
 
@@ -395,6 +396,13 @@ class MainActivity : NokiaBaseActivity() {
         )
         discoverListRoots = mutableListOf()
 
+        // ① 缓存优先：离线也能看到上次推荐歌单，避免空白页
+        val cached = DiscoverCache.load(this)
+        if (cached.isNotEmpty()) {
+            discoverPlaylists = cached
+            renderDiscoverPlaylists(cached)
+        }
+        // ② 后台静默拉取最新数据，成功则覆盖缓存与 UI
         loadDiscoverPlaylists()
     }
 
@@ -405,6 +413,7 @@ class MainActivity : NokiaBaseActivity() {
                 if (isDestroyed || isFinishing) return@launch
                 if (playlists.isNotEmpty()) {
                     discoverPlaylists = playlists
+                    DiscoverCache.save(this@MainActivity, playlists)
                     renderDiscoverPlaylists(playlists)
                 }
             } catch (e: Exception) {
@@ -562,8 +571,8 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     /**
-     * 监听网络从断开恢复为可用：若榜单尚未加载成功，自动触发后台刷新。
-     * 解决「离线进应用报错 → 联网后不刷新」的问题。
+     * 监听网络从断开恢复为可用：若榜单 / 发现页推荐歌单尚未加载成功，
+     * 自动触发后台刷新。解决「离线进应用空白/报错 → 联网后不刷新」的问题。
      */
     private fun registerChartNetworkObserver() {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
@@ -573,11 +582,11 @@ class MainActivity : NokiaBaseActivity() {
             .build()
         val cb = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
-                Log.d("MainActivity", "network restored, reload toplist if needed")
+                Log.d("MainActivity", "network restored, reload toplist/discover if needed")
                 runOnUiThread {
-                    if (!isDestroyed && !isFinishing && chartBoards.isEmpty()) {
-                        loadChartBoards()
-                    }
+                    if (isDestroyed || isFinishing) return@runOnUiThread
+                    if (chartBoards.isEmpty()) loadChartBoards()
+                    if (discoverPlaylists.isEmpty()) loadDiscoverPlaylists()
                 }
             }
         }
