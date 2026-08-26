@@ -407,6 +407,11 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     private fun loadDiscoverPlaylists() {
+        // 无网时不白费请求，保留缓存视图，等网络恢复回调自动重试
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Log.d("MainActivity", "offline, skip discover load")
+            return
+        }
         lifecycleScope.launch {
             try {
                 val playlists = PlaylistApi.getRecommendPlaylists()
@@ -543,6 +548,11 @@ class MainActivity : NokiaBaseActivity() {
     /** 拉取云音乐官方真实榜单数据（无需登录），失败时保留占位提示或缓存视图 */
     private fun loadChartBoards() {
         if (chartLoading) return
+        // 无网时不白费请求，保留缓存视图，等网络恢复回调自动重试
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Log.d("MainActivity", "offline, skip toplist load")
+            return
+        }
         chartLoading = true
         lifecycleScope.launch {
             try {
@@ -1081,6 +1091,10 @@ class MainActivity : NokiaBaseActivity() {
      * PlaybackService 自动续批（isPersonalFm 标记）。需要登录。
      */
     private fun openPersonalFm() {
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Toast.makeText(this, "当前无网络，请联网后再试", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (RetrofitClient.getCookie().isNullOrEmpty()) {
             Toast.makeText(this, "私人 FM 需要先登录网易云账号", Toast.LENGTH_SHORT).show()
             return
@@ -1117,6 +1131,10 @@ class MainActivity : NokiaBaseActivity() {
      * 需要登录（Cookie），未登录或拉取失败给出提示。
      */
     private fun openDailyRecommend() {
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            Toast.makeText(this, "当前无网络，请联网后再试", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (RetrofitClient.getCookie().isNullOrEmpty()) {
             Toast.makeText(this, "每日推荐需要先登录网易云账号", Toast.LENGTH_SHORT).show()
             return
