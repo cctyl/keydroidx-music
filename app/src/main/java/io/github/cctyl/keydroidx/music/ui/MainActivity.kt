@@ -1,5 +1,6 @@
 package io.github.cctyl.keydroidx.music.ui
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -8,6 +9,9 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -29,6 +33,7 @@ import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
 import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
+import io.github.cctyl.keydroidx.music.cache.ToplistCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.ToplistBoard
@@ -95,6 +100,10 @@ class MainActivity : NokiaBaseActivity() {
     // ── 榜单 Tab ──
     private lateinit var chartItemRoots: MutableList<LinearLayout>
     private var chartBoards: List<ToplistBoard> = emptyList()
+    /** 榜单后台加载中标记，防止网络回调/onResume 重复触发 */
+    private var chartLoading = false
+    /** 监听网络恢复后自动刷新榜单（离线→联网的场景） */
+    private var chartNetworkCallback: ConnectivityManager.NetworkCallback? = null
 
     // ── 搜索 Tab ──
     private lateinit var searchFieldRoot: LinearLayout
@@ -140,6 +149,18 @@ class MainActivity : NokiaBaseActivity() {
         // 详见 NOKIA_DEVELOPMENT_RULES.md「进入界面后首个方向键被吞规范」。
         applyFocus()
         focusItems.getOrNull(focusIdx)?.post { applyFocus() }
+
+        // 返回应用后若榜单仍空（之前断网加载失败），联网状态下重试一次
+        if (chartBoards.isEmpty() && !chartLoading &&
+            io.github.cctyl.keydroidx.music.util.NetworkUtils.isNetworkAvailable(this)
+        ) {
+            loadChartBoards()
+        }
+    }
+
+    override fun onDestroy() {
+        unregisterChartNetworkObserver()
+        super.onDestroy()
     }
 
     override fun onInitViews() {
@@ -477,11 +498,20 @@ class MainActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     private fun setupChartTab() {
         val chartRoot = findViewById<View>(R.id.content_chart)
-
-        // 先渲染占位提示，随后异步拉取真实榜单数据
         chartItemRoots = mutableListOf()
-        renderChartPlaceholder(chartRoot.findViewById(R.id.ll_chart_list), "正在加载排行榜…")
+
+        // ① 缓存优先：离线也能看到上次榜单，避免直接抛「加载失败」
+        val cached = ToplistCache.load(this)
+        if (cached.isNotEmpty()) {
+            chartBoards = cached
+            renderChartBoards(cached)
+        } else {
+            renderChartPlaceholder(chartRoot.findViewById(R.id.ll_chart_list), "正在加载排行榜…")
+        }
+        // ② 后台静默拉取最新榜单，成功则覆盖缓存与 UI
         loadChartBoards()
+        // ③ 注册网络恢复监听，断网恢复后自动刷新
+        registerChartNetworkObserver()
     }
 
     /** 榜单加载中/失败占位条目 */
@@ -501,25 +531,73 @@ class MainActivity : NokiaBaseActivity() {
         NokiaFontManager.applyToViewTree(container)
     }
 
-    /** 拉取云音乐官方真实榜单数据（无需登录），失败时保留占位提示 */
+    /** 拉取云音乐官方真实榜单数据（无需登录），失败时保留占位提示或缓存视图 */
     private fun loadChartBoards() {
+        if (chartLoading) return
+        chartLoading = true
         lifecycleScope.launch {
             try {
                 val boards = PlaylistApi.getToplists().take(8)
                 Log.d("MainActivity", "toplist loaded: ${boards.size} boards")
                 if (isDestroyed || isFinishing) return@launch
                 if (boards.isEmpty()) {
-                    Log.w("MainActivity", "toplist empty, keep placeholder")
+                    Log.w("MainActivity", "toplist empty, keep current view")
                     return@launch
                 }
                 chartBoards = boards
+                ToplistCache.save(this@MainActivity, boards)
                 renderChartBoards(boards)
             } catch (e: Exception) {
                 Log.e("MainActivity", "loadChartBoards failed", e)
                 if (isDestroyed || isFinishing) return@launch
                 val container = findViewById<LinearLayout?>(R.id.ll_chart_list) ?: return@launch
-                renderChartPlaceholder(container, "榜单加载失败：${e.message}")
+                // 已有缓存（已渲染）时保留缓存视图，不把断网误报成加载失败
+                if (chartBoards.isEmpty()) {
+                    renderChartPlaceholder(container, "榜单加载失败：${e.message}")
+                }
+            } finally {
+                chartLoading = false
             }
+        }
+    }
+
+    /**
+     * 监听网络从断开恢复为可用：若榜单尚未加载成功，自动触发后台刷新。
+     * 解决「离线进应用报错 → 联网后不刷新」的问题。
+     */
+    private fun registerChartNetworkObserver() {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        if (chartNetworkCallback != null) return
+        val req = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        val cb = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                Log.d("MainActivity", "network restored, reload toplist if needed")
+                runOnUiThread {
+                    if (!isDestroyed && !isFinishing && chartBoards.isEmpty()) {
+                        loadChartBoards()
+                    }
+                }
+            }
+        }
+        try {
+            cm.registerNetworkCallback(req, cb)
+            chartNetworkCallback = cb
+        } catch (e: Exception) {
+            Log.w("MainActivity", "registerNetworkCallback failed: ${e.message}")
+        }
+    }
+
+    private fun unregisterChartNetworkObserver() {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        chartNetworkCallback?.let {
+            try {
+                cm.unregisterNetworkCallback(it)
+            } catch (e: Exception) {
+                Log.w("MainActivity", "unregisterNetworkCallback failed: ${e.message}")
+            }
+            chartNetworkCallback = null
         }
     }
 
