@@ -66,14 +66,16 @@ object AudioCacheManager {
      * 创建基于缓存的 CacheDataSource.Factory
      */
     fun createCacheDataSourceFactory(context: Context): DataSource.Factory {
-        val upstreamFactory = DefaultHttpDataSource.Factory()
+        val httpFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(15000)
 
+        val defaultDataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
+
         return CacheDataSource.Factory()
             .setCache(getCache(context))
-            .setUpstreamDataSourceFactory(upstreamFactory)
+            .setUpstreamDataSourceFactory(defaultDataSourceFactory)
             .setCacheKeyFactory { dataSpec ->
                 dataSpec.customData?.toString() ?: dataSpec.key ?: dataSpec.uri.toString()
             }

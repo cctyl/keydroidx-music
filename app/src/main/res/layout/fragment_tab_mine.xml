@@ -228,7 +228,71 @@
                 android:includeFontPadding="false" />
         </LinearLayout>
 
-        <!-- ── 入口 3: 本地音乐扫描 ── -->
+        <!-- ── 入口 3: 下载管理 ── -->
+        <LinearLayout
+            android:id="@+id/item_download"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:focusable="true"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/icon_download"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:gravity="center"
+                android:textSize="16sp"
+                android:textColor="@color/music_accent"
+                android:includeFontPadding="false" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mine_download"
+                    android:textColor="@color/music_item_normal_text"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:id="@+id/tv_download_sub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mine_download_sub"
+                    android:textColor="@color/music_subtext"
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/badge_download"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:paddingRight="4dp"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
+                android:text="@string/mine_download_badge"
+                android:textColor="#FFFFFF"
+                android:textSize="9sp"
+                android:background="@drawable/bg_badge"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- ── 入口 4: 本地音乐扫描 ── -->
         <LinearLayout
             android:id="@+id/item_local"
             android:layout_width="match_parent"

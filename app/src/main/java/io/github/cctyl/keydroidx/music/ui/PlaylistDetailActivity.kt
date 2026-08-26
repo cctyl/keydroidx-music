@@ -12,6 +12,8 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
+import io.github.cctyl.keydroidx.music.download.DownloadManager
+import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
@@ -646,6 +648,45 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         finishSetup(preserveFocus = true)
                         Toast.makeText(this, getString(R.string.toast_history_removed), Toast.LENGTH_SHORT).show()
                     }
+
+                    // 下载 / 删除下载
+                    val dlTask = DownloadManager.getTask(targetSong.id)
+                    if (dlTask == null || dlTask.status == DownloadStatus.FAILED) {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DOWNLOAD, iconSize, iconColor))
+                        actions.add {
+                            val songItem = SongItem(
+                                id = targetSong.id,
+                                name = targetSong.title,
+                                artists = listOfNotNull(targetSong.artist.takeIf { it.isNotBlank() }?.let { ArtistItem(name = it) }),
+                                album = AlbumItem(name = null, picUrl = null),
+                                duration = null,
+                                fee = if (targetSong.isVip) 1 else 0,
+                                noCopyright = targetSong.noCopyright
+                            )
+                            DownloadManager.enqueueDownload(songItem)
+                            Toast.makeText(this, "已加入下载队列", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (dlTask.status == DownloadStatus.COMPLETED) {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                        actions.add {
+                            val confirm = NokiaConfirmDialog(
+                                this,
+                                getString(R.string.dialog_delete_download_title),
+                                getString(R.string.dialog_delete_download_msg)
+                            )
+                            confirm.setPositiveButton("删除") {
+                                DownloadManager.deleteDownload(targetSong.id)
+                                Toast.makeText(this, "已删除下载", Toast.LENGTH_SHORT).show()
+                            }
+                            confirm.show()
+                        }
+                    } else {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+                        actions.add {
+                            DownloadManager.pauseDownload(targetSong.id)
+                            Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             }
         } else {
@@ -655,6 +696,45 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     val targetSong = songs[songIdx]
                     dialog.addItem(1, getString(R.string.menu_play_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PLAY, iconSize, iconColor))
                     actions.add { playSong(targetSong) }
+
+                    // 下载 / 删除下载
+                    val dlTask = DownloadManager.getTask(targetSong.id)
+                    if (dlTask == null || dlTask.status == DownloadStatus.FAILED) {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DOWNLOAD, iconSize, iconColor))
+                        actions.add {
+                            val songItem = SongItem(
+                                id = targetSong.id,
+                                name = targetSong.title,
+                                artists = listOfNotNull(targetSong.artist.takeIf { it.isNotBlank() }?.let { ArtistItem(name = it) }),
+                                album = AlbumItem(name = null, picUrl = null),
+                                duration = null,
+                                fee = if (targetSong.isVip) 1 else 0,
+                                noCopyright = targetSong.noCopyright
+                            )
+                            DownloadManager.enqueueDownload(songItem)
+                            Toast.makeText(this, "已加入下载队列", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (dlTask.status == DownloadStatus.COMPLETED) {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                        actions.add {
+                            val confirm = NokiaConfirmDialog(
+                                this,
+                                getString(R.string.dialog_delete_download_title),
+                                getString(R.string.dialog_delete_download_msg)
+                            )
+                            confirm.setPositiveButton("删除") {
+                                DownloadManager.deleteDownload(targetSong.id)
+                                Toast.makeText(this, "已删除下载", Toast.LENGTH_SHORT).show()
+                            }
+                            confirm.show()
+                        }
+                    } else {
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+                        actions.add {
+                            DownloadManager.pauseDownload(targetSong.id)
+                            Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             }
         }

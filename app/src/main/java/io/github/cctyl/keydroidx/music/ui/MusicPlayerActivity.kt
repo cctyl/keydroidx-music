@@ -21,6 +21,7 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.library.LibraryManager
+import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.lyric.LrcLine
 import io.github.cctyl.keydroidx.music.lyric.LrcParser
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
@@ -861,10 +862,31 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     /**
      * 异步拉取 LRC 文本并解析为 LrcLine 列表，然后填充到歌词区。
+     * 优先读取本地已下载的歌词文件；若无本地歌词则联网请求。
      */
     private fun loadLyrics(songId: Long) {
         lifecycleScope.launch {
             try {
+                // 1. 优先读取已下载的本地歌词
+                val downloaded = DownloadManager.getDownloadedSong(songId)
+                if (downloaded != null && !downloaded.lyricPath.isNullOrBlank()) {
+                    val lrcFile = java.io.File(downloaded.lyricPath!!)
+                    if (lrcFile.exists()) {
+                        val raw = withContext(Dispatchers.IO) {
+                            lrcFile.readText(Charsets.UTF_8)
+                        }
+                        if (!raw.isNullOrBlank()) {
+                            lrcLines = LrcParser.parse(raw)
+                            currentLyricIndex = -1
+                            populateLyricLines()
+                            populateFullscreenLyrics()
+                            Log.d(TAG, "Loaded ${lrcLines.size} downloaded lyric lines for song $songId")
+                            return@launch
+                        }
+                    }
+                }
+
+                // 2. 本地无歌词时联网拉取
                 val resp = withContext(Dispatchers.IO) {
                     RetrofitClient.api.getLyric(id = songId)
                 }
@@ -1023,6 +1045,11 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     companion object {
         private const val TAG = "MusicPlayerActivity"
+
+        fun start(context: Context) {
+            val intent = Intent(context, MusicPlayerActivity::class.java)
+            context.startActivity(intent)
+        }
 
         // === 演示模式：硬编码真实 LRC + 模拟进度，方便 UI 验收 ===
         private const val DEMO_MODE = false

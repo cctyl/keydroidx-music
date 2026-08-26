@@ -15,7 +15,9 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import android.os.Environment
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
@@ -25,6 +27,7 @@ import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
+import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
 import kotlinx.coroutines.Dispatchers
@@ -134,7 +137,20 @@ class LocalMusicActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(findViewById(R.id.icon_scan), NokiaIcons.ICON_REFRESH)
         NokiaIcons.setIcon(findViewById(R.id.icon_pick_folder), NokiaIcons.ICON_FOLDER)
         pickedFolder = loadPickedFolder()
-        localSongs = loadScannedSongs()
+        val loaded = loadScannedSongs()
+        val downloaded = DownloadManager.getDownloadedLocalSongs().map {
+            LocalSong(
+                rowId = -it.id,
+                title = it.name,
+                artist = it.artistName,
+                path = it.localPath ?: "",
+                durationMs = it.duration ?: 0L
+            )
+        }
+        localSongs = mergeSongs(downloaded, loaded)
+        if (downloaded.isNotEmpty()) {
+            saveScannedSongs()
+        }
         updatePickFolderSub()
         if (localSongs.isNotEmpty()) {
             tvScanSub.text = "共 ${localSongs.size} 首歌曲 · 点击可继续扫描"
@@ -416,7 +432,8 @@ class LocalMusicActivity : NokiaBaseActivity() {
      * 递归收集音频扩展名文件，最多扫 500 个防止极端情况卡死。
      */
     private fun scanFilesystem(): List<LocalSong> {
-        val roots = listOf(
+        val roots = listOfNotNull(
+            getExternalFilesDir(Environment.DIRECTORY_MUSIC),
             android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MUSIC),
             android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
             java.io.File(android.os.Environment.getExternalStorageDirectory(), "netease/cloudmusic/Music")
@@ -633,6 +650,39 @@ class LocalMusicActivity : NokiaBaseActivity() {
 
         dialog.addItem(2, getString(R.string.local_pick_folder), NokiaIcons.createDrawable(this, NokiaIcons.ICON_FOLDER, iconSize, iconColor))
         actions.add { showFolderPicker() }
+
+        if (focusHelper.focusIndex >= 2) {
+            val songIdx = focusHelper.focusIndex - 2
+            if (songIdx in localSongs.indices) {
+                val song = localSongs[songIdx]
+                dialog.addItem(actions.size + 1, "删除歌曲文件", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                actions.add {
+                    val confirm = NokiaConfirmDialog(this, "删除本地歌曲", "确定要删除「${song.title}」及其本地文件吗？")
+                    confirm.setPositiveButton("删除") {
+                        val file = File(song.path)
+                        if (file.exists()) {
+                            file.delete()
+                        }
+                        // 同步删除同名 lrc 歌词
+                        val lrcFile = File(file.parentFile, "${file.nameWithoutExtension}.lrc")
+                        if (lrcFile.exists()) {
+                            lrcFile.delete()
+                        }
+                        // 如果是下载任务库中的，一并从下载管理中清理
+                        DownloadManager.deleteDownloadByPath(song.path)
+
+                        val updated = localSongs.toMutableList()
+                        updated.removeAt(songIdx)
+                        localSongs = updated
+                        saveScannedSongs()
+                        renderSongs()
+                        focusHelper.setFocusIndex(focusHelper.focusIndex.coerceAtMost(getFocusableViews().size - 1), true)
+                        Toast.makeText(this, "已删除本地文件", Toast.LENGTH_SHORT).show()
+                    }
+                    confirm.show()
+                }
+            }
+        }
 
         if (localSongs.isNotEmpty()) {
             dialog.addItem(actions.size + 1, "清空列表", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
