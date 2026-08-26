@@ -991,6 +991,10 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         val normal = MusicTheme.current(applicationContext).subtext
         val customTf = NokiaFontManager.getTypeface(this)
 
+        // 推送当前歌词行到 PlaybackStateManager（供 Provider/Widget 读取）
+        val currentLineText = if (idx in lrcLines.indices) lrcLines[idx].text else null
+        PlaybackStateManager.updateCurrentLyricLine(currentLineText)
+
         lyricTextViews.forEachIndexed { i, tv ->
             if (i == idx) {
                 tv.setTextColor(accent)

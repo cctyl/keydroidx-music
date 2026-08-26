@@ -36,11 +36,11 @@
             </intent-filter>
         </activity>
 
-        <!-- ���������� -->
+        <!-- 正在播放详情页：exported=true 供 Launcher 组件通过显式 Intent 启动 -->
         <activity
             android:name="io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 歌单详情页 -->
         <activity
@@ -87,6 +87,24 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+
+        <!-- 播放状态 ContentProvider（供 Launcher 组件、系统 AppWidget 读取当前播放态） -->
+        <provider
+            android:name="io.github.cctyl.keydroidx.music.provider.PlaybackProvider"
+            android:authorities="io.github.cctyl.keydroidx.music.playback"
+            android:exported="true" />
+
+        <!-- 音乐播放系统小组件 -->
+        <receiver
+            android:name="io.github.cctyl.keydroidx.music.widget.MusicAppWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/music_app_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

@@ -23,13 +23,17 @@ import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity
 import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.library.LibraryManager
+import io.github.cctyl.keydroidx.music.lyric.LrcLine
+import io.github.cctyl.keydroidx.music.lyric.LrcParser
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
+import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import io.github.cctyl.keydroidx.music.util.NetworkUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlaybackService : MediaSessionService() {
 
@@ -38,12 +42,18 @@ class PlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private val handler = Handler(Looper.getMainLooper())
 
+    /** 当前歌曲已加载的歌词行（后台歌词跟踪用） */
+    private var loadedLyrics: List<LrcLine> = emptyList()
+    private var lyricsSongId: Long = -1L
+
     private val progressRunnable = object : Runnable {
         override fun run() {
             player?.let { p ->
                 val pos = p.currentPosition
                 val dur = if (p.duration > 0) p.duration else 0L
                 PlaybackStateManager.updateProgress(pos, dur)
+                // 后台歌词跟踪：计算当前歌词行并推送
+                updateCurrentLyricLine(pos)
             }
             handler.postDelayed(this, 500)
         }
@@ -127,6 +137,8 @@ class PlaybackService : MediaSessionService() {
 
         PlaybackStateManager.updatePlaylist(playlist, index)
         val song = playlist[index]
+        // 后台歌词跟踪：切歌时预加载歌词
+        loadLyrics(song.id)
         loadAndPlaySong(song)
     }
 
@@ -392,6 +404,62 @@ class PlaybackService : MediaSessionService() {
             } finally {
                 fetchingFm = false
             }
+        }
+    }
+
+    /**
+     * 后台歌词跟踪：加载指定歌曲的 LRC 歌词（优先本地下载，否则联网）。
+     * 供组件/Widget 在后台播放时展示当前歌词行。
+     */
+    private fun loadLyrics(songId: Long) {
+        if (songId == lyricsSongId && loadedLyrics.isNotEmpty()) return
+        lyricsSongId = songId
+        loadedLyrics = emptyList()
+        PlaybackStateManager.updateCurrentLyricLine(null)
+
+        serviceScope.launch {
+            try {
+                // 1. 优先读取已下载的本地歌词
+                val downloaded = DownloadManager.getDownloadedSong(songId)
+                if (downloaded != null && !downloaded.lyricPath.isNullOrBlank()) {
+                    val lrcFile = java.io.File(downloaded.lyricPath!!)
+                    if (lrcFile.exists()) {
+                        val raw = withContext(Dispatchers.IO) { lrcFile.readText(Charsets.UTF_8) }
+                        if (!raw.isNullOrBlank()) {
+                            loadedLyrics = LrcParser.parse(raw)
+                            Log.d(TAG, "Loaded ${loadedLyrics.size} downloaded lyric lines for song $songId")
+                            return@launch
+                        }
+                    }
+                }
+
+                // 2. 本地无歌词时联网拉取
+                val resp = withContext(Dispatchers.IO) { RetrofitClient.api.getLyric(id = songId) }
+                val raw = resp.lrc?.lyric
+                if (!raw.isNullOrEmpty()) {
+                    loadedLyrics = LrcParser.parse(raw)
+                    Log.d(TAG, "Loaded ${loadedLyrics.size} lyric lines for song $songId")
+                } else {
+                    Log.d(TAG, "No lyric for song $songId")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load lyrics for song $songId: ${e.message}", e)
+            }
+        }
+    }
+
+    /** 根据播放进度计算当前歌词行并推送到 PlaybackStateManager（供 Provider/Widget 读取）。 */
+    private fun updateCurrentLyricLine(posMs: Long) {
+        if (loadedLyrics.isEmpty()) return
+        var idx = -1
+        for (i in loadedLyrics.indices) {
+            if (loadedLyrics[i].timeMs <= posMs) idx = i else break
+        }
+        if (idx !in loadedLyrics.indices) return
+        val line = loadedLyrics[idx].text
+        // 仅当歌词行变化时推送（避免高频广播）
+        if (line != PlaybackStateManager.getCurrentLyricLineSync()) {
+            PlaybackStateManager.updateCurrentLyricLine(line)
         }
     }
 
