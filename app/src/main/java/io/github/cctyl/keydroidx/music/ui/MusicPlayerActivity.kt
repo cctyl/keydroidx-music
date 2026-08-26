@@ -741,7 +741,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 bottomMargin = dp(5)
             }
             gravity = Gravity.CENTER
-            textSize = 13f
+            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
             setTextColor(Color.parseColor("#E0FFFFFF"))
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
@@ -804,28 +804,28 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     tv.background = cyanBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    tv.textSize = 14f
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
                 }
                 // 2. 用户方向键选中的光标行（但不是当前播放行）
                 isCursor && !isPlaying -> {
                     tv.background = focusBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    tv.textSize = 14f
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
                 }
                 // 3. 当前播放行（但用户光标移到了其他行）
                 !isCursor && isPlaying -> {
                     tv.background = cyanBg
                     tv.setTextColor(cyan)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    tv.textSize = 14f
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
                 }
                 // 4. 普通歌词行
                 else -> {
                     tv.background = null
                     tv.setTextColor(normal)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    tv.textSize = 13f
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
             }
         }
@@ -941,7 +941,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 bottomMargin = dp(3)
             }
             gravity = Gravity.CENTER
-            textSize = 11f          // sp
+            // 设计字号 11sp，实际大小 = 设计值 × 桌面缩放基准
+            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
             setTextColor(MusicTheme.current(applicationContext).subtext)
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
@@ -966,18 +967,17 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         val accent = MusicTheme.BRAND_ACCENT
         val normal = MusicTheme.current(applicationContext).subtext
-        val fontScale = NokiaFontManager.getFontScale()
         val customTf = NokiaFontManager.getTypeface(this)
 
         lyricTextViews.forEachIndexed { i, tv ->
             if (i == idx) {
                 tv.setTextColor(accent)
                 tv.setTypeface(customTf, android.graphics.Typeface.BOLD)
-                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13f * fontScale)
+                NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
             } else {
                 tv.setTextColor(normal)
                 tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
-                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11f * fontScale)
+                NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
             }
         }
 

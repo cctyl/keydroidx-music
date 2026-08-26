@@ -14,6 +14,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
 import io.github.cctyl.keydroidx.music.auth.CookieManager
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 
 /**
@@ -104,7 +105,7 @@ class WebLoginActivity : Activity() {
         val closeBtn = TextView(this).apply {
             text = "✕"
             setTextColor(0xFFFFFFFF.toInt())
-            textSize = 18f
+            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 18f)
             setPadding(28, 18, 28, 18)
             setBackgroundColor(0x88000000.toInt())
             setOnClickListener { finish() }
