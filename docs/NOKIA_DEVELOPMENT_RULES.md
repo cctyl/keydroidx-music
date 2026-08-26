@@ -600,3 +600,29 @@ public void fixMidContentHeight(final View content, final boolean topAlign) {
 
 **禁止** 将 `category.HOME`、`category.DEFAULT` 与 `category.LAUNCHER` 混合在同一个 `<intent-filter>` 标签内。混合声明会导致部分 Android 系统（特别是 Android 10+ 的 RoleManager / PreferredActivity 解析策略）产生匹配歧义，导致系统无法持久化保存默认桌面设置，从而在按 Home / 挂机键时反复弹出“选择主屏幕应用”。
 
+
+### 14. 字体缩放（fontScale）生效链路与排查规范（重要）
+
+桌面端配置的字体大小（`font_scale`）通过以下链路同步到本应用，所有页面文字（含底部软键栏、标题栏）均应自动跟随：
+
+```
+桌面 Provider (content://{authority}/settings → font_scale)
+  → NokiaClient 同步（loadLocalPrefs / tryQueryProvider）
+    → NokiaFontManager.setFontScale(scale)
+      → NokiaBaseActivity.onFontChanged() 对整个 DecorView 递归应用
+        → 实际字号 = 设计字号(designPx) × fontScale
+```
+
+开发约束：
+
+- **动态创建的 TextView 必须使用 `NokiaFontManager.setTextSize(tv, unit, size)`** 设置字号，禁止直接调用 `tv.setTextSize(...)`。
+  - 直接设置后若该 View 在 `applyToViewTree` 首次扫描时被记录为"设计值"，后续重复应用会导致字号漂移（越变越大或漏缩放）；
+  - `NokiaFontManager.setTextSize` 会以未缩放设计值打 tag 记录，保证可重复应用不漂移。
+- **Dialog 是独立窗口**，不在 Activity 的 DecorView 树内。自定义弹窗必须在 `show()` 时手动调用 `NokiaFontManager.applyToViewTree(getWindow().getDecorView())`（SDK 内置的 `NokiaOptionsDialog` / `NokiaConfirmDialog` 已处理）。
+- **MaterialIcons 字体自动豁免**：`NokiaFontManager.applyTypefaceRecursively` 会跳过使用 MaterialIcons 的 TextView（图标不随字体/缩放变形），业务侧无需特殊处理。
+
+排查口诀（发现"某处文字不跟随桌面缩放"时按序检查）：
+
+1. 该 TextView 是否在 `onFontChanged` 之后才动态创建，且创建时没用 `NokiaFontManager.setTextSize()`；
+2. 是否位于 Dialog 独立窗口内且漏调 `applyToViewTree(decorView)`；
+3. 通过 `adb shell content query --uri content://{authority}/settings` 或 logcat 过滤 `NokiaClient` 确认 `font_scale` 是否已成功从桌面同步。
