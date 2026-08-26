@@ -97,6 +97,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
     override fun onInitViews() {
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        // XML 静态经典蓝配色 → 当前主题色
+        findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
 
         // ── 查找 View ───────────────────────────────────────
         vinylDisk = findViewById(R.id.vinyl_disk)
@@ -785,10 +787,10 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         // 否则它会被冻结在第一次的 playing 值上，导致滚动目标永远停在某行（表现为歌词界面一直停在顶部）。
 
         val cyanBg = resources.getDrawable(R.drawable.bg_lyric_current)
-        val focusBg = resources.getDrawable(R.drawable.bg_focused_item)
+        val focusBg = MusicTheme.createFocusDrawable(this, 4f)
         val white = Color.parseColor("#FFFFFF")
-        val cyan = Color.parseColor("#38BDF8")
-        val normal = Color.parseColor("#B0B0B0")
+        val cyan = MusicTheme.BRAND_ACCENT
+        val normal = MusicTheme.current(applicationContext).subtext
 
         val cursor = if (focusLyricIndex in lyricFullTextViews.indices) focusLyricIndex else playing
 
@@ -917,7 +919,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         for (line in lrcLines) {
             val tv = buildLyricTextView().apply {
                 text = line.text
-                setTextColor(Color.parseColor("#B0B0B0"))
+                setTextColor(MusicTheme.current(applicationContext).subtext)
             }
             container.addView(tv)
             lyricTextViews.add(tv)
@@ -940,7 +942,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             }
             gravity = Gravity.CENTER
             textSize = 11f          // sp
-            setTextColor(Color.parseColor("#B0B0B0"))
+            setTextColor(MusicTheme.current(applicationContext).subtext)
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
             setSingleLine(false)
@@ -962,8 +964,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         if (idx == currentLyricIndex) return   // 未变化则不重绘
         currentLyricIndex = idx
 
-        val accent = Color.parseColor("#38BDF8")
-        val normal = Color.parseColor("#B0B0B0")
+        val accent = MusicTheme.BRAND_ACCENT
+        val normal = MusicTheme.current(applicationContext).subtext
         val fontScale = NokiaFontManager.getFontScale()
         val customTf = NokiaFontManager.getTypeface(this)
 

@@ -85,12 +85,12 @@ class LocalMusicActivity : NokiaBaseActivity() {
     val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else 0
     private var renderedCount = 0
 
-    // ── 颜色缓存 ──
-    private val colorSubtext by lazy { Color.parseColor("#B0B0B0") }
-    private val colorSubtextFocused by lazy { Color.parseColor("#E0F2FE") }
-    private val colorAccent by lazy { Color.parseColor("#38BDF8") }
-    private val colorWhite by lazy { Color.WHITE }
-    private val colorDivider by lazy { Color.parseColor("#2D426B") }
+    // ── 颜色（跟随当前主题，取值见 MusicTheme / HTML 原型）──
+    private val colorSubtext get() = MusicTheme.current(this).subtext
+    private val colorSubtextFocused get() = MusicTheme.SUBTEXT_FOCUSED
+    private val colorAccent get() = MusicTheme.BRAND_ACCENT
+    private val colorWhite get() = Color.WHITE
+    private val colorDivider get() = MusicTheme.current(this).dashed
 
     // ══════════════════════════════════════════════════════════
     //  NokiaBaseActivity 回调
@@ -102,6 +102,8 @@ class LocalMusicActivity : NokiaBaseActivity() {
         setTitleIcon(NokiaIcons.ICON_SD_CARD)
         setStatusBarVisible(true)
         setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
+        // XML 静态经典蓝配色 → 当前主题色
+        findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
         setBatteryPercent("70%")
         setSoftKeys(
             getString(R.string.softkey_options),
@@ -505,7 +507,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         getFocusableViews().forEachIndexed { i, view ->
             if (view is LinearLayout) {
                 if (i == focusIdx) {
-                    view.setBackgroundResource(R.drawable.bg_focused_item)
+                    view.background = MusicTheme.createFocusDrawable(this, 4f)
                     setChildTextColors(view, true)
                     // 规范要求（NOKIA_DEVELOPMENT_RULES.md）：焦点移动必须 requestFocus()
                     view.requestFocus()

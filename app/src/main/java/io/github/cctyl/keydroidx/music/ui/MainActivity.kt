@@ -27,6 +27,7 @@ import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
+import io.github.cctyl.nokia.keycore.ui.NokiaTheme
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
@@ -115,20 +116,18 @@ class MainActivity : NokiaBaseActivity() {
     private var focusItems: List<LinearLayout> = emptyList()
     private var focusIdx = 0
 
-    // ── 颜色缓存 ──
-    private val colorAccent by lazy { Color.parseColor("#38BDF8") }
-    private val colorSubtext by lazy { Color.parseColor("#B0B0B0") }
-    private val colorWhite by lazy { Color.WHITE }
-    private val colorSubtextFocused by lazy { Color.parseColor("#E0F2FE") }
-    private val colorFocusBg by lazy { Color.parseColor("#0055AA") }
-    private val activeTabGradient by lazy {
-        GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(Color.TRANSPARENT, Color.parseColor("#660055AA"))
-        )
-    }
-    private val colorDivider by lazy { Color.parseColor("#2D426B") }
-    private val colorSectionBg by lazy { Color.parseColor("#4D000000") }
+    // ── 颜色（跟随桌面同步的当前主题，取值见 MusicTheme / HTML 原型）──
+    private val colorAccent get() = MusicTheme.BRAND_ACCENT
+    private val colorSubtext get() = MusicTheme.current(this).subtext
+    private val colorWhite get() = Color.WHITE
+    private val colorSubtextFocused get() = MusicTheme.SUBTEXT_FOCUSED
+    private val colorFocusBg get() = MusicTheme.current(this).focus
+    private val activeTabGradient get() = GradientDrawable(
+        GradientDrawable.Orientation.TOP_BOTTOM,
+        intArrayOf(Color.TRANSPARENT, (MusicTheme.current(this).focus and 0x00FFFFFF) or 0x66000000)
+    )
+    private val colorDivider get() = MusicTheme.current(this).dashed
+    private val colorSectionBg get() = MusicTheme.current(this).cardBg
 
     // ══════════════════════════════════════════════════════════
     //  NokiaBaseActivity 回调
@@ -179,6 +178,8 @@ class MainActivity : NokiaBaseActivity() {
         setupChartTab()
         setupSearchTab()
         switchTab(TAB_MINE)
+        // 按当前主题重刷 XML 静态色与卡片背景
+        applyDynamicTheme()
 
         // 加载用户信息（未登录则显示占位提示）
         loadUserProfile()
@@ -813,7 +814,7 @@ class MainActivity : NokiaBaseActivity() {
         var focusedView: View? = null
         focusItems.forEachIndexed { i, layout ->
             if (i == focusIdx) {
-                layout.setBackgroundResource(R.drawable.bg_focused_item)
+                layout.background = focusDrawable()
                 setChildTextColors(layout, true)
                 // 必须让当前焦点条目 focusableInTouchMode=true，否则在触屏设备上
                 // 窗口处于 touch mode 时 requestFocus() 会失败（条目仅 focusable=true
@@ -851,6 +852,33 @@ class MainActivity : NokiaBaseActivity() {
                 }
             }
         }
+    }
+
+    /** 当前主题焦点行背景（4dp 圆角），每次调用重新生成以跟随主题 */
+    private fun focusDrawable() = MusicTheme.createFocusDrawable(this, 4f)
+
+    /**
+     * 把当前主题应用到 XML 静态配色：发现页宫格卡片背景、
+     * 布局中 @color/music_* 引用的经典蓝静态色等。主题切换时也会重新调用。
+     */
+    private fun applyDynamicTheme() {
+        val p = MusicTheme.current(this)
+        listOf(R.id.grid_fm, R.id.grid_daily).forEach { id ->
+            findViewById<View?>(id)?.background = MusicTheme.createCardDrawable(this, 4f)
+        }
+        findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it, p) }
+    }
+
+    /**
+     * 桌面/本地主题切换回调：基类已刷标题栏、软键栏与窗口底色，
+     * 这里重刷本页所有依赖主题色的动态元素。
+     */
+    override fun onThemeChanged(themeId: String, theme: NokiaTheme.ThemeDef) {
+        super.onThemeChanged(themeId, theme)
+        Log.d("MainActivity", "theme changed -> $themeId")
+        if (isDestroyed || isFinishing) return
+        applyDynamicTheme()
+        switchTab(currentTab)
     }
 
     /**

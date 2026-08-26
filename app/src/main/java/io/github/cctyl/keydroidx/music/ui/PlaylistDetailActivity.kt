@@ -137,14 +137,14 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     /** 已渲染的曲目条数（songs 全量在内存，视图分页创建） */
     private var renderedCount = 0
 
-    // ── 颜色缓存 ──
-    private val colorWhite by lazy { Color.WHITE }
-    private val colorSubtext by lazy { Color.parseColor("#B0B0B0") }
-    private val colorSubtextFocused by lazy { Color.parseColor("#E0F2FE") }
-    private val colorAccent by lazy { Color.parseColor("#38BDF8") }
-    private val colorFavRed by lazy { Color.parseColor("#EF4444") }
-    private val colorFavGray by lazy { Color.parseColor("#64748B") }
-    private val colorDivider by lazy { Color.parseColor("#2D426B") }
+    // ── 颜色（跟随当前主题，取值见 MusicTheme / HTML 原型）──
+    private val colorWhite get() = Color.WHITE
+    private val colorSubtext get() = MusicTheme.current(this).subtext
+    private val colorSubtextFocused get() = MusicTheme.SUBTEXT_FOCUSED
+    private val colorAccent get() = MusicTheme.BRAND_ACCENT
+    private val colorFavRed get() = Color.parseColor("#EF4444")
+    private val colorFavGray get() = Color.parseColor("#64748B")
+    private val colorDivider get() = MusicTheme.current(this).dashed
 
     // ══════════════════════════════════════════════════════════
     //  NokiaBaseActivity 回调
@@ -152,6 +152,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     override fun getContentLayoutRes(): Int = R.layout.activity_playlist_detail
 
     override fun onInitViews() {
+        // XML 静态经典蓝配色 → 当前主题色
+        findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
         // 读取 Intent 数据
         playlistName = intent.getStringExtra(EXTRA_PLAYLIST_NAME) ?: "歌单"
         playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: NokiaIcons.ICON_QUEUE_MUSIC
@@ -448,7 +450,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         views.forEachIndexed { i, view ->
             if (view is LinearLayout) {
                 if (i == focusIdx) {
-                    view.setBackgroundResource(R.drawable.bg_focused_item)
+                    view.background = MusicTheme.createFocusDrawable(this, 4f)
                     setChildTextColors(view, true)
                     // 规范要求（NOKIA_DEVELOPMENT_RULES.md）：焦点移动必须 requestFocus()，
                     // 否则 ScrollView 不知道要把这一行滚进可视区，光标会滚出屏幕外
