@@ -95,59 +95,161 @@ items.add(new NokiaOptionsDialog.OptionItem(
 
 ## 进入界面后首个方向键被吞规范（重要）
 
-**任何「纯按键驱动、内容区无可聚焦列表项」的页面（如正在播放详情页、设置详情页等），进入界面后第一个方向键（UP / DOWN / LEFT / RIGHT / SELECT）必须立即生效；若出现「第一次按无效、第二次起才生效」的现象，根因几乎都是：窗口处于「无焦点视图」状态，首个方向键被 Android 焦点框架用于「退出触摸模式 + 寻找焦点目标」而吞掉，根本到不了 `NokiaBaseActivity.dispatchKeyEvent → onAction`。**
+**任何页面（纯按键驱动页、列表页、手写表单页等），进入界面或从桌面/子页面返回后，第一个方向键（UP / DOWN / LEFT / RIGHT / SELECT）必须 100% 立即生效；若出现「第一次按无效、第二次起才生效」的现象，根因是：窗口处于「无焦点视图（findFocus() == null）」状态，首个方向键被 Android 底层输入管道用于「退出触摸模式 + 寻找焦点目标」直接吞掉，根本无法传递到 `NokiaBaseActivity.dispatchKeyEvent → onAction`。**
 
-背景与原因（反复出现的 bug，最近一次：正在播放详情页 `MusicPlayerActivity`）：
+---
 
-1. 在触屏设备上，新 Activity / Fragment 的窗口默认处于 **touch mode**。当窗口「没有任何 View 持有焦点」时，**第一个方向键（`KEYCODE_DPAD_UP/DOWN/LEFT/RIGHT/CENTER`）会被框架用于退出触摸模式并寻找焦点目标，事件被吞掉，不会派发给 `Activity.dispatchKeyEvent`**，自然也到不了 `onAction`。第二次起窗口已脱离触摸模式，方向键才正常派发到 `onAction`。
-2. **列表页也会中招，除非条目能在 touch mode 下持焦**：列表页的条目根布局声明了 `android:focusable="true"`，且 `applyFocus()` / `NokiaListFocusHelper` 会调用 `requestFocus()` 让某个条目持焦。但 **`focusable="true"` 单凭不足以在 touch mode 下获焦**——`View.requestFocus()` 在窗口处于 touch mode 时，只对 `focusableInTouchMode=true` 的视图返回 true；只 `focusable=true` 的条目 `requestFocus()` 会静默失败，窗口仍无焦点视图，首个方向键照样被吞。本次「我的」Tab（`MineTabFragment` 一类的 `NokiaPageFragment` 手写条目）就中了招：条目只声明 `focusable="true"`，`applyFocus()` 里 `requestFocus()` 在 touch mode 下失败，首键被吞，第二键才生效。**修复：在 `applyFocus()` 给当前焦点条目 `layout.isFocusableInTouchMode = true` 再 `requestFocus()`**（见下）。
-3. **纯按键驱动页（无列表项）则必中招**：如 `MusicPlayerActivity` 的内容区只有唱片、歌词 `ScrollView`、进度条、按键指南条，**没有任何持焦点的可聚焦 View**。进入后第一个方向键被框架吞掉，`onAction(UP/DOWN/...)` 不执行（音量不调、不切歌、不播放暂停），用户感知「第一次按没反应」。
-4. **`*` / `#` / 左右软键不受影响**：它们不是方向键（`KEYCODE_STAR` / `KEYCODE_POUND` / `KEYCODE_MENU` / `KEYCODE_BACK` 或自定义软键码），不触发「退出触摸模式」的吞键逻辑，所以第一次按就生效——这正是判断本 bug 的特征：**只有方向键/确认键第一次无效，其余键正常**。
-5. **不要因为某台设备「没复现」就认为没问题**：纯按键机（无触摸屏）的窗口永不进入 touch mode，不会复现；带触摸屏的按键机（测试机多为这类）必复现。验证必须在带触摸屏的真机上进行。
+### 一、Android 系统底层吞键机制深度剖析
 
-正确做法（已修复 `MusicPlayerActivity`，新页面照抄）：
+在 Android 系统的按键分发管道中（`ViewRootImpl.java` → `ViewPostImeInputStage.java`）：
 
-- **给内容区根视图一个焦点**：根布局 XML 声明 `android:focusable="true"` + `android:focusableInTouchMode="true"`，并在 `onInitViews()` / `onPageCreated()` 末尾主动 `root.requestFocus()`（再 `root.post { root.requestFocus() }` 兜底，应对窗口焦点稍后才就绪）。
-  ```kotlin
-  val playerRoot = findViewById<View>(R.id.layout_player_root)
-  playerRoot.requestFocus()
-  playerRoot.post { playerRoot.requestFocus() }
-  ```
-  ```xml
-  <LinearLayout android:id="@+id/layout_player_root"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent"
-      android:focusable="true"
-      android:focusableInTouchMode="true" ... >
-  ```
-- **把页面内非业务性的 `ScrollView` 设为不可聚焦**：`android:focusable="false"` + `android:focusableInTouchMode="false"`。否则框架「退出触摸模式」时焦点可能落到 `ScrollView` 上，后续方向键被它用于滚动而再次吞键（表现为「按上下变成滚动歌词」而非触发 `onAction`）。
-- **列表页不要误改**：列表页的条目 `focusable="true"` + `requestFocus()` 是其正常工作前提，本规范只针对「内容区无可聚焦列表项」的纯按键驱动页。
-  - **例外/补充（2026-08 实测 bug）**：手写焦点条目的列表页（如 `MainActivity` 的「我的」Tab，不是 `NokiaListPageFragment`）条目仅 `focusable="true"` 时，`applyFocus()` 里 `requestFocus()` 在 touch mode 下会失败 → 窗口无焦点视图 → 首键被吞。修复是在 `applyFocus()` 中给当前焦点条目额外打开 `isFocusableInTouchMode = true` 再 `requestFocus()`，让它能在 touch mode 下持焦（持焦后窗口即脱离无焦点态，首键正常派发）。动态填充的条目（`item_playlist` 等）无需逐个改 XML，只要焦点切到它时 `applyFocus` 会设上。
-    ```kotlin
-    private fun applyFocus() {
-        focusItems.forEachIndexed { i, layout ->
-            if (i == focusIdx) {
-                layout.setBackgroundResource(R.drawable.bg_focused_item)
-                setChildTextColors(layout, true)
-                layout.isFocusableInTouchMode = true  // 关键：让 requestFocus 在 touch mode 下成功
-                layout.requestFocus()
-            } else { ... }
+```java
+// ViewPostImeInputStage.processKeyEvent 核心管道逻辑
+if (mView.isInTouchMode()) {
+    if (isDirectional(keyCode) || isConfirm(keyCode)) {
+        boolean handled = ensureTouchMode(false); // 尝试退出触摸模式
+        if (handled) {
+            return FINISH_HANDLED; // 吞键！事件在此直接终结，不派发给 Activity
         }
     }
-    ```
-- **`onResume` 必须重新 `requestFocus`（2026-08 实测 bug，重要）**：返回桌面后再回到本页，窗口会重新进入 touch mode（桌面上的触屏操作会把本窗口重置为 touch mode），而 `onInitViews()` / `switchTab()` / `onPageCreated()` 不会在 `onResume` 重跑，原先持焦的视图会失焦 → 首个方向键被吞。表现：第一次进页面正常，返回桌面再回来后首键又无效。修复：在 `onResume` 末尾重新让焦点视图持焦（调 `applyFocus()` 或直接 `requestFocus()`，并 `post {}` 兜底）。
-    - `MainActivity.onResume`：`applyFocus()` + `focusItems.getOrNull(focusIdx)?.post { applyFocus() }`。
-    - `MusicPlayerActivity.onResume`：`findViewById(R.id.layout_player_root).requestFocus()` + `post { requestFocus() }`。
-- **自查特征**：若某页面报「第一次按方向键/确认没反应，第二次才有」，直接套用本修复；不要去改 `NokiaBaseActivity.dispatchKeyEvent` 的去抖/分发逻辑（那套逻辑是对的，问题在窗口焦点状态）。
+}
+```
 
-关键认知：
+当 `ensureTouchMode(false)` 执行 `leaveTouchMode()` 时：
+- **情况 A（已有 View 持有焦点）**：若 `mView.hasFocus() == true` 且当前持焦的 View 是 `isFocusable()` 的，`leaveTouchMode()` 会直接返回 **`false`** —— **按键绝不被吞，直接正常分发到 `Activity.dispatchKeyEvent`**。
+- **情况 B（没有任何 View 持有焦点，`findFocus() == null`）**：系统认为当前无持焦目标，触发 `restoreDefaultFocus()` 遍历整棵树寻找首个可聚焦 View，并返回 **`true`** —— **首个按键被系统当作“退出触摸模式并寻焦”的触发器直接拦截消耗**！直到第二次按下时，因系统已脱离 Touch Mode，事件才终于能到达 Activity。
 
-- 「方向键第一次无效、其余键正常」**= 窗口无焦点视图导致首个方向键被触摸模式吞掉**，而非按键分发逻辑有 bug。
-- 纯按键驱动页必须自让根视图持焦；列表页靠条目 `requestFocus()` 天然规避——**但条目必须在 touch mode 下能持焦**（`focusableInTouchMode`），否则同样被吞。
-- **进入页面与从桌面返回（onResume）两条路径都要持焦**：只在 `onInitViews`/`onCreate` 持焦不够，`onResume` 必须重新持焦，否则返回桌面再回来首键仍被吞。
-- 已修复案例：
-  - `MusicPlayerActivity`（根 `layout_player_root` 加 `focusable` + `requestFocus()`，两个歌词 `ScrollView` 加 `focusable="false"`；`onResume` 重新 `requestFocus`）。
-  - `MainActivity`「我的」Tab（`applyFocus()` 给当前焦点条目 `isFocusableInTouchMode = true` 再 `requestFocus()`；`onResume` 重新 `applyFocus()`）——手写条目的列表页同样要遵守。
+> **特征判断**：`*` / `#` / 左右软键不受影响（它们不是 Directional/Confirm 键，不触发 `ensureTouchMode` 吞键），**只有上下左右与确认键在第一次按下时无效，第二次才生效**。
+
+---
+
+### 二、历史演进与前三次修复方案复盘（保留与注释）
+
+在生态演进过程中，该问题经历了三次局部修补，虽然当时缓解了特定页面的症状，但因未从底层框架根治，导致在后续新页面中反复复现。
+
+#### 1. 历史方案一（2026-08 页面级补丁 · `MusicPlayerActivity`）
+```kotlin
+// 做法：在特定页面的根布局加属性并在 onInitViews 手动获焦
+val playerRoot = findViewById<View>(R.id.layout_player_root)
+playerRoot.requestFocus()
+playerRoot.post { playerRoot.requestFocus() }
+```
+```xml
+<LinearLayout android:id="@+id/layout_player_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true" ... >
+```
+> **【局限性注释】**：
+> 这是典型的业务页面局部修补。只保护了单个 Activity，新编写的 Activity（如设置页、反馈页）如果没有人肉照抄这套代码，问题必然在每一个新页面上重复爆发。
+
+#### 2. 历史方案二（2026-08 列表条目级补丁 · `MainActivity`「我的」Tab）
+```kotlin
+// 做法：在手写条目的 applyFocus() 里动态赋予 focusableInTouchMode
+private fun applyFocus() {
+    focusItems.forEachIndexed { i, layout ->
+        if (i == focusIdx) {
+            layout.setBackgroundResource(R.drawable.bg_focused_item)
+            setChildTextColors(layout, true)
+            layout.isFocusableInTouchMode = true  // 让 requestFocus 在 touch mode 下成功
+            layout.requestFocus()
+        } else { ... }
+    }
+}
+```
+> **【局限性注释】**：
+> 针对手写列表条目（非 `NokiaListPageFragment`）做了补丁，解决了 Tab 切换时的持焦问题。但由于仅在 `applyFocus()` 触发，对手写表单（如反馈页）或纯静态页面依旧无法自动覆盖。
+
+#### 3. 历史方案三（Commit `3d269a0` · 基类 DecorView 假修复）
+```java
+// NokiaBaseActivity.onCreate & onResume 当时的改动：
+View decor = getWindow() != null ? getWindow().getDecorView() : null;
+if (decor != null) {
+    decor.setFocusableInTouchMode(true);
+    decor.requestFocus();
+    decor.post(decor::requestFocus);
+}
+```
+> **【失效原因深度注释】**：
+> 1. **时序严重错位**：在 `onCreate` / `onResume` 执行时，View 树**尚未完成 Measure / Layout 测量布局**，Window 也**尚未获得系统窗口焦点（Window Focus）**，过早调用 `decor.requestFocus()` 无法建立真实持焦。
+> 2. **DecorView 是容器不是叶子**：`DecorView` 是 `FrameLayout`（ViewGroup）。在 Android 源码中，`ViewGroup.requestFocus()` 默认优先执行 `onRequestFocusInDescendants` 遍历子节点。如果子节点（如 5 行表单）均无 `focusableInTouchMode=true`，整棵树都拒收焦点；随后 Window Focus 建立时，DecorView 直接失焦，导致 `findFocus() == null` 再次出现。
+> 3. **ScrollView 中间容器干扰**：页面外层的 `ScrollView` 默认具有聚焦能力，在退出触摸模式时系统可能将焦点派发给 `ScrollView`，将方向键用于滚动，截断了向 Activity 的分发。
+
+---
+
+### 三、全新框架级根治方案（最终标准规范）
+
+为了彻底杜绝任何页面（无论是纯按键页、手写表单页、还是复杂交互页）再次出现首键被吞，实施**基类全局锚定 + 表单组件规范**的双重防御体系：
+
+#### 1. 基类层全局焦点锚定（`NokiaBaseActivity`）
+在所有页面的基类 `NokiaBaseActivity` 中内置持久焦点兜底机制，子类无需任何额外代码即可自动受益：
+
+- **`onWindowFocusChanged(boolean hasFocus)` 关键节点持焦**：
+  在 Activity 真正获得系统窗口焦点（`hasFocus == true`）的黄金时机执行检查：
+  ```java
+  @Override
+  public void onWindowFocusChanged(boolean hasFocus) {
+      super.onWindowFocusChanged(hasFocus);
+      if (hasFocus) {
+          ensureActiveFocus();
+      }
+  }
+  ```
+- **`ensureActiveFocus()` 自动唤醒**：
+  若当前 `getCurrentFocus() == null` 或持焦 View 无法在 Touch Mode 下持焦，基类自动激活 `contentContainer`（内容容器 `R.id.midPanel`），强制设置 `setFocusableInTouchMode(true)` 并立即 `requestFocus()` + `post` 队列兜底。
+  ```java
+  protected void ensureActiveFocus() {
+      View current = getCurrentFocus();
+      if (current == null || !current.isFocusableInTouchMode()) {
+          View target = contentContainer != null ? contentContainer : rootContainer;
+          if (target == null && getWindow() != null) {
+              target = getWindow().getDecorView();
+          }
+          if (target != null) {
+              target.setFocusable(true);
+              target.setFocusableInTouchMode(true);
+              target.requestFocus();
+              final View finalTarget = target;
+              target.post(() -> {
+                  if (getCurrentFocus() == null && finalTarget != null) {
+                      finalTarget.requestFocus();
+                  }
+              });
+          }
+      }
+  }
+  ```
+- **生命周期回退保证**：
+  在 `onResume()` 中统一调用 `ensureActiveFocus()`，确保无论从子页面返回、按 Home 键切回桌面再返回，均能瞬间恢复持焦。
+
+#### 2. 自定义表单 / 手写列表页面规范（以 `NokiaFeedbackActivity` 为标准范例）
+对于包含手写条目的页面：
+
+- **条目行声明原生持焦能力**：
+  每个可交互行在 XML 中必须显式声明：
+  ```xml
+  android:focusable="true"
+  android:focusableInTouchMode="true"
+  ```
+- **状态切换同步 View 焦点**：
+  在 `setFocusRow(row)` 或 `applyFocus()` 改变选中高亮背景色的同时，必须同步调用 `rows[row].requestFocus()`，使业务逻辑选中态与 Android 系统底层焦点树完全重合。
+- **滚动容器隔离**：
+  页面内非业务性 `ScrollView` 必须声明：
+  ```xml
+  android:focusable="false"
+  android:focusableInTouchMode="false"
+  ```
+  防止系统寻焦时将焦点误分配给 `ScrollView` 导致方向键被滚动事件消耗。
+
+---
+
+### 四、速查 Checklist 与关键认知
+
+- [ ] 新建任何 Activity 统一继承自 `NokiaBaseActivity`，自动享受基类 `onWindowFocusChanged` 全局焦点锚定保护。
+- [ ] 页面内若有外层包裹的 `ScrollView`，确保声明 `android:focusable="false"` + `android:focusableInTouchMode="false"`。
+- [ ] 手写表单/条目列表，条目根布局声明 `focusable="true"` + `focusableInTouchMode="true"`，并在切行时调用 `view.requestFocus()`。
+- [ ] 真机验证标准：冷启动进入页面、从子页面返回、切桌面再切回，**第 1 次按 `DPAD_UP/DOWN/SELECT` 必须立即在 Logcat 打印 `dispatchKeyEvent`**。
 
 ## 软键栏（底部左右菜单）禁止加高亮 / 焦点逻辑（重要）
 
@@ -600,29 +702,3 @@ public void fixMidContentHeight(final View content, final boolean topAlign) {
 
 **禁止** 将 `category.HOME`、`category.DEFAULT` 与 `category.LAUNCHER` 混合在同一个 `<intent-filter>` 标签内。混合声明会导致部分 Android 系统（特别是 Android 10+ 的 RoleManager / PreferredActivity 解析策略）产生匹配歧义，导致系统无法持久化保存默认桌面设置，从而在按 Home / 挂机键时反复弹出“选择主屏幕应用”。
 
-
-### 14. 字体缩放（fontScale）生效链路与排查规范（重要）
-
-桌面端配置的字体大小（`font_scale`）通过以下链路同步到本应用，所有页面文字（含底部软键栏、标题栏）均应自动跟随：
-
-```
-桌面 Provider (content://{authority}/settings → font_scale)
-  → NokiaClient 同步（loadLocalPrefs / tryQueryProvider）
-    → NokiaFontManager.setFontScale(scale)
-      → NokiaBaseActivity.onFontChanged() 对整个 DecorView 递归应用
-        → 实际字号 = 设计字号(designPx) × fontScale
-```
-
-开发约束：
-
-- **动态创建的 TextView 必须使用 `NokiaFontManager.setTextSize(tv, unit, size)`** 设置字号，禁止直接调用 `tv.setTextSize(...)`。
-  - 直接设置后若该 View 在 `applyToViewTree` 首次扫描时被记录为"设计值"，后续重复应用会导致字号漂移（越变越大或漏缩放）；
-  - `NokiaFontManager.setTextSize` 会以未缩放设计值打 tag 记录，保证可重复应用不漂移。
-- **Dialog 是独立窗口**，不在 Activity 的 DecorView 树内。自定义弹窗必须在 `show()` 时手动调用 `NokiaFontManager.applyToViewTree(getWindow().getDecorView())`（SDK 内置的 `NokiaOptionsDialog` / `NokiaConfirmDialog` 已处理）。
-- **MaterialIcons 字体自动豁免**：`NokiaFontManager.applyTypefaceRecursively` 会跳过使用 MaterialIcons 的 TextView（图标不随字体/缩放变形），业务侧无需特殊处理。
-
-排查口诀（发现"某处文字不跟随桌面缩放"时按序检查）：
-
-1. 该 TextView 是否在 `onFontChanged` 之后才动态创建，且创建时没用 `NokiaFontManager.setTextSize()`；
-2. 是否位于 Dialog 独立窗口内且漏调 `applyToViewTree(decorView)`；
-3. 通过 `adb shell content query --uri content://{authority}/settings` 或 logcat 过滤 `NokiaClient` 确认 `font_scale` 是否已成功从桌面同步。
