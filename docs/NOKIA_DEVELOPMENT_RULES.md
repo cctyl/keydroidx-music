@@ -702,3 +702,21 @@ public void fixMidContentHeight(final View content, final boolean topAlign) {
 
 **禁止** 将 `category.HOME`、`category.DEFAULT` 与 `category.LAUNCHER` 混合在同一个 `<intent-filter>` 标签内。混合声明会导致部分 Android 系统（特别是 Android 10+ 的 RoleManager / PreferredActivity 解析策略）产生匹配歧义，导致系统无法持久化保存默认桌面设置，从而在按 Home / 挂机键时反复弹出“选择主屏幕应用”。
 
+### 14. 生态统一日志规范与分级控制（NokiaLog）（重要）
+
+**所有生态应用与接入 SDK 的组件统一使用 `io.github.cctyl.nokia.keycore.log.NokiaLog` 进行日志打印与落盘，禁止使用原始 `android.util.Log` 散乱输出，禁止使用底层 `logcat` 管道粗暴捕获。**
+
+背景与规范：
+
+1. **统一目录标准**：所有 App 日志一律存放在 `/sdcard/Android/data/<包名>/log/yyyyMMdd.log`（按天滚动，自动清理 7 天前旧日志），与桌面端（`keydroidx-launcher`）完全对齐。
+2. **两档日志级别与持久化开关**：
+   - **默认状态（Release 正式版）**：`fileMinLevel = Log.ERROR`。平时只落盘 `ERROR` 级异常和 `FATAL` 崩溃堆栈，不占用存储 I/O。
+   - **调试模式（Debug 构建 / 用户在设置页手动开启）**：`fileMinLevel = Log.DEBUG`。落盘所有 `DEBUG`、`INFO`、`WARN` 业务日志。
+   - **通用 API**：
+     - `NokiaLog.init(context)`：自动读取持久化开关并应用对应级别。
+     - `NokiaLog.installCrashHandler(context)`：安装未捕获异常崩溃同步落盘处理器。
+     - `NokiaLog.isDetailedLogEnabled(context)` / `NokiaLog.setDetailedLogEnabled(context, boolean)`：读写详细日志开关。
+3. **业务代码打印规范**：
+   - 业务打点调用 `NokiaLog.d(TAG, "...")`、`NokiaLog.e(TAG, "...", tr)`，或者在项目中建立如 `NLog` 的轻量门面。
+   - 禁止在日志中写入用户密码、Token 等未脱敏隐私信息。
+
