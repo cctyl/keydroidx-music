@@ -423,7 +423,33 @@ new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
 
 ---
 
-## 八、构建与运行指南
+## 八、统一日志规范（强制使用 NokiaLog）
+
+为了配合生态统一日志收集与意见反馈（`NokiaFeedbackActivity`），**本项目禁止直接使用原生 `android.util.Log` 或引入第三方日志库，必须强制统一使用 `keydroidx-core` 提供的 `NokiaLog`**。
+
+### 8.1 接入与使用规范
+1. **Application 初始化**：
+   ```kotlin
+   NokiaLog.setTag("KeydroidX-Music")
+   NokiaLog.init(this) // 自动读取详细日志开关决定落盘级别
+   NokiaLog.installCrashHandler(this) // 崩溃自动抓取瞬时落盘
+   ```
+2. **业务代码打印（零成本桥接）**：
+   - 在 Kotlin 文件头部添加别名导入，现有 `Log.d/i/w/e` 代码无需改动即可自动享受分级过滤与落盘：
+     ```kotlin
+     import io.github.cctyl.keydroidx.music.util.NLog as Log
+     ```
+   - 或直接调用：`NokiaLog.d("Tag", "msg")`、`NokiaLog.e("Tag", "msg", throwable)`。
+3. **日志分级与持久化开关**：
+   - **详细日志关闭（默认/Release）**：仅记录 `ERROR` 与 `FATAL` 崩溃堆栈，零文件 I/O 损耗。
+   - **详细日志开启（Debug/排查）**：记录所有 `DEBUG`、`INFO`、`WARN` 业务日志。
+   - 主界面/设置页选项菜单必须提供「详细日志：开/关」切换项（调用 `NokiaLog.setDetailedLogEnabled`）。
+4. **日志落盘约定**：
+   - 统一输出至 `/sdcard/Android/data/<包名>/log/yyyyMMdd.log`，按天自动轮转，保留 7 天。
+
+---
+
+## 九、构建与运行指南
 
 ### 8.1 环境与前置要求
 - **JDK 17**：`gradle.properties` 中 `org.gradle.java.home` 硬编码了本机环境路径（换机器需修改）与 Android SDK。
@@ -452,16 +478,17 @@ new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
   # 已配置 junit4 + org.json，PlaylistApi、LrcParser 等纯解析逻辑可写 JVM 单测
   ```
 
-### 8.3 测试设备说明
+### 9.3 测试设备说明
 - `4a24ecf`：240×320（Android 4.4，可直装）
 - `tcpip 连接设备`：320×480（可直装）
 - `jz5dauzlu8euw4e6`：小米 16:9 长屏（**不支持 adb 直装**，需 push 到 `/sdcard/Download` 手动安装）
 
 ---
 
-## 九、开发自查清单
+## 十、开发自查清单
 
 - [ ] **继承合规**：所有 Activity 继承自 `NokiaBaseActivity`，所有内容 Fragment 继承自 `NokiaListPageFragment` / `NokiaScrollPageFragment` / `NokiaPageFragment`。
+- [ ] **日志合规**：全工程禁止直接使用原生 `android.util.Log`，强制使用 `NokiaLog`（或 `import ...NLog as Log`），确保日志可分级过滤与落盘。
 - [ ] **软键声明**：软键文字与标题全部通过覆写 `getPageTitle()` / `getSoftLeftText()` / `getSoftRightText()` 实现，无直接 `findViewById` 操作软键栏代码。
 - [ ] **软键无高亮**：底部软键栏无任何背景高亮设置、无左右方向键焦点切换代码。
 - [ ] **字体合规**：所有文字均为点阵字体，动态添加的 View 已调用 `NokiaFontManager.applyToViewTree(view)`。
@@ -475,7 +502,7 @@ new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
 
 ---
 
-## 十、参考文档与设计资产
+## 十一、参考文档与设计资产
 
 - **UI 布局与按键状态机详细规范**：👉 **[UI_DESIGN_SPEC.md](./UI_DESIGN_SPEC.md)**
 - **交互原型单文件（浏览器可用键盘验证）**：`nokia_music_ui_mockup.html`
