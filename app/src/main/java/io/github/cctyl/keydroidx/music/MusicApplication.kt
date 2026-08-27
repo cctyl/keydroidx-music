@@ -14,6 +14,9 @@ import io.github.cctyl.nokia.common.log.NokiaLog
 class MusicApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // 尽早初始化 NokiaClient（建立 Provider 同步与 ThemeProvider 注册）
+        io.github.cctyl.nokia.keycore.NokiaClient.get(this)
+
         // 统一日志：尽早初始化文件日志 + 崩溃捕获，覆盖冷启动阶段的崩溃。
         // 日志落盘到 Android/data/<包名>/log/yyyyMMdd.log，与反馈模块读取目录一致。
         // 根据持久化设置自动决定等级（Debug 默认全量 DEBUG，Release 默认仅 ERROR）。
