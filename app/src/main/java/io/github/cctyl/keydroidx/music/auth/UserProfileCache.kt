@@ -63,6 +63,12 @@ object UserProfileCache {
         }
     }
 
+    /** 是否为 VIP 会员用户（vipType > 0 视为黑胶/音乐包等 VIP 用户） */
+    fun isVip(context: Context): Boolean {
+        val profile = load(context)
+        return (profile?.vipType ?: 0) > 0
+    }
+
     /** 退出登录 / cookie 被服务端判定过期时清除（含歌单与头像）。 */
     fun clear(context: Context) {
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)

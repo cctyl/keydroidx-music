@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity
 import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.library.LibraryManager
@@ -178,19 +179,16 @@ class PlaybackService : MediaSessionService() {
             skipToNextPlayable()
             return
         }
-        // 会员歌直接跳过（fee=1）
-        if ((song.fee ?: 0) == 1) {
-            Log.w(TAG, "VIP song skipped: ${song.name}")
-            skipToNextPlayable()
-            return
-        }
 
         // 网络歌曲播放
         val isCached = AudioCacheManager.isSongCached(this, song.id)
         val hasNetwork = NetworkUtils.isNetworkAvailable(this)
+        val isUserVip = UserProfileCache.isVip(this)
+
+        Log.i(TAG, "[VIP-CHECK] [PLAY-FLOW] Start playing -> id: ${song.id}, name: ${song.name}, fee: ${song.fee}, isCached: $isCached, hasNetwork: $hasNetwork, isUserVip: $isUserVip")
 
         if (!hasNetwork && !isCached) {
-            Log.w(TAG, "No network and song not cached: ${song.name}")
+            Log.w(TAG, "[VIP-CHECK] [PLAY-FLOW] No network and song not cached: ${song.name}")
             showNoNetworkToast()
             player?.pause()
             PlaybackStateManager.updatePlayingState(false)
@@ -199,7 +197,7 @@ class PlaybackService : MediaSessionService() {
 
         if (isCached) {
             // 本地已有缓存，优先使用缓存播放（即便断网也能离线播）
-            Log.d(TAG, "Playing cached song: ${song.name}, id: ${song.id}")
+            Log.d(TAG, "[VIP-CHECK] [PLAY-FLOW] Playing cached song: ${song.name}, id: ${song.id}")
             val dummyUri = "https://music.163.com/song/media/${song.id}.mp3"
             val mediaItem = buildMediaItem(song, dummyUri)
             player?.let { p ->
@@ -209,17 +207,55 @@ class PlaybackService : MediaSessionService() {
             }
             updateNotification()
             LibraryManager.addRecentSong(song)
+
+            // 如果是非 VIP 用户，检查是否是 VIP 歌曲
+            val isVipSong = (song.fee ?: 0) == 1
+            Log.i(TAG, "[VIP-CHECK] [CACHE-BRANCH] isUserVip: $isUserVip, isVipSong: $isVipSong, fee: ${song.fee}")
+            if (!isUserVip && isVipSong) {
+                Log.i(TAG, "[VIP-CHECK] Showing toast for cached VIP trial song: ${song.name}")
+                handler.post {
+                    Toast.makeText(
+                        applicationContext,
+                        "VIP 歌曲，正在播放试听片段",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else if (!isUserVip && song.fee == 0) {
+                // 如果历史记录里 fee 是 0，但在联网情况下异步核对是否为 VIP 歌曲，以便后续修正
+                if (hasNetwork) {
+                    serviceScope.launch {
+                        try {
+                            val checkResult = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
+                            Log.i(TAG, "[VIP-CHECK] [ASYNC-CHECK] result -> isTrial: ${checkResult.isTrial}, trialEnd: ${checkResult.trialEnd}")
+                            if (checkResult.isTrial) {
+                                val updatedSong = song.copy(fee = 1)
+                                LibraryManager.addRecentSong(updatedSong)
+                                val durationTip = if (checkResult.trialEnd > 0) "${checkResult.trialEnd}秒" else ""
+                                handler.post {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "VIP 歌曲，正在播放${durationTip}试听片段",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "[VIP-CHECK] [ASYNC-CHECK] Failed: ${e.message}")
+                        }
+                    }
+                }
+            }
             return
         }
 
         // 无缓存但在网络可用时：联网取播放链接
         serviceScope.launch {
             try {
-                Log.d(TAG, "Fetching song url for id: ${song.id}")
+                Log.d(TAG, "[VIP-CHECK] [NET-BRANCH] Fetching song url for id: ${song.id}")
                 val result = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
                 val url = result.url
                 if (url.isNullOrEmpty()) {
-                    Log.e(TAG, "Failed to get song url for: ${song.name}")
+                    Log.e(TAG, "[VIP-CHECK] [NET-BRANCH] Failed to get song url for: ${song.name}")
                     if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
                         showNoNetworkToast()
                         player?.pause()
@@ -229,18 +265,39 @@ class PlaybackService : MediaSessionService() {
                     }
                     return@launch
                 }
-                Log.d(TAG, "Playing song: ${song.name}, url: $url")
-                val mediaItem = buildMediaItem(song, url)
+                Log.d(TAG, "[VIP-CHECK] [NET-BRANCH] Got url: $url, isTrial: ${result.isTrial}, trialStart: ${result.trialStart}, trialEnd: ${result.trialEnd}")
+
+                val isVipOrTrial = result.isTrial || (song.fee ?: 0) == 1
+                val updatedSong = if (isVipOrTrial && (song.fee ?: 0) != 1) {
+                    song.copy(fee = 1)
+                } else {
+                    song
+                }
+
+                Log.i(TAG, "[VIP-CHECK] [NET-BRANCH] Decision -> isUserVip: $isUserVip, isVipOrTrial: $isVipOrTrial, showToast: ${!isUserVip && isVipOrTrial}")
+
+                if (!isUserVip && isVipOrTrial) {
+                    val durationTip = if (result.trialEnd > 0) "${result.trialEnd}秒" else ""
+                    handler.post {
+                        Toast.makeText(
+                            applicationContext,
+                            "VIP 歌曲，正在播放${durationTip}试听片段",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                val mediaItem = buildMediaItem(updatedSong, url)
                 player?.let { p ->
                     p.setMediaItem(mediaItem)
                     p.prepare()
                     p.play()
                 }
                 updateNotification()
-                // 成功准备播放，记录到最近播放历史
-                LibraryManager.addRecentSong(song)
+                // 成功准备播放，记录到最近播放历史（保存更新后的 fee 属性）
+                LibraryManager.addRecentSong(updatedSong)
             } catch (e: Exception) {
-                Log.e(TAG, "Error playing song: ${e.message}", e)
+                Log.e(TAG, "[VIP-CHECK] [NET-BRANCH] Error playing song: ${e.message}", e)
                 if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
                     showNoNetworkToast()
                     player?.pause()

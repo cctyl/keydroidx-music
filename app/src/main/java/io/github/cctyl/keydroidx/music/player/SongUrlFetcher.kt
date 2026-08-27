@@ -7,7 +7,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class SongUrlResult(val url: String, val actualLevel: String)
+data class SongUrlResult(
+    val url: String,
+    val actualLevel: String,
+    val isTrial: Boolean = false,
+    val trialStart: Int = 0,
+    val trialEnd: Int = 0
+)
 
 object SongUrlFetcher {
     private const val TAG = "SongUrlFetcher"
@@ -37,9 +43,14 @@ object SongUrlFetcher {
                         val obj = data.getJSONObject(0)
                         val url = obj.optString("url")
                         val actualLevel = obj.optString("level", tryLevel)
+                        val freeTrialInfo = obj.optJSONObject("freeTrialInfo")
+                        val isTrial = freeTrialInfo != null
+                        val trialStart = freeTrialInfo?.optInt("start", 0) ?: 0
+                        val trialEnd = freeTrialInfo?.optInt("end", 0) ?: 0
+
                         if (!url.isNullOrEmpty() && url != "null") {
-                            Log.d(TAG, "got url: $url  actualLevel: $actualLevel  requested: $level")
-                            return@withContext SongUrlResult(url, actualLevel)
+                            Log.d(TAG, "got url: $url  actualLevel: $actualLevel  isTrial: $isTrial (${trialStart}s-${trialEnd}s)  requested: $level")
+                            return@withContext SongUrlResult(url, actualLevel, isTrial, trialStart, trialEnd)
                         }
                     }
                 } catch (e: Exception) {
@@ -52,14 +63,14 @@ object SongUrlFetcher {
         SongUrlResult("https://music.163.com/song/media/outer/url?id=$songId.mp3", "standard")
     }
 
+
     private fun buildPayload(songId: Long, level: String): Map<String, String> {
-        val base = mutableMapOf(
+        val encodeType = if (level == "lossless" || level == "hires") "flac" else "mp3"
+        return mapOf(
             "ids" to JSONArray().put(songId).toString(),
-            "level" to level
+            "level" to level,
+            "encodeType" to encodeType
         )
-        if (level == "lossless" || level == "hires") {
-            base["encodeType"] = "flac"
-        }
-        return base
     }
+
 }

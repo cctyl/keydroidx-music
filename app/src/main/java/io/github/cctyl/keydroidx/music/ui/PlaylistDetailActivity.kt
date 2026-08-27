@@ -419,6 +419,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
             tvArtist.text = song.artist
 
+            val isUserVip = io.github.cctyl.keydroidx.music.auth.UserProfileCache.isVip(this)
             // 会员歌曲 / 无权限歌曲：灰显 + 提示标记
             if (song.noCopyright) {
                 val gray = Color.parseColor("#9CA3AF")
@@ -427,11 +428,15 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 tvArtist.text = "${song.artist} · 无权限"
                 tvArtist.setTextColor(gray)
             } else if (song.isVip) {
-                val gray = Color.parseColor("#9CA3AF")
-                tvIndex.setTextColor(gray)
-                tvTitle.setTextColor(gray)
-                tvArtist.text = "${song.artist} · 需要会员"
-                tvArtist.setTextColor(gray)
+                if (isUserVip) {
+                    tvArtist.text = "${song.artist} · VIP"
+                } else {
+                    val gray = Color.parseColor("#9CA3AF")
+                    tvIndex.setTextColor(gray)
+                    tvTitle.setTextColor(gray)
+                    tvArtist.text = "${song.artist} · VIP试听"
+                    tvArtist.setTextColor(gray)
+                }
             }
 
             if (song.isFav) {
@@ -583,30 +588,19 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
     private fun playSong(song: SongDisplayItem) {
         var startIndex = if (focusIdx == 0) 0 else focusIdx - 1
+        Log.i(TAG_DETAIL, "[VIP-CHECK] [PLAYLIST-DETAIL] Clicked song -> id: ${song.id}, title: ${song.title}, isVip: ${song.isVip}, noCopyright: ${song.noCopyright}")
 
         // 无权限/下架歌不可播：从选中处向后找第一个可播的（环形）
         if (song.noCopyright) {
             val alt = (1..songs.size).firstOrNull { off ->
                 val cand = songs[(startIndex + off) % songs.size]
-                !cand.noCopyright && !cand.isVip
+                !cand.noCopyright
             }?.let { (startIndex + it) % songs.size }
             if (alt == null) {
                 Toast.makeText(this, "歌单内全部歌曲都无权限，无法播放", Toast.LENGTH_SHORT).show()
                 return
             }
             Toast.makeText(this, "《${song.title}》无权限播放，已跳过", Toast.LENGTH_SHORT).show()
-            startIndex = alt
-        } else if (song.isVip) {
-            // 会员歌不可播：从选中处向后找第一个可播的（环形）
-            val alt = (1..songs.size).firstOrNull { off ->
-                val cand = songs[(startIndex + off) % songs.size]
-                !cand.noCopyright && !cand.isVip
-            }?.let { (startIndex + it) % songs.size }
-            if (alt == null) {
-                Toast.makeText(this, "歌单内全部歌曲都需要会员，无法播放", Toast.LENGTH_SHORT).show()
-                return
-            }
-            Toast.makeText(this, "《${song.title}》需要会员，已跳过", Toast.LENGTH_SHORT).show()
             startIndex = alt
         }
 
