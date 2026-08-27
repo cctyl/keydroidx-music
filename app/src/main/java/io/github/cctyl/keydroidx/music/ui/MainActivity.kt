@@ -30,7 +30,7 @@ import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.log.NokiaLog
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaTheme
+import io.github.cctyl.nokia.common.ui.NokiaTheme
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaFeedbackActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
