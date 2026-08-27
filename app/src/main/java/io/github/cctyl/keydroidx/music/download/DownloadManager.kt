@@ -2,7 +2,7 @@ package io.github.cctyl.keydroidx.music.download
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.github.cctyl.keydroidx.music.model.MusicItem

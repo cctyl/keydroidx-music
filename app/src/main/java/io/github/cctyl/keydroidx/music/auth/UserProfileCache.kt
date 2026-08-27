@@ -1,7 +1,7 @@
 package io.github.cctyl.keydroidx.music.auth
 
 import android.content.Context
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import org.json.JSONObject
 

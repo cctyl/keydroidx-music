@@ -6,7 +6,7 @@ import android.graphics.Color
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.view.Gravity

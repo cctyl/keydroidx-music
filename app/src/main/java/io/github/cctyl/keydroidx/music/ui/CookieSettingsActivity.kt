@@ -3,7 +3,7 @@ package io.github.cctyl.keydroidx.music.ui
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText

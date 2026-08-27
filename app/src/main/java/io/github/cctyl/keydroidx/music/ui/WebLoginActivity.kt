@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View

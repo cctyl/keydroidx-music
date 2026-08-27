@@ -1,6 +1,6 @@
 package io.github.cctyl.keydroidx.music.player
 
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

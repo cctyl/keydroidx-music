@@ -3,7 +3,7 @@ package io.github.cctyl.keydroidx.music.ui
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout

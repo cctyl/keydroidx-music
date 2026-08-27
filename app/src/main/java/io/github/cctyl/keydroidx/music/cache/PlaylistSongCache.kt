@@ -1,7 +1,7 @@
 package io.github.cctyl.keydroidx.music.cache
 
 import android.content.Context
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File

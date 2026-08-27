@@ -12,7 +12,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
@@ -28,6 +28,7 @@ import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
+import io.github.cctyl.nokia.keycore.log.NokiaLog
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaTheme
 import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
@@ -1452,7 +1453,7 @@ class MainActivity : NokiaBaseActivity() {
             )
         }
 
-        // 公共项：Cookie 设置 / 后台播放 / 意见反馈 / 关于 / 退出应用（所有 Tab 一致）
+        // 公共项：Cookie 设置 / 后台播放 / 意见反馈 / 详细日志 / 关于 / 退出应用（所有 Tab 一致）
         // 注：「正在播放」由右软键直达，不进菜单避免重复
         dialog.addItem(
             2, "网易云 Cookie 设置",
@@ -1466,12 +1467,17 @@ class MainActivity : NokiaBaseActivity() {
             4, "意见反馈",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_EDIT, iconSize, iconColor)
         )
+        val detailedLog = NokiaLog.isDetailedLogEnabled(this)
         dialog.addItem(
-            5, getString(R.string.menu_about),
+            5, if (detailedLog) "详细日志：开" else "详细日志：关",
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
+        )
+        dialog.addItem(
+            6, getString(R.string.menu_about),
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
         )
         dialog.addItem(
-            6, "退出应用",
+            7, "退出应用",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
@@ -1508,10 +1514,17 @@ class MainActivity : NokiaBaseActivity() {
                     startActivity(Intent(this, NokiaFeedbackActivity::class.java))
                 }
                 4 -> {
+                    // 详细日志切换
+                    val next = !NokiaLog.isDetailedLogEnabled(this)
+                    NokiaLog.setDetailedLogEnabled(this, next)
+                    val tip = if (next) "已开启详细日志（记录调试信息）" else "已关闭详细日志（仅记录错误与崩溃）"
+                    Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
+                }
+                5 -> {
                     // 关于
                     startActivity(Intent(this, AboutActivity::class.java))
                 }
-                5 -> {
+                6 -> {
                     // 退出应用：停止播放服务并结束任务
                     Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
                     stopService(Intent(this, PlaybackService::class.java))

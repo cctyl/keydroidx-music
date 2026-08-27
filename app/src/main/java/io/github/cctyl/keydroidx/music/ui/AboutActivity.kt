@@ -5,9 +5,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.widget.Toast
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.nokia.keycore.log.NokiaLog
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
@@ -92,6 +93,9 @@ class AboutActivity : NokiaBaseActivity() {
         val iconSize = (18 * resources.displayMetrics.density).toInt()
         val dialog = NokiaOptionsDialog(this, getString(R.string.about_title))
 
+        val detailedLogEnabled = NokiaLog.isDetailedLogEnabled(this)
+        val logToggleTitle = if (detailedLogEnabled) "详细日志：已开启" else "详细日志：已关闭"
+
         dialog.addItem(
             1, getString(R.string.about_open_repo),
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_ARROW_FORWARD, iconSize, iconColor)
@@ -101,7 +105,11 @@ class AboutActivity : NokiaBaseActivity() {
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_EDIT, iconSize, iconColor)
         )
         dialog.addItem(
-            3, getString(R.string.about_return),
+            3, logToggleTitle,
+            NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
+        )
+        dialog.addItem(
+            4, getString(R.string.about_return),
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_ARROW_BACK, iconSize, iconColor)
         )
 
@@ -109,10 +117,19 @@ class AboutActivity : NokiaBaseActivity() {
             when (index) {
                 0 -> openRepoInBrowser()
                 1 -> copyRepoUrl()
-                2 -> finish()
+                2 -> toggleDetailedLog()
+                3 -> finish()
             }
         }
         dialog.show()
+    }
+
+    private fun toggleDetailedLog() {
+        val newState = !NokiaLog.isDetailedLogEnabled(this)
+        NokiaLog.setDetailedLogEnabled(this, newState)
+        val tip = if (newState) "详细日志已开启 (记录调试日志)" else "详细日志已关闭 (仅记录错误与崩溃)"
+        Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
+        NokiaLog.i(TAG, tip)
     }
 
     /** 调系统浏览器打开开源仓库；无可用浏览器时给出提示。 */
