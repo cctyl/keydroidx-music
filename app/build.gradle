@@ -3,15 +3,14 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-// Read KDFB feedback config from local.properties (not in git)
+// Read feedback config from local.properties (not in git)
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withInputStream { localProperties.load(it) }
 }
-def kdfbHost = localProperties.getProperty('KDFB_SERVER_HOST', '127.0.0.1')
-def kdfbPort = localProperties.getProperty('KDFB_SERVER_PORT', '9421')
-def kdfbKey = localProperties.getProperty('KDFB_PRIVATE_KEY', '')
+def feedbackUrl = localProperties.getProperty('FEEDBACK_UPLOAD_URL', 'http://127.0.0.1:9421/upload')
+def feedbackKey = localProperties.getProperty('FEEDBACK_SECRET_KEY', '')
 
 android {
     namespace 'io.github.cctyl.keydroidx.music'
@@ -28,9 +27,8 @@ android {
         versionCode 1
         versionName "1.0.0"
 
-        buildConfigField "String", "KDFB_SERVER_HOST", "\"${kdfbHost}\""
-        buildConfigField "int", "KDFB_SERVER_PORT", "${kdfbPort}"
-        buildConfigField "String", "KDFB_PRIVATE_KEY", "\"${kdfbKey}\""
+        buildConfigField "String", "FEEDBACK_UPLOAD_URL", "\"${feedbackUrl}\""
+        buildConfigField "String", "FEEDBACK_SECRET_KEY", "\"${feedbackKey}\""
     }
 
     signingConfigs {

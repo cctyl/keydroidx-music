@@ -7,9 +7,9 @@ import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.warmup.AppWarmup
-import io.github.cctyl.nokia.keycore.feedback.NokiaFeedback
-import io.github.cctyl.nokia.keycore.feedback.NokiaFeedbackConfig
-import io.github.cctyl.nokia.keycore.log.NokiaLog
+import io.github.cctyl.nokia.common.feedback.NokiaFeedback
+import io.github.cctyl.nokia.common.feedback.NokiaFeedbackConfig
+import io.github.cctyl.nokia.common.log.NokiaLog
 
 class MusicApplication : Application() {
     override fun onCreate() {
@@ -33,9 +33,8 @@ class MusicApplication : Application() {
         // 初始化意见反馈组件
         NokiaFeedback.init(
             NokiaFeedbackConfig(
-                BuildConfig.KDFB_SERVER_HOST,
-                BuildConfig.KDFB_SERVER_PORT,
-                BuildConfig.KDFB_PRIVATE_KEY,
+                BuildConfig.FEEDBACK_UPLOAD_URL,
+                BuildConfig.FEEDBACK_SECRET_KEY,
                 "KeydroidX-Music",
                 BuildConfig.VERSION_NAME,
                 null
