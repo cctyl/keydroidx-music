@@ -197,6 +197,48 @@
                 android:background="@color/music_accent"
                 android:visibility="invisible" />
         </FrameLayout>
+
+        <!-- ── Tab 5: 设置 ── -->
+        <FrameLayout
+            android:id="@+id/tab_setting"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tab_icon_setting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="1dp" />
+
+                <TextView
+                    android:id="@+id/tab_label_setting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tab_setting"
+                    android:textSize="11sp"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/tab_indicator_setting"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_gravity="bottom"
+                android:background="@color/music_accent"
+                android:visibility="invisible" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Tab 栏底部分割线 -->
@@ -206,7 +248,7 @@
         android:background="@color/music_tab_bottom_line" />
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 内容区 - 4个 Tab 内容页面，GONE/VISIBLE 切换             -->
+    <!-- 内容区 - 5个 Tab 内容页面，GONE/VISIBLE 切换             -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <FrameLayout
         android:layout_width="match_parent"
@@ -241,6 +283,14 @@
         <include
             android:id="@+id/content_search"
             layout="@layout/fragment_tab_search"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- Tab 5: 设置 -->
+        <include
+            android:id="@+id/content_setting"
+            layout="@layout/fragment_tab_setting"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone" />

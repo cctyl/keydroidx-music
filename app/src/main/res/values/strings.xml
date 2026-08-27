@@ -7,12 +7,14 @@
     <string name="title_discover">发现音乐</string>
     <string name="title_chart">云音乐排行榜</string>
     <string name="title_search">歌曲搜索</string>
+    <string name="title_setting">系统设置</string>
 
     <!-- ── Tab 栏 ── -->
     <string name="tab_mine">我的</string>
     <string name="tab_discover">发现</string>
     <string name="tab_chart">榜单</string>
     <string name="tab_search">搜索</string>
+    <string name="tab_setting">设置</string>
 
     <!-- ── 软键栏 ── -->
     <string name="softkey_options">选项</string>

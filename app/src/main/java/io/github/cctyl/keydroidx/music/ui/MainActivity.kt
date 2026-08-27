@@ -56,11 +56,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 音乐库主界面，包含 4 个 Tab：我的 / 发现 / 榜单 / 搜索
+ * 音乐库主界面，包含 5 个 Tab：我的 / 发现 / 榜单 / 搜索 / 设置
  *
  * 布局结构（activity_music_main.xml）：
  *   NokiaBaseActivity 骨架提供 顶部标题栏 + 底部软键栏
- *   本布局只负责: Tab栏 + 4个内容页
+ *   本布局只负责: Tab栏 + 5个内容页
  */
 class MainActivity : NokiaBaseActivity() {
 
@@ -69,6 +69,7 @@ class MainActivity : NokiaBaseActivity() {
     private val TAB_DISCOVER = 1
     private val TAB_CHART = 2
     private val TAB_SEARCH = 3
+    private val TAB_SETTING = 4
     private var currentTab = TAB_MINE
 
     // ── Tab 栏控件 ──
@@ -115,6 +116,9 @@ class MainActivity : NokiaBaseActivity() {
     // ── 搜索 Tab ──
     private lateinit var searchFieldRoot: LinearLayout
     private lateinit var searchKeywordRoots: MutableList<LinearLayout>
+
+    // ── 设置 Tab ──
+    private lateinit var settingRoots: List<LinearLayout>
 
     // ── 当前焦点状态 ──
     private var focusItems: List<LinearLayout> = emptyList()
@@ -181,6 +185,7 @@ class MainActivity : NokiaBaseActivity() {
         setupDiscoverTab()
         setupChartTab()
         setupSearchTab()
+        setupSettingTab()
         switchTab(TAB_MINE)
         // 按当前主题重刷 XML 静态色与卡片背景
         applyDynamicTheme()
@@ -221,31 +226,36 @@ class MainActivity : NokiaBaseActivity() {
             findViewById(R.id.tab_mine),
             findViewById(R.id.tab_discover),
             findViewById(R.id.tab_chart),
-            findViewById(R.id.tab_search)
+            findViewById(R.id.tab_search),
+            findViewById(R.id.tab_setting)
         )
         tabIcons = listOf(
             findViewById(R.id.tab_icon_mine),
             findViewById(R.id.tab_icon_discover),
             findViewById(R.id.tab_icon_chart),
-            findViewById(R.id.tab_icon_search)
+            findViewById(R.id.tab_icon_search),
+            findViewById(R.id.tab_icon_setting)
         )
         tabLabels = listOf(
             findViewById(R.id.tab_label_mine),
             findViewById(R.id.tab_label_discover),
             findViewById(R.id.tab_label_chart),
-            findViewById(R.id.tab_label_search)
+            findViewById(R.id.tab_label_search),
+            findViewById(R.id.tab_label_setting)
         )
         tabIndicators = listOf(
             findViewById(R.id.tab_indicator_mine),
             findViewById(R.id.tab_indicator_discover),
             findViewById(R.id.tab_indicator_chart),
-            findViewById(R.id.tab_indicator_search)
+            findViewById(R.id.tab_indicator_search),
+            findViewById(R.id.tab_indicator_setting)
         )
         tabContents = listOf(
             findViewById(R.id.content_mine),
             findViewById(R.id.content_discover),
             findViewById(R.id.content_chart),
-            findViewById(R.id.content_search)
+            findViewById(R.id.content_search),
+            findViewById(R.id.content_setting)
         )
 
         // 设置 Tab 图标
@@ -253,7 +263,8 @@ class MainActivity : NokiaBaseActivity() {
             NokiaIcons.ICON_PERSON,
             NokiaIcons.ICON_EXPLORE,
             NokiaIcons.ICON_LEADERBOARD,
-            NokiaIcons.ICON_SEARCH
+            NokiaIcons.ICON_SEARCH,
+            NokiaIcons.ICON_SETTINGS
         )
         tabIcons.forEachIndexed { i, tv -> NokiaIcons.setIcon(tv, iconCodes[i]) }
 
@@ -718,6 +729,23 @@ class MainActivity : NokiaBaseActivity() {
         renderSearchKeywords()
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  设置 Tab
+    // ══════════════════════════════════════════════════════════
+    private fun setupSettingTab() {
+        val settingRoot = findViewById<View>(R.id.content_setting)
+        settingRoots = listOf(
+            settingRoot.findViewById(R.id.item_setting_auth),
+            settingRoot.findViewById(R.id.item_setting_cookie),
+            settingRoot.findViewById(R.id.item_setting_bg_play),
+            settingRoot.findViewById(R.id.item_setting_feedback),
+            settingRoot.findViewById(R.id.item_setting_log),
+            settingRoot.findViewById(R.id.item_setting_about),
+            settingRoot.findViewById(R.id.item_setting_exit)
+        )
+        updateSettingItemsUI()
+    }
+
     /** 搜索框内嵌 EditText（原地输入，不弹窗） */
     private fun searchEditText(): EditText? =
         findViewById<EditText>(R.id.et_search_input)
@@ -819,6 +847,13 @@ class MainActivity : NokiaBaseActivity() {
                 setSoftKeys("选项", "搜索", "删除")
                 focusItems = listOf(searchFieldRoot) + searchKeywordRoots
             }
+            TAB_SETTING -> {
+                setPageTitle("系统设置")
+                setTitleIcon(NokiaIcons.ICON_SETTINGS)
+                setSoftKeys(null, "选择", "正在播放")
+                updateSettingItemsUI()
+                focusItems = settingRoots
+            }
         }
         focusIdx = 0
         applyFocus()
@@ -851,6 +886,7 @@ class MainActivity : NokiaBaseActivity() {
             TAB_DISCOVER -> findViewById<ScrollView>(R.id.content_discover)
             TAB_CHART -> findViewById<ScrollView>(R.id.content_chart)
             TAB_SEARCH -> findViewById<ScrollView>(R.id.scroll_search)
+            TAB_SETTING -> findViewById<ScrollView>(R.id.content_setting)
             else -> null
         }
         if (currentScroll != null && focusedView != null) {
@@ -965,7 +1001,7 @@ class MainActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.RIGHT -> {
-                if (currentTab < 3) switchTab(currentTab + 1)
+                if (currentTab < 4) switchTab(currentTab + 1)
                 true
             }
             NokiaKeyAction.SELECT -> {
@@ -974,13 +1010,16 @@ class MainActivity : NokiaBaseActivity() {
                     TAB_DISCOVER -> onSelectDiscoverItem()
                     TAB_CHART -> onSelectChartItem()
                     TAB_SEARCH -> onSelectSearchItem()
+                    TAB_SETTING -> onSelectSettingItem()
                     else -> { /* 其他 Tab 暂不处理 */ }
                 }
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                // 左软键：各 Tab 统一唤出选项菜单
-                showOptionsDialog()
+                // 左软键：设置 Tab 无左软键，其余 Tab 唤出选项菜单
+                if (currentTab != TAB_SETTING) {
+                    showOptionsDialog()
+                }
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
@@ -1437,94 +1476,25 @@ class MainActivity : NokiaBaseActivity() {
     private fun showOptionsDialog() {
         val iconColor = Color.WHITE
         val iconSize = (18 * resources.displayMetrics.density).toInt()
-        val title = if (CookieManager.hasCookie(this)) "账户" else "选项"
-        val dialog = NokiaOptionsDialog(this, title)
+        val dialog = NokiaOptionsDialog(this, "选项")
 
-        // 账户项（登录 / 退出登录）
-        if (CookieManager.hasCookie(this)) {
-            dialog.addItem(
-                1, "退出登录",
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
-            )
-        } else {
-            dialog.addItem(
-                1, "登录网易云",
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_PERSON, iconSize, iconColor)
-            )
-        }
-
-        // 公共项：Cookie 设置 / 后台播放 / 意见反馈 / 详细日志 / 关于 / 退出应用（所有 Tab 一致）
-        // 注：「正在播放」由右软键直达，不进菜单避免重复
         dialog.addItem(
-            2, "网易云 Cookie 设置",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
-        )
-        dialog.addItem(
-            3, "后台播放",
+            1, "后台播放",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_VOLUME_UP, iconSize, iconColor)
         )
         dialog.addItem(
-            4, "意见反馈",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_EDIT, iconSize, iconColor)
-        )
-        val detailedLog = NokiaLog.isDetailedLogEnabled(this)
-        dialog.addItem(
-            5, if (detailedLog) "详细日志：开" else "详细日志：关",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
-        )
-        dialog.addItem(
-            6, getString(R.string.menu_about),
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_INFO, iconSize, iconColor)
-        )
-        dialog.addItem(
-            7, "退出应用",
+            2, "退出应用",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
         dialog.setOnOptionSelectedListener { index, _ ->
             when (index) {
                 0 -> {
-                    if (CookieManager.hasCookie(this)) {
-                        // 退出登录
-                        CookieManager.clearCookie(this)
-                        UserProfileCache.clear(this)
-                        PlaylistSongCache.clearAll(this)
-                        RetrofitClient.updateCookie(this, null)
-                        Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
-                        loadUserProfile()   // 回到未登录态
-                        loadDiscoverPlaylists() // 回退到默认推荐歌单
-                    } else {
-                        // 发起 WebView 登录
-                        loginLauncher.launch(
-                            Intent(this, WebLoginActivity::class.java)
-                        )
-                    }
-                }
-                1 -> {
-                    // 网易云 Cookie 设置
-                    startActivity(Intent(this, CookieSettingsActivity::class.java))
-                }
-                2 -> {
                     // 后台播放：退到桌面但应用进程与 PlaybackService 存活，音乐继续播
                     Log.d("MainActivity", "后台播放：moveTaskToBack")
                     moveTaskToBack(true)
                 }
-                3 -> {
-                    // 意见反馈
-                    startActivity(Intent(this, NokiaFeedbackActivity::class.java))
-                }
-                4 -> {
-                    // 详细日志切换
-                    val next = !NokiaLog.isDetailedLogEnabled(this)
-                    NokiaLog.setDetailedLogEnabled(this, next)
-                    val tip = if (next) "已开启详细日志（记录调试信息）" else "已关闭详细日志（仅记录错误与崩溃）"
-                    Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
-                }
-                5 -> {
-                    // 关于
-                    startActivity(Intent(this, AboutActivity::class.java))
-                }
-                6 -> {
+                1 -> {
                     // 退出应用：停止播放服务并结束任务
                     Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
                     stopService(Intent(this, PlaybackService::class.java))
@@ -1533,6 +1503,106 @@ class MainActivity : NokiaBaseActivity() {
             }
         }
         dialog.show()
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  "设置" Tab 选中与数据渲染
+    // ══════════════════════════════════════════════════════════
+    private fun updateSettingItemsUI() {
+        // 更新账号项状态（登录 / 退出登录）
+        val isLogin = CookieManager.hasCookie(this)
+        findViewById<TextView>(R.id.tv_setting_auth_title)?.text = if (isLogin) "退出登录" else "登录网易云"
+        findViewById<TextView>(R.id.tv_setting_auth_sub)?.text = if (isLogin) "当前已登录，按确定可退出账号" else "登录网易云音乐账号同步歌单"
+        findViewById<TextView>(R.id.icon_setting_auth)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_PERSON)
+        }
+
+        // 更新 Cookie 设置图标
+        findViewById<TextView>(R.id.icon_setting_cookie)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_SETTINGS)
+        }
+
+        // 更新后台播放图标
+        findViewById<TextView>(R.id.icon_setting_bg_play)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_VOLUME_UP)
+        }
+
+        // 更新意见反馈图标
+        findViewById<TextView>(R.id.icon_setting_feedback)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_EDIT)
+        }
+
+        // 更新详细日志状态与图标
+        val detailedLog = NokiaLog.isDetailedLogEnabled(this)
+        findViewById<TextView>(R.id.tv_setting_log_title)?.text = if (detailedLog) "详细日志：已开启" else "详细日志：已关闭"
+        findViewById<TextView>(R.id.tv_setting_log_sub)?.text = if (detailedLog) "记录 DEBUG/INFO 调试信息（按确定切换）" else "仅记录错误与崩溃日志（按确定切换）"
+        findViewById<TextView>(R.id.icon_setting_log)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_SETTINGS)
+        }
+
+        // 更新关于图标
+        findViewById<TextView>(R.id.icon_setting_about)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_INFO)
+        }
+
+        // 更新退出图标
+        findViewById<TextView>(R.id.icon_setting_exit)?.let {
+            NokiaIcons.setIcon(it, NokiaIcons.ICON_CLOSE)
+        }
+    }
+
+    private fun onSelectSettingItem() {
+        if (focusIdx < 0 || focusIdx >= settingRoots.size) return
+        when (focusIdx) {
+            0 -> {
+                // 1. 登录 / 退出登录
+                if (CookieManager.hasCookie(this)) {
+                    CookieManager.clearCookie(this)
+                    UserProfileCache.clear(this)
+                    PlaylistSongCache.clearAll(this)
+                    RetrofitClient.updateCookie(this, null)
+                    Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
+                    loadUserProfile()   // 回到未登录态
+                    loadDiscoverPlaylists() // 回退到默认推荐歌单
+                    updateSettingItemsUI()
+                } else {
+                    loginLauncher.launch(
+                        Intent(this, WebLoginActivity::class.java)
+                    )
+                }
+            }
+            1 -> {
+                // 2. 网易云 Cookie 设置
+                startActivity(Intent(this, CookieSettingsActivity::class.java))
+            }
+            2 -> {
+                // 3. 后台播放：退到桌面但应用进程与 PlaybackService 存活，音乐继续播
+                Log.d("MainActivity", "后台播放：moveTaskToBack")
+                moveTaskToBack(true)
+            }
+            3 -> {
+                // 4. 意见反馈
+                startActivity(Intent(this, NokiaFeedbackActivity::class.java))
+            }
+            4 -> {
+                // 5. 详细日志切换
+                val next = !NokiaLog.isDetailedLogEnabled(this)
+                NokiaLog.setDetailedLogEnabled(this, next)
+                val tip = if (next) "已开启详细日志（记录调试信息）" else "已关闭详细日志（仅记录错误与崩溃）"
+                Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
+                updateSettingItemsUI()
+            }
+            5 -> {
+                // 6. 关于
+                startActivity(Intent(this, AboutActivity::class.java))
+            }
+            6 -> {
+                // 7. 退出应用：停止播放服务并结束任务
+                Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
+                stopService(Intent(this, PlaybackService::class.java))
+                finishAffinity()
+            }
+        }
     }
 
     private fun makeDivider(leftDp: Int, rightDp: Int): View {

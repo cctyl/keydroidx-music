@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeydroidX 音乐 - 主界面设置 Tab 方案 A 预览</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --screen-w: 240px;
+      --screen-h: 320px;
+      --color-primary: #1A3A6B;
+      --color-dark: #0A0E17;
+      --color-accent: #3A86FF;
+      --color-focus: #1E3A8A;
+      --color-text: #E8EEF5;
+      --color-subtext: #8FA3BF;
+      --color-card-bg: #121A2A;
+      --color-border: #1E293B;
+      --color-badge: #EF4444;
+      --color-badge-vip: #D97706;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 20px 10px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #60a5fa;
+      font-weight: bold;
+    }
+
+    .desc-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-width: 480px;
+      width: 100%;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .desc-card p {
+      margin-bottom: 6px;
+    }
+    .desc-card p:last-child {
+      margin-bottom: 0;
+    }
+    .desc-card strong {
+      color: #93c5fd;
+    }
+    .tag-badge {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+
+    /* 手机外壳 */
+    .phone-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #1e293b;
+      border-radius: 28px;
+      padding: 16px 14px 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.2);
+      border: 3px solid #334155;
+    }
+
+    /* 240x320 屏幕视口 */
+    .screen-viewport {
+      width: var(--screen-w);
+      height: var(--screen-h);
+      background-color: var(--color-dark);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+      position: relative;
+      font-family: monospace, sans-serif;
+    }
+
+    /* 顶栏 */
+    .status-bar {
+      height: 22px;
+      background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 11px;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    .status-title {
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+    }
+
+    /* Tab 栏：5 等分，每项 48dp */
+    .tab-bar {
+      height: 38px;
+      background-color: #0A0E17;
+      display: flex;
+      border-bottom: 2px solid #1A3A6B;
+      flex-shrink: 0;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-subtext);
+      cursor: pointer;
+      position: relative;
+      padding-top: 2px;
+    }
+    .tab-item.active {
+      color: var(--color-text);
+    }
+    .tab-item .material-icons {
+      font-size: 15px;
+      margin-bottom: 1px;
+    }
+    .tab-item .tab-text {
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .tab-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 6px;
+      right: 6px;
+      height: 2px;
+      background-color: var(--color-accent);
+      display: none;
+    }
+    .tab-item.active .tab-indicator {
+      display: block;
+    }
+
+    /* 内容滚动区 */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      background-color: var(--color-dark);
+      position: relative;
+    }
+    .content-area::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 列表条目通用 */
+    .list-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      min-height: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer;
+    }
+    .list-item.focus {
+      background: linear-gradient(90deg, #1E3A8A 0%, #172554 100%);
+      border-left: 3px solid #60A5FA;
+    }
+    .list-item .item-icon {
+      font-size: 18px;
+      color: var(--color-accent);
+      margin-right: 8px;
+      width: 20px;
+      text-align: center;
+    }
+    .list-item.focus .item-icon {
+      color: #FFFFFF;
+    }
+    .list-item .item-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .list-item .item-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-item .item-sub {
+      font-size: 9px;
+      color: var(--color-subtext);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-item.focus .item-sub {
+      color: #BFDBFE;
+    }
+
+    .item-badge {
+      font-size: 8px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: #2563EB;
+      color: #fff;
+      font-weight: bold;
+      margin-left: 4px;
+    }
+    .item-toggle-state {
+      font-size: 10px;
+      font-weight: bold;
+      color: #10B981;
+      padding: 2px 5px;
+      background: rgba(16, 185, 129, 0.15);
+      border-radius: 3px;
+    }
+    .item-toggle-state.off {
+      color: #94A3B8;
+      background: rgba(148, 163, 184, 0.15);
+    }
+
+    /* 分组标题 */
+    .section-header {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.3);
+      font-size: 10px;
+      font-weight: bold;
+      color: #93C5FD;
+      border-left: 3px solid #3B82F6;
+      margin-top: 4px;
+    }
+
+    /* 用户头部 */
+    .user-header {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      background: rgba(0,0,0,0.25);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 18px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      color: #94a3b8;
+    }
+    .user-info-text {
+      flex: 1;
+      overflow: hidden;
+    }
+    .user-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .user-sub {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .vip-tag {
+      font-size: 8px;
+      color: #f59e0b;
+      background: rgba(245,158,11,0.15);
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+
+    /* 底栏软键 */
+    .softkey-bar {
+      height: 24px;
+      background: linear-gradient(180deg, #172554 0%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    .softkey-item {
+      flex: 1;
+      text-align: center;
+      font-size: 10px;
+      color: #93c5fd;
+      font-weight: bold;
+    }
+    .softkey-item.center {
+      color: #ffffff;
+    }
+
+    /* 物理键盘控制区 */
+    .keypad-wrapper {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      gap: 6px;
+    }
+    .hw-key {
+      height: 32px;
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .hw-key:active {
+      background: #2563eb;
+      transform: translateY(1px);
+    }
+    .hw-key.soft {
+      background: #1e3a8a;
+      color: #93c5fd;
+    }
+
+    /* 吐司提示框 */
+    .toast-box {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #3b82f6;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      display: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>KeydroidX 音乐 - 主界面优化预览 (方案 A)</h1>
+
+  <div class="desc-card">
+    <p><span class="tag-badge">优化说明</span> 新增第 5 个 Tab<strong>【设置】</strong>，每个 Tab 占 48dp，完美适配 240dp 视口。</p>
+    <p>⚡ <strong>现有入口 100% 忠实保留，功能与行为完全一致：</strong></p>
+    <ul style="padding-left: 18px; margin-top: 4px;">
+      <li><strong>登录网易云 / 退出登录</strong>：未登录点击唤出 WebView 登录；已登录点击退出登录。</li>
+      <li><strong>网易云 Cookie 设置</strong>：进入 Cookie 设置页（扫码/手动导入）。</li>
+      <li><strong>后台播放</strong>：退至后台，保持音频播放。</li>
+      <li><strong>意见反馈</strong>：进入反馈界面提交 Issue 与日志。</li>
+      <li><strong>详细日志：开/关</strong>：一键开关分级详细日志落盘。</li>
+      <li><strong>关于</strong>：展示版本号与致谢。</li>
+      <li><strong>退出应用</strong>：停止 PlaybackService 并结束任务。</li>
+    </ul>
+    <p style="margin-top:6px; color:#a5f3fc;">💡 提示：可用键盘 <kbd>←</kbd> <kbd>→</kbd> 切 Tab，<kbd>↑</kbd> <kbd>↓</kbd> 移焦点，<kbd>Enter</kbd> 确定，<kbd>L</kbd> 左软键。</p>
+  </div>
+
+  <div class="phone-wrapper">
+    <!-- 240x320 视口 -->
+    <div class="screen-viewport" id="screen">
+      
+      <!-- 顶栏 -->
+      <div class="status-bar">
+        <span class="status-title" id="bar-title">设置</span>
+        <div class="status-icons">
+          <span>09:41</span>
+          <span class="material-icons" style="font-size:12px;">network_cell</span>
+          <span class="material-icons" style="font-size:12px;">battery_full</span>
+        </div>
+      </div>
+
+      <!-- 5 Tab 栏 -->
+      <div class="tab-bar">
+        <div class="tab-item" onclick="switchTab(0)" id="tab-0">
+          <span class="material-icons">person</span>
+          <span class="tab-text">我的</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" onclick="switchTab(1)" id="tab-1">
+          <span class="material-icons">explore</span>
+          <span class="tab-text">发现</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" onclick="switchTab(2)" id="tab-2">
+          <span class="material-icons">leaderboard</span>
+          <span class="tab-text">榜单</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item" onclick="switchTab(3)" id="tab-3">
+          <span class="material-icons">search</span>
+          <span class="tab-text">搜索</span>
+          <div class="tab-indicator"></div>
+        </div>
+        <div class="tab-item active" onclick="switchTab(4)" id="tab-4">
+          <span class="material-icons">settings</span>
+          <span class="tab-text">设置</span>
+          <div class="tab-indicator"></div>
+        </div>
+      </div>
+
+      <!-- 内容区 -->
+      <div class="content-area" id="content-container">
+        <!-- 动态渲染 Tab 内容 -->
+      </div>
+
+      <!-- 底部软键 -->
+      <div class="softkey-bar">
+        <div class="softkey-item" id="soft-left">选项</div>
+        <div class="softkey-item center" id="soft-center">确定</div>
+        <div class="softkey-item" id="soft-right">正在播放</div>
+      </div>
+
+      <!-- 吐司通知 -->
+      <div class="toast-box" id="toast"></div>
+
+    </div>
+
+    <!-- 模拟物理键盘 -->
+    <div class="keypad-wrapper">
+      <div class="hw-key soft" onclick="handleKey('SOFT_LEFT')">左软</div>
+      <div class="hw-key" onclick="handleKey('UP')">▲</div>
+      <div class="hw-key soft" onclick="handleKey('SOFT_RIGHT')">右软</div>
+      <div class="hw-key" onclick="handleKey('LEFT')">◀</div>
+      <div class="hw-key" style="background:#2563eb; color:#fff;" onclick="handleKey('ENTER')">OK</div>
+      <div class="hw-key" onclick="handleKey('RIGHT')">▶</div>
+      <div class="hw-key" onclick="handleKey('BACK')">返回</div>
+      <div class="hw-key" onclick="handleKey('DOWN')">▼</div>
+      <div class="hw-key" onclick="showToast('主页键')">⌂</div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 4; // 默认展示设置 Tab
+    let focusIdx = 0;
+    let isLoggedIn = true;
+    let detailedLog = false;
+
+    // 忠实还原原 MainActivity 的 7 大选项入口
+    const settingItems = [
+      { id: 'auth', title: () => isLoggedIn ? '退出登录' : '登录网易云', sub: () => isLoggedIn ? '当前登录：云村音乐人' : '按 OK 登录网易云音乐', icon: 'account_circle' },
+      { id: 'cookie', title: () => '网易云 Cookie 设置', sub: () => '手动导入 / 扫码更新 Cookie', icon: 'vpn_key' },
+      { id: 'bg_play', title: () => '后台播放', sub: () => '最小化窗口，音乐在后台继续播放', icon: 'volume_up' },
+      { id: 'feedback', title: () => '意见反馈', sub: () => '提交 Issue 或使用建议', icon: 'rate_review' },
+      { id: 'log', title: () => detailedLog ? '详细日志：开' : '详细日志：关', sub: () => detailedLog ? '已开启 DEBUG 级别详细日志落盘' : '仅记录 ERROR 错误与崩溃堆栈', icon: 'description', isToggle: true },
+      { id: 'about', title: () => '关于', sub: () => 'KeydroidX 音乐 v1.0.0', icon: 'info' },
+      { id: 'exit', title: () => '退出应用', sub: () => '停止播放服务并退出程序', icon: 'power_settings_new' }
+    ];
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 1500);
+    }
+
+    function switchTab(tabIndex) {
+      currentTab = tabIndex;
+      focusIdx = 0;
+      for (let i = 0; i <= 4; i++) {
+        const tabEl = document.getElementById(`tab-${i}`);
+        if (i === currentTab) {
+          tabEl.classList.add('active');
+        } else {
+          tabEl.classList.remove('active');
+        }
+      }
+      renderContent();
+      updateBarAndSoftkeys();
+    }
+
+    function updateBarAndSoftkeys() {
+      const titleEl = document.getElementById('bar-title');
+      const softLeft = document.getElementById('soft-left');
+      const softCenter = document.getElementById('soft-center');
+      const softRight = document.getElementById('soft-right');
+
+      if (currentTab === 0) {
+        titleEl.innerText = "我的音乐库";
+        softLeft.innerText = "选项";
+        softCenter.innerText = "播放/查看";
+        softRight.innerText = "正在播放";
+      } else if (currentTab === 1) {
+        titleEl.innerText = "发现音乐";
+        softLeft.innerText = "选项";
+        softCenter.innerText = "进入";
+        softRight.innerText = "正在播放";
+      } else if (currentTab === 2) {
+        titleEl.innerText = "云音乐排行榜";
+        softLeft.innerText = "选项";
+        softCenter.innerText = "查看榜单";
+        softRight.innerText = "正在播放";
+      } else if (currentTab === 3) {
+        titleEl.innerText = "歌曲搜索";
+        softLeft.innerText = "清空";
+        softCenter.innerText = "搜索";
+        softRight.innerText = "删除";
+      } else if (currentTab === 4) {
+        titleEl.innerText = "系统设置";
+        softLeft.innerText = "";
+        softCenter.innerText = "进入/切换";
+        softRight.innerText = "正在播放";
+      }
+    }
+
+    function renderContent() {
+      const container = document.getElementById('content-container');
+      container.innerHTML = '';
+
+      if (currentTab === 4) {
+        // 设置 Tab 页面
+        settingItems.forEach((item, idx) => {
+          const isFocused = idx === focusIdx;
+          const row = document.createElement('div');
+          row.className = `list-item ${isFocused ? 'focus' : ''}`;
+          row.onclick = () => { focusIdx = idx; renderContent(); handleEnter(); };
+
+          let rightWidget = '';
+          if (item.isToggle) {
+            rightWidget = `<span class="item-toggle-state ${detailedLog ? '' : 'off'}">${detailedLog ? 'ON' : 'OFF'}</span>`;
+          }
+
+          row.innerHTML = `
+            <span class="material-icons item-icon">${item.icon}</span>
+            <div class="item-content">
+              <div class="item-title">${item.title()}</div>
+              <div class="item-sub">${item.sub()}</div>
+            </div>
+            ${rightWidget}
+          `;
+          container.appendChild(row);
+        });
+      } else if (currentTab === 0) {
+        // 我的 Tab
+        container.innerHTML = `
+          <div class="user-header">
+            <div class="user-avatar"><span class="material-icons">account_circle</span></div>
+            <div class="user-info-text">
+              <div class="user-name">云村音乐人 <span class="vip-tag">VIP</span></div>
+              <div class="user-sub">Lv.8 · 粉丝 12 · 歌单 6</div>
+            </div>
+          </div>
+          <div class="list-item ${focusIdx === 0 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#ef4444;">favorite</span>
+            <div class="item-content"><div class="item-title">我喜欢的音乐</div><div class="item-sub">128 首歌曲</div></div>
+            <span class="item-badge">红心</span>
+          </div>
+          <div class="list-item ${focusIdx === 1 ? 'focus' : ''}">
+            <span class="material-icons item-icon">history</span>
+            <div class="item-content"><div class="item-title">最近播放历史</div><div class="item-sub">50 首歌曲</div></div>
+          </div>
+          <div class="list-item ${focusIdx === 2 ? 'focus' : ''}">
+            <span class="material-icons item-icon">download_for_offline</span>
+            <div class="item-content"><div class="item-title">下载管理</div><div class="item-sub">0 首已下载 · 0 首下载中</div></div>
+            <span class="item-badge">下载</span>
+          </div>
+          <div class="list-item ${focusIdx === 3 ? 'focus' : ''}">
+            <span class="material-icons item-icon">folder</span>
+            <div class="item-content"><div class="item-title">本地音乐</div><div class="item-sub">内部存储与 TF 卡</div></div>
+            <span class="item-badge">本地</span>
+          </div>
+          <div class="section-header">自建与收藏歌单</div>
+          <div class="list-item ${focusIdx === 4 ? 'focus' : ''}">
+            <span class="material-icons item-icon">queue_music</span>
+            <div class="item-content"><div class="item-title">90后经典粤语怀旧金曲</div><div class="item-sub">86 首</div></div>
+          </div>
+        `;
+      } else if (currentTab === 1) {
+        // 发现 Tab
+        container.innerHTML = `
+          <div class="list-item ${focusIdx === 0 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#f59e0b;">radio</span>
+            <div class="item-content"><div class="item-title">私人 FM</div><div class="item-sub">个性化随心听</div></div>
+          </div>
+          <div class="list-item ${focusIdx === 1 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#10b981;">event_note</span>
+            <div class="item-content"><div class="item-title">每日推荐</div><div class="item-sub">每天 06:00 更新 · 专属好歌</div></div>
+            <span class="item-badge" style="background:#10B981;">每日</span>
+          </div>
+          <div class="section-header">今日推荐歌单</div>
+          <div class="list-item ${focusIdx === 2 ? 'focus' : ''}">
+            <span class="material-icons item-icon">queue_music</span>
+            <div class="item-content"><div class="item-title">【华语】藏在回忆里的治愈旋律</div><div class="item-sub">播放 24.5万 · 28首</div></div>
+          </div>
+        `;
+      } else if (currentTab === 2) {
+        // 榜单 Tab
+        container.innerHTML = `
+          <div class="list-item ${focusIdx === 0 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#ef4444;">whatshot</span>
+            <div class="item-content"><div class="item-title">热歌榜</div><div class="item-sub">官方云音乐 · 每周四更新</div></div>
+          </div>
+          <div class="list-item ${focusIdx === 1 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#3b82f6;">fiber_new</span>
+            <div class="item-content"><div class="item-title">新歌榜</div><div class="item-sub">官方云音乐 · 每天更新</div></div>
+          </div>
+          <div class="list-item ${focusIdx === 2 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#8b5cf6;">trending_up</span>
+            <div class="item-content"><div class="item-title">飙升榜</div><div class="item-sub">官方云音乐 · 每天更新</div></div>
+          </div>
+        `;
+      } else if (currentTab === 3) {
+        // 搜索 Tab
+        container.innerHTML = `
+          <div class="list-item ${focusIdx === 0 ? 'focus' : ''}">
+            <span class="material-icons item-icon">search</span>
+            <div class="item-content"><div class="item-title">搜索歌曲 / 歌手</div><div class="item-sub">按 OK 输入拼音或全键盘搜索</div></div>
+          </div>
+          <div class="section-header">热门搜索</div>
+          <div class="list-item ${focusIdx === 1 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#ef4444;">trending_up</span>
+            <div class="item-content"><div class="item-title">周杰伦</div><div class="item-sub">热搜度 999万</div></div>
+          </div>
+          <div class="list-item ${focusIdx === 2 ? 'focus' : ''}">
+            <span class="material-icons item-icon" style="color:#f59e0b;">trending_up</span>
+            <div class="item-content"><div class="item-title">陈奕迅</div><div class="item-sub">热搜度 850万</div></div>
+          </div>
+        `;
+      }
+    }
+
+    function handleEnter() {
+      if (currentTab === 4) {
+        const item = settingItems[focusIdx];
+        if (item.id === 'auth') {
+          if (isLoggedIn) {
+            isLoggedIn = false;
+            showToast("已退出登录");
+          } else {
+            isLoggedIn = true;
+            showToast("登录成功 ✓");
+          }
+          renderContent();
+        } else if (item.id === 'cookie') {
+          showToast("打开：网易云 Cookie 设置");
+        } else if (item.id === 'bg_play') {
+          showToast("后台播放：退到桌面继续播放");
+        } else if (item.id === 'feedback') {
+          showToast("打开：意见反馈");
+        } else if (item.id === 'log') {
+          detailedLog = !detailedLog;
+          showToast(detailedLog ? "已开启详细日志（记录调试信息）" : "已关闭详细日志（仅记录错误与崩溃）");
+          renderContent();
+        } else if (item.id === 'about') {
+          showToast("打开：关于页面");
+        } else if (item.id === 'exit') {
+          showToast("退出应用：停止播放并结束任务");
+        }
+      } else {
+        showToast("进入选中条目");
+      }
+    }
+
+    function handleKey(key) {
+      if (key === 'LEFT') {
+        if (currentTab > 0) switchTab(currentTab - 1);
+      } else if (key === 'RIGHT') {
+        if (currentTab < 4) switchTab(currentTab + 1);
+      } else if (key === 'UP') {
+        const max = currentTab === 4 ? settingItems.length : 4;
+        if (focusIdx > 0) {
+          focusIdx--;
+          renderContent();
+        }
+      } else if (key === 'DOWN') {
+        const max = currentTab === 4 ? settingItems.length : 4;
+        if (focusIdx < max - 1) {
+          focusIdx++;
+          renderContent();
+        }
+      } else if (key === 'ENTER') {
+        handleEnter();
+      } else if (key === 'SOFT_LEFT') {
+        if (currentTab === 4) {
+          showToast("设置页暂无快捷菜单");
+        } else {
+          showToast("唤出选项菜单");
+        }
+      } else if (key === 'SOFT_RIGHT') {
+        showToast("打开：正在播放");
+      } else if (key === 'BACK') {
+        if (currentTab !== 0) {
+          switchTab(0);
+        } else {
+          showToast("按退出键退出");
+        }
+      }
+    }
+
+    // 键盘监听
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') handleKey('LEFT');
+      else if (e.key === 'ArrowRight') handleKey('RIGHT');
+      else if (e.key === 'ArrowUp') handleKey('UP');
+      else if (e.key === 'ArrowDown') handleKey('DOWN');
+      else if (e.key === 'Enter') handleKey('ENTER');
+      else if (e.key === 'l' || e.key === 'L') handleKey('SOFT_LEFT');
+      else if (e.key === 'r' || e.key === 'R') handleKey('SOFT_RIGHT');
+      else if (e.key === 'Escape' || e.key === 'Backspace') handleKey('BACK');
+    });
+
+    // 初始化渲染
+    switchTab(4);
+  </script>
+</body>
+</html>
