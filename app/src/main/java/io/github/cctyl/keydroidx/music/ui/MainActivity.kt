@@ -734,6 +734,7 @@ class MainActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     private fun setupSettingTab() {
         val settingRoot = findViewById<View>(R.id.content_setting)
+        NokiaFontManager.applyToViewTree(settingRoot)
         settingRoots = listOf(
             settingRoot.findViewById(R.id.item_setting_auth),
             settingRoot.findViewById(R.id.item_setting_cookie),
@@ -781,6 +782,7 @@ class MainActivity : NokiaBaseActivity() {
                 container.addView(makeDivider(8, 8))
             }
         }
+        NokiaFontManager.applyToViewTree(container)
         // 若当前正处于搜索 Tab，刷新焦点链（保持焦点在搜索框上）
         if (currentTab == TAB_SEARCH) {
             focusItems = listOf(searchFieldRoot) + searchKeywordRoots

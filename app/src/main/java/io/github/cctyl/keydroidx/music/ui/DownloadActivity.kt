@@ -20,6 +20,7 @@ import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.nokia.keycore.model.NokiaKeyBinding
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
+import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
@@ -173,6 +174,7 @@ class DownloadActivity : NokiaBaseActivity() {
         }
 
         displayedTasks = newDisplayed
+        NokiaFontManager.applyToViewTree(taskContainer)
         focusHelper.setItems(taskViews)
 
         val restoreIdx = if (currentFocusSongId != null) {

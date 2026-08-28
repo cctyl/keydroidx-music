@@ -23,7 +23,7 @@
             android:id="@+id/icon_chart_thumb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
+            android:textSize="15sp"
             android:textColor="#FFFFFF"
             android:includeFontPadding="false" />
     </LinearLayout>
@@ -48,8 +48,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/music_item_normal_text"
-                android:textSize="12sp"
-                android:textStyle="bold"
+                android:textSize="9sp"
+                
                 android:includeFontPadding="false" />
 
             <TextView
@@ -58,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="4dp"
                 android:textColor="@color/music_subtext"
-                android:textSize="10sp"
+                android:textSize="8sp"
                 android:includeFontPadding="false" />
         </LinearLayout>
 
@@ -69,7 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textColor="@color/music_subtext"
-            android:textSize="10sp"
+            android:textSize="8sp"
             android:singleLine="true"
             android:ellipsize="end"
             android:includeFontPadding="false" />
@@ -81,7 +81,7 @@
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:gravity="center"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textColor="@color/music_subtext"
         android:includeFontPadding="false" />
 </LinearLayout>

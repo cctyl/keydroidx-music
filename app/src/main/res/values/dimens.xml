@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础字号规范（对齐桌面微调，避免在 240x320 下初显过大） -->
+    <!-- 正文/列表主标题：原 12sp/13sp -> 11sp -->
+    <dimen name="music_font_primary">11sp</dimen>
+
+    <!-- 副标题/说明文字/时间：原 10sp/11sp -> 9sp -->
+    <dimen name="music_font_secondary">9sp</dimen>
+
+    <!-- 微型提示/角标/序号：原 9sp/10sp -> 8sp -->
+    <dimen name="music_font_caption">8sp</dimen>
+
+    <!-- Tab栏/导航标题：原 11sp -> 10sp -->
+    <dimen name="music_font_tab">10sp</dimen>
+
+    <!-- 强调大标题/页面标题：原 14sp/16sp -> 13sp -->
+    <dimen name="music_font_header">13sp</dimen>
+</resources>

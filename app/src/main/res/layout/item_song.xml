@@ -24,7 +24,7 @@
         android:layout_width="18dp"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textSize="10sp"
+        android:textSize="8sp"
         android:textColor="@color/music_subtext"
         android:includeFontPadding="false" />
 
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/music_item_normal_text"
-                android:textSize="12sp"
+                android:textSize="9sp"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:includeFontPadding="false" />
@@ -58,7 +58,7 @@
                 android:id="@+id/icon_playing"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
+                android:textSize="9sp"
                 android:textColor="@color/music_accent"
                 android:visibility="gone"
                 android:includeFontPadding="false" />
@@ -69,7 +69,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/music_subtext"
-            android:textSize="10sp"
+            android:textSize="8sp"
             android:singleLine="true"
             android:ellipsize="end"
             android:includeFontPadding="false" />
@@ -80,7 +80,7 @@
         android:id="@+id/icon_fav"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="13sp"
+        android:textSize="9sp"
         android:layout_marginLeft="4dp"
         android:includeFontPadding="false" />
 

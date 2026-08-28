@@ -78,7 +78,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textSize="13sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"
                     android:singleLine="true"
@@ -91,7 +91,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:gravity="center"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textColor="@color/music_subtext"
                     android:singleLine="true"
                     android:ellipsize="end"
@@ -164,7 +164,7 @@
                     android:id="@+id/tv_current_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="9sp"
+                    android:textSize="8sp"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
 
@@ -174,7 +174,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:textSize="9sp"
+                    android:textSize="8sp"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
 
@@ -182,7 +182,7 @@
                     android:id="@+id/tv_total_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="9sp"
+                    android:textSize="8sp"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -213,7 +213,7 @@
                     android:id="@+id/icon_guide_lyrics"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textColor="#FDE047"
                     android:includeFontPadding="false" />
 
@@ -239,7 +239,7 @@
                     android:id="@+id/icon_guide_prev"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -264,7 +264,7 @@
                     android:id="@+id/icon_guide_playpause"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -289,7 +289,7 @@
                     android:id="@+id/icon_guide_next"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -314,7 +314,7 @@
                     android:id="@+id/icon_guide_mode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textColor="#FDE047"
                     android:includeFontPadding="false" />
 

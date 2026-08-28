@@ -66,8 +66,8 @@
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -78,7 +78,7 @@
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -93,8 +93,8 @@
                 android:paddingBottom="1dp"
                 android:text="VIP"
                 android:textColor="#8B5A2B"
-                android:textSize="9sp"
-                android:textStyle="bold"
+                android:textSize="8sp"
+                
                 android:background="@drawable/bg_badge"
                 android:visibility="gone"
                 android:includeFontPadding="false" />
@@ -109,7 +109,7 @@
             android:id="@+id/item_favorites"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -120,10 +120,10 @@
 
             <TextView
                 android:id="@+id/icon_favorites"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="12sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -139,8 +139,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_favorites"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -148,7 +148,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -161,7 +161,7 @@
                 android:paddingTop="1dp"
                 android:paddingBottom="1dp"
                 android:textColor="#FFFFFF"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -171,7 +171,7 @@
             android:id="@+id/item_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -182,10 +182,10 @@
 
             <TextView
                 android:id="@+id/icon_history"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="12sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -201,8 +201,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_history"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -210,7 +210,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -223,7 +223,7 @@
                 android:paddingTop="1dp"
                 android:paddingBottom="1dp"
                 android:textColor="#FFFFFF"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -233,7 +233,7 @@
             android:id="@+id/item_download"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -244,10 +244,10 @@
 
             <TextView
                 android:id="@+id/icon_download"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="12sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -263,8 +263,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_download"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -273,7 +273,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_download_sub"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -287,7 +287,7 @@
                 android:paddingBottom="1dp"
                 android:text="@string/mine_download_badge"
                 android:textColor="#FFFFFF"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -297,7 +297,7 @@
             android:id="@+id/item_local"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -308,10 +308,10 @@
 
             <TextView
                 android:id="@+id/icon_local"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="12sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -327,8 +327,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_local"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -336,7 +336,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_local_sub"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -349,7 +349,7 @@
                 android:paddingBottom="1dp"
                 android:text="@string/mine_local_badge"
                 android:textColor="#FFFFFF"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -360,7 +360,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="34dp"
+            android:minHeight="26dp"
             android:layout_marginTop="4dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
@@ -379,8 +379,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="6dp"
                 android:textColor="@color/music_section_header_text"
-                android:textSize="12sp"
-                android:textStyle="bold"
+                android:textSize="9sp"
+                
                 android:includeFontPadding="false" />
         </LinearLayout>
 

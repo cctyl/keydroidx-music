@@ -24,7 +24,7 @@
             android:id="@+id/item_setting_auth"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -36,10 +36,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_auth"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -56,8 +56,8 @@
                     android:layout_height="wrap_content"
                     android:text="登录网易云"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -66,7 +66,7 @@
                     android:layout_height="wrap_content"
                     android:text="按 OK 登录网易云音乐"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -76,7 +76,7 @@
             android:id="@+id/item_setting_cookie"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -88,10 +88,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_cookie"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -108,8 +108,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/cookie_settings_title"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -118,7 +118,7 @@
                     android:layout_height="wrap_content"
                     android:text="手动导入 / 查看 Cookie"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -128,7 +128,7 @@
             android:id="@+id/item_setting_bg_play"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -140,10 +140,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_bg_play"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -160,8 +160,8 @@
                     android:layout_height="wrap_content"
                     android:text="后台播放"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -170,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:text="最小化窗口，音乐在后台继续播放"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -180,7 +180,7 @@
             android:id="@+id/item_setting_feedback"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -192,10 +192,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_feedback"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -212,8 +212,8 @@
                     android:layout_height="wrap_content"
                     android:text="意见反馈"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -222,7 +222,7 @@
                     android:layout_height="wrap_content"
                     android:text="提交问题或使用建议"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -232,7 +232,7 @@
             android:id="@+id/item_setting_log"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -244,10 +244,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_log"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -264,8 +264,8 @@
                     android:layout_height="wrap_content"
                     android:text="详细日志：关"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -274,7 +274,7 @@
                     android:layout_height="wrap_content"
                     android:text="仅记录 ERROR 错误与崩溃堆栈"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -284,7 +284,7 @@
             android:id="@+id/item_setting_about"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -296,10 +296,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_about"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -316,8 +316,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/menu_about"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -326,7 +326,7 @@
                     android:layout_height="wrap_content"
                     android:text="版本信息与致谢"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -336,7 +336,7 @@
             android:id="@+id/item_setting_exit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="44dp"
+            android:minHeight="38dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:focusable="true"
@@ -348,10 +348,10 @@
 
             <TextView
                 android:id="@+id/icon_setting_exit"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:gravity="center"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -368,8 +368,8 @@
                     android:layout_height="wrap_content"
                     android:text="退出应用"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
+                    android:textSize="9sp"
+                    
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -378,7 +378,7 @@
                     android:layout_height="wrap_content"
                     android:text="停止播放服务并退出程序"
                     android:textColor="@color/music_subtext"
-                    android:textSize="10sp"
+                    android:textSize="8sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>

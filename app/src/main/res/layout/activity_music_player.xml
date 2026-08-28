@@ -31,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="@color/music_item_normal_text"
         android:singleLine="true"
@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:gravity="center"
-        android:textSize="13sp"
+        android:textSize="10sp"
         android:textColor="@color/music_item_subtext"
         android:singleLine="true"
         android:text="未知艺术家" />
@@ -54,7 +54,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:textSize="12sp"
+        android:textSize="10sp"
         android:textColor="@color/music_primary"
         android:text="[ 暂停中 ]" />
 
@@ -79,7 +79,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textColor="@color/music_item_subtext"
             android:text="01:15" />
 
@@ -87,7 +87,7 @@
             android:id="@+id/tv_total_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textColor="@color/music_item_subtext"
             android:text="03:45" />
     </LinearLayout>
@@ -98,7 +98,7 @@
         android:layout_weight="1"
         android:gravity="bottom|center_horizontal"
         android:paddingBottom="10dp"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:textColor="@color/music_item_subtext"
         android:text="[确定]: 播放/暂停  [左/右]: 切歌  [返回]: 列表" />
 

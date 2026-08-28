@@ -17,7 +17,7 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:gravity="center"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:textColor="@color/music_accent"
         android:includeFontPadding="false" />
 
@@ -36,7 +36,7 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:textColor="@color/music_item_normal_text"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:includeFontPadding="false" />
 
@@ -48,7 +48,7 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:textColor="@color/music_subtext"
-            android:textSize="10sp"
+            android:textSize="8sp"
             android:includeFontPadding="false" />
     </LinearLayout>
 
@@ -59,7 +59,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="6dp"
         android:textColor="@color/music_subtext"
-        android:textSize="10sp"
+        android:textSize="8sp"
         android:includeFontPadding="false" />
 
 </LinearLayout>

@@ -22,7 +22,7 @@
             android:layout_weight="1"
             android:text="KeydroidX 音乐"
             android:textColor="#FFFFFFFF"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:text="▶"
             android:textColor="#FF4FC3F7"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:paddingStart="6dp" />
     </LinearLayout>
 
@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:text="暂无歌词"
         android:textColor="#FFAAAAAA"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:maxLines="1"
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"

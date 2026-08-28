@@ -11,7 +11,7 @@
         android:id="@+id/tv_song_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         android:textColor="@color/music_item_normal_text"
         android:singleLine="true"
@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:textSize="12sp"
+        android:textSize="10sp"
         android:textColor="@color/music_item_subtext"
         android:singleLine="true"
         android:ellipsize="end" />
