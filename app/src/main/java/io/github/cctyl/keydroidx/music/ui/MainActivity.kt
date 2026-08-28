@@ -1101,9 +1101,15 @@ class MainActivity : NokiaBaseActivity() {
         val itemCount = 1 + mineFixedRoots.size + minePlaylistRoots.size
         if (focusIdx < 0 || focusIdx >= itemCount) return
 
-        // ── 用户信息头部：刷新个人资料 ──
+        // ── 用户信息头部 ──
         if (focusIdx == 0) {
-            loadUserProfile()
+            if (CookieManager.hasCookie(this)) {
+                // 已登录：刷新个人资料
+                loadUserProfile()
+            } else {
+                // 未登录：跳转到设置页登陆
+                switchTab(TAB_SETTING)
+            }
             return
         }
 
@@ -1426,7 +1432,7 @@ class MainActivity : NokiaBaseActivity() {
             iconAvatar.visibility = View.VISIBLE
             ivAvatar?.visibility = View.GONE
             tvNickname?.text = "未登录"
-            tvSub?.text = "按左软键可登录网易云"
+            tvSub?.text = "请到设置页面登陆"
             badgeVip?.visibility = View.GONE
         } else {
             iconAvatar.visibility = View.GONE   // 有图时隐藏；无图稍后由 loadUserProfile 恢复
