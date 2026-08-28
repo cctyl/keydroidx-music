@@ -378,7 +378,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         llSongContainer.removeAllViews()
         songItemViews.clear()
         renderedCount = 0
-        appendSongs(PAGE_SIZE)
+        appendSongs(songs.size)
     }
 
     /** 追加渲染下一页曲目视图。 */
