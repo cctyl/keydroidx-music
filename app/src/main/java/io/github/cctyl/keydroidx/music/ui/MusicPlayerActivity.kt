@@ -1,5 +1,6 @@
 package io.github.cctyl.keydroidx.music.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -1049,11 +1050,34 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         vinylRotateAnim?.cancel()
     }
 
+    /**
+     * 播放页实例被复用时回调（singleTask / CLEAR_TOP / SINGLE_TOP）。
+     *
+     * 典型场景：在播放页按挂机键回桌面（本页只是被压到后台，没有 finish），
+     * 再从桌面「正在播放」组件进入 —— 不会新建实例，而是复用当前实例并走到这里。
+     * 播放态全部来自 PlaybackStateManager 的 StateFlow，视图无需重建，
+     * 只需挂上新的 intent（onResume 会兜底 requestFocus，首个方向键不会被吞）。
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        Log.d(TAG, "onNewIntent：复用已有播放页实例，任务栈不再叠层")
+    }
+
     companion object {
         private const val TAG = "MusicPlayerActivity"
 
+        /**
+         * 统一入口：复用任务栈中已有的播放页，并清空其上方压着的页面。
+         * 配合 manifest 的 singleTask，保证从任何入口（桌面组件 / 通知栏 /
+         * 歌单页 / 本地音乐 / 下载页 / 私人 FM）反复进入都只有一个播放页实例。
+         */
         fun start(context: Context) {
-            val intent = Intent(context, MusicPlayerActivity::class.java)
+            val intent = Intent(context, MusicPlayerActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                // 非 Activity 上下文（Service / Application）必须补 NEW_TASK
+                if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             context.startActivity(intent)
         }
 

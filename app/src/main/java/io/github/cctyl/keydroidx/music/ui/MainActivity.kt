@@ -1028,8 +1028,8 @@ class MainActivity : NokiaBaseActivity() {
                 if (currentTab == TAB_SEARCH) {
                     onDeleteSearchItem()
                 } else {
-                    val intent = Intent(this, MusicPlayerActivity::class.java)
-                    startActivity(intent)
+                    // 走统一入口：复用已有播放页，避免与桌面组件/通知栏来回切换时叠层
+                    MusicPlayerActivity.start(this)
                 }
                 true
             }
@@ -1212,7 +1212,7 @@ class MainActivity : NokiaBaseActivity() {
                     putExtra(PlaybackService.EXTRA_INDEX, 0)
                 }
                 startService(playIntent)
-                startActivity(Intent(this@MainActivity, MusicPlayerActivity::class.java))
+                MusicPlayerActivity.start(this@MainActivity)
             } catch (e: Exception) {
                 Log.e("MainActivity", "openPersonalFm failed", e)
                 if (!isDestroyed && !isFinishing) {

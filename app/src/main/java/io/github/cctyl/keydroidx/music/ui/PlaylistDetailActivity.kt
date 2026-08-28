@@ -654,9 +654,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         }
         startService(playIntent)
 
-        // 4. 跳转播放详情页
-        val playerIntent = Intent(this, MusicPlayerActivity::class.java)
-        startActivity(playerIntent)
+        // 4. 跳转播放详情页（复用已有实例并清空其上方页面，防止反复切歌叠层）
+        MusicPlayerActivity.start(this)
     }
 
     private fun showOptionsMenu() {

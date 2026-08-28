@@ -89,7 +89,10 @@ class PlaybackService : MediaSessionService() {
                 .setSessionActivity(PendingIntent.getActivity(
                     this,
                     0,
-                    Intent(this, MusicPlayerActivity::class.java),
+                    Intent(this, MusicPlayerActivity::class.java).apply {
+                        // 复用已有播放页并清空其上方页面，避免反复点击通知叠层
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    },
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 ))
                 .build().also { session ->

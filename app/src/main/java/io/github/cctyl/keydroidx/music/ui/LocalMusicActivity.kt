@@ -638,7 +638,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         }
         startService(playIntent)
 
-        startActivity(Intent(this, MusicPlayerActivity::class.java))
+        MusicPlayerActivity.start(this)
     }
 
     private fun showOptionsMenu() {

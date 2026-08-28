@@ -36,11 +36,25 @@
             </intent-filter>
         </activity>
 
-        <!-- 正在播放详情页：exported=true 供 Launcher 组件通过显式 Intent 启动 -->
+        <!--
+            正在播放详情页：exported=true 供 Launcher 组件通过显式 Intent 启动。
+
+            launchMode=singleTask 是修复「任务栈叠层」的关键：
+            桌面组件用 ACTION_MAIN + FLAG_ACTIVITY_NEW_TASK 启动本页，而按挂机键/红键
+            回桌面时本页只是被压到后台、并没有 finish()，再次从组件进入就会在本页之上
+            再压一个新的 MusicPlayerActivity —— 进出 N 次就叠 N 层，需要连按 N 次返回
+            才能回到 Tab 页。singleTask 保证：
+              1) 本任务栈内永远只有一个播放页实例（复用走 onNewIntent）；
+              2) 再次进入时自动清空它上方压着的页面（例如从播放页打开的播放列表页）；
+              3) 无论外部（桌面组件/通知栏）用哪种 flag 启动都生效。
+            注意：未显式声明 taskAffinity，沿用应用默认（包名），因此播放页仍然落在
+            音乐应用自己的任务栈里，位于 MainActivity 之上，返回即可回到 Tab。
+        -->
         <activity
             android:name="io.github.cctyl.keydroidx.music.ui.MusicPlayerActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="true" />
+            android:exported="true"
+            android:launchMode="singleTask" />
 
         <!-- 歌单详情页 -->
         <activity
