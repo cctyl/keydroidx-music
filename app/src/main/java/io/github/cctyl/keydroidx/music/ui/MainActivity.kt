@@ -1468,8 +1468,13 @@ class MainActivity : NokiaBaseActivity() {
                     loadUserProfile()   // 刷新用户信息头部
                     loadDiscoverPlaylists() // 刷新发现页推荐
                 } else {
-                    Toast.makeText(this, "登录失败：cookie 未保存", Toast.LENGTH_SHORT).show()
+                    // Cookie 已清除（退出登录 / 手动清空）
+                    Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
+                    loadUserProfile()        // 回到未登录态
+                    loadDiscoverPlaylists()  // 回退到默认推荐歌单
                 }
+                // 同步刷新设置页账号项文案
+                updateSettingItemsUI()
             }
         }
 
@@ -1572,8 +1577,8 @@ class MainActivity : NokiaBaseActivity() {
                 }
             }
             1 -> {
-                // 2. 网易云 Cookie 设置
-                startActivity(Intent(this, CookieSettingsActivity::class.java))
+                // 2. 网易云 Cookie 设置：走 loginLauncher 以便保存后刷新登录态
+                loginLauncher.launch(Intent(this, CookieSettingsActivity::class.java))
             }
             2 -> {
                 // 3. 后台播放：退到桌面但应用进程与 PlaybackService 存活，音乐继续播

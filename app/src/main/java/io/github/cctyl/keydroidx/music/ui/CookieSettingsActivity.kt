@@ -164,7 +164,7 @@ class CookieSettingsActivity : NokiaBaseActivity() {
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor)
         )
         dialog.addItem(
-            3, "保存",
+            3, "保存并退出",
             NokiaIcons.createDrawable(this, NokiaIcons.ICON_CHECK, iconSize, iconColor)
         )
         dialog.addItem(
@@ -230,13 +230,19 @@ class CookieSettingsActivity : NokiaBaseActivity() {
             RetrofitClient.updateCookie(this, null)
             updateStatus("已清除 Cookie（未登录）")
             Toast.makeText(this, "Cookie 已清除", Toast.LENGTH_SHORT).show()
+            // 通知宿主刷新登录态并返回
+            setResult(RESULT_OK)
+            finish()
             return
         }
         val normalized = if (input.contains("=")) input else "MUSIC_U=$input"
         Log.d(TAG, "saveCookie: length=${normalized.length} hasMUSICU=${normalized.contains("MUSIC_U")}")
         RetrofitClient.updateCookie(this, normalized)  // 内部会持久化
-        updateStatus("已保存，返回后刷新即可生效")
+        updateStatus("已保存")
         Toast.makeText(this, "Cookie 已保存 ✓", Toast.LENGTH_SHORT).show()
+        // 保存成功立即通知宿主刷新登录态，并返回设置页
+        setResult(RESULT_OK)
+        finish()
     }
 
     override fun onDestroy() {
