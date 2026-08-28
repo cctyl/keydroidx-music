@@ -53,8 +53,7 @@ class DownloadActivity : NokiaBaseActivity() {
         setPageTitle("下载管理")
         setTitleIcon(NokiaIcons.ICON_DOWNLOAD)
         setStatusBarVisible(true)
-        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
-        setBatteryPercent("70%")
+        registerBatteryReceiver()
         scrollView = findViewById(R.id.scroll_view)
         taskContainer = findViewById(R.id.ll_task_container)
 

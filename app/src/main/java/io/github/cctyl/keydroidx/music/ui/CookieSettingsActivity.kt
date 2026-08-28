@@ -44,8 +44,7 @@ class CookieSettingsActivity : NokiaBaseActivity() {
         setPageTitle(getString(R.string.cookie_settings_title))
         setTitleIcon(NokiaIcons.ICON_SETTINGS)
         setStatusBarVisible(true)
-        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
-        setBatteryPercent("70%")
+        registerBatteryReceiver()
         setSoftKeys(
             getString(R.string.softkey_options),
             getString(R.string.softkey_input),

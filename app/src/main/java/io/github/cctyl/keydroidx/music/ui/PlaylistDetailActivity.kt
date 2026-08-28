@@ -172,8 +172,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         setPageTitle(playlistName)
         setTitleIcon(playlistIcon)
         setStatusBarVisible(true)
-        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
-        setBatteryPercent("70%")
+        registerBatteryReceiver()
         setSoftKeys(
             getString(R.string.softkey_options),
             getString(R.string.softkey_play_selected),

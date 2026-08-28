@@ -104,10 +104,9 @@ class LocalMusicActivity : NokiaBaseActivity() {
         setPageTitle("本地音乐")
         setTitleIcon(NokiaIcons.ICON_SD_CARD)
         setStatusBarVisible(true)
-        setSignalIcon(NokiaIcons.ICON_SIGNAL_CELLULAR_4_BAR)
         // XML 静态经典蓝配色 → 当前主题色
         findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
-        setBatteryPercent("70%")
+        registerBatteryReceiver()
         setSoftKeys(
             getString(R.string.softkey_options),
             getString(R.string.softkey_play_selected),
