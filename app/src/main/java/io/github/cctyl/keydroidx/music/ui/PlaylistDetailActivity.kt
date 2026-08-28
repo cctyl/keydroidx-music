@@ -44,7 +44,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     companion object {
         private const val TAG_DETAIL = "PlaylistDetail"
         /** 懒加载页大小：每次只创建这么多行视图 */
-        private const val PAGE_SIZE = 20
+        private const val PAGE_SIZE = 30
         private const val EXTRA_PLAYLIST_NAME = "playlist_name"
         private const val EXTRA_PLAYLIST_ID = "playlist_id"
         private const val EXTRA_PLAYLIST_ICON = "playlist_icon"
@@ -378,7 +378,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         llSongContainer.removeAllViews()
         songItemViews.clear()
         renderedCount = 0
-        appendSongs(songs.size)
+        appendSongs(PAGE_SIZE)
     }
 
     /** 追加渲染下一页曲目视图。 */
@@ -545,7 +545,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             }
             NokiaKeyAction.DOWN -> {
                 // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
-                if (focusHelper.focusIndex >= renderedCount - 2) {
+                if (focusHelper.focusIndex >= renderedCount - 8) {
                     if (renderedCount < songs.size) {
                         appendSongs(PAGE_SIZE)
                         focusHelper.setItems(getFocusableViews())
