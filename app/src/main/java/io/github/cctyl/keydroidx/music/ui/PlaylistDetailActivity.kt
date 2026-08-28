@@ -544,18 +544,41 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 true
             }
             NokiaKeyAction.DOWN -> {
-                // 懒加载：焦点接近已渲染末尾时追加下一页（提前 2 条预加载）
+                val hasMoreLocal = renderedCount < songs.size
+                val hasMoreSearch = searchKeyword != null && searchHasMore
+
+                // 提前 8 条触发预加载下一批
                 if (focusHelper.focusIndex >= renderedCount - 8) {
-                    if (renderedCount < songs.size) {
+                    if (hasMoreLocal) {
                         appendSongs(PAGE_SIZE)
+                        val currFocus = focusHelper.focusIndex
                         focusHelper.setItems(getFocusableViews())
-                        Log.d(TAG_DETAIL, "lazy load: rendered ${renderedCount}/${songs.size}")
-                    } else if (searchKeyword != null) {
-                        // 视图已全部渲染且还有更多 → 拉取搜索下一页
+                        focusHelper.setFocusIndex(currFocus, false)
+                    } else if (hasMoreSearch) {
                         loadMoreSearch(initial = false)
                     }
                 }
-                focusHelper.onDirection(action)
+
+                // 核心防回顶逻辑：
+                // 如果当前已经在已渲染列表末尾，且后续仍有数据未加载完（本地待渲染或搜索下一页待拉取），
+                // 此时绝不能触发循环回顶！
+                val isAtRenderedEnd = focusHelper.focusIndex >= focusHelper.itemCount - 1
+                val hasPendingData = (renderedCount < songs.size) || (searchKeyword != null && searchHasMore)
+
+                if (isAtRenderedEnd && hasPendingData) {
+                    if (renderedCount < songs.size) {
+                        // 同步追加下一批数据并直接将焦点移到新追加的第一条
+                        val oldIdx = focusHelper.focusIndex
+                        appendSongs(PAGE_SIZE)
+                        focusHelper.setItems(getFocusableViews())
+                        focusHelper.setFocusIndex(oldIdx + 1, true)
+                    } else if (searchKeyword != null && searchHasMore) {
+                        // 搜索模式且需要网络拉取：保持在底部，避免跳回顶部
+                        loadMoreSearch(initial = false)
+                    }
+                } else {
+                    focusHelper.onDirection(action)
+                }
                 true
             }
             NokiaKeyAction.SELECT -> {
