@@ -1594,7 +1594,12 @@ class MainActivity : NokiaBaseActivity() {
             }
             5 -> {
                 // 6. 关于
-                startActivity(Intent(this, AboutActivity::class.java))
+                val config = io.github.cctyl.nokia.common.ui.about.NokiaAboutConfig.createDefault(this)
+                    .setAuthor("cctyl")
+                    .setDescription("KeydroidX 音乐是一款专为物理九键 / 全键盘 Android 按键机量身定制的轻量级音乐播放器，基于 KeydroidX 按键机生态构建，纯物理按键驱动，开箱即用获得生态能力。")
+                    .setRepoUrl("https://github.com/cctyl/keydroidx-music")
+                    .setShowDetailedLogToggle(true)
+                io.github.cctyl.nokia.keycore.ui.NokiaAboutActivity.start(this, config)
             }
             6 -> {
                 // 7. 退出应用：停止播放服务并结束任务

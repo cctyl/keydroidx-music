@@ -72,11 +72,7 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
-        <!-- 关于页 -->
-        <activity
-            android:name="io.github.cctyl.keydroidx.music.ui.AboutActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="false" />
+
 
         <!-- 播放服务 -->
         <service
