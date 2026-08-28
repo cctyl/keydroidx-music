@@ -738,7 +738,6 @@ class MainActivity : NokiaBaseActivity() {
         settingRoots = listOf(
             settingRoot.findViewById(R.id.item_setting_auth),
             settingRoot.findViewById(R.id.item_setting_cookie),
-            settingRoot.findViewById(R.id.item_setting_bg_play),
             settingRoot.findViewById(R.id.item_setting_feedback),
             settingRoot.findViewById(R.id.item_setting_log),
             settingRoot.findViewById(R.id.item_setting_about),
@@ -1535,11 +1534,6 @@ class MainActivity : NokiaBaseActivity() {
             NokiaIcons.setIcon(it, NokiaIcons.ICON_SETTINGS)
         }
 
-        // 更新后台播放图标
-        findViewById<TextView>(R.id.icon_setting_bg_play)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_VOLUME_UP)
-        }
-
         // 更新意见反馈图标
         findViewById<TextView>(R.id.icon_setting_feedback)?.let {
             NokiaIcons.setIcon(it, NokiaIcons.ICON_EDIT)
@@ -1589,24 +1583,19 @@ class MainActivity : NokiaBaseActivity() {
                 loginLauncher.launch(Intent(this, CookieSettingsActivity::class.java))
             }
             2 -> {
-                // 3. 后台播放：退到桌面但应用进程与 PlaybackService 存活，音乐继续播
-                Log.d("MainActivity", "后台播放：moveTaskToBack")
-                moveTaskToBack(true)
-            }
-            3 -> {
-                // 4. 意见反馈
+                // 3. 意见反馈
                 startActivity(Intent(this, NokiaFeedbackActivity::class.java))
             }
-            4 -> {
-                // 5. 详细日志切换
+            3 -> {
+                // 4. 详细日志切换
                 val next = !NokiaLog.isDetailedLogEnabled(this)
                 NokiaLog.setDetailedLogEnabled(this, next)
                 val tip = if (next) "已开启详细日志（记录调试信息）" else "已关闭详细日志（仅记录错误与崩溃）"
                 Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
                 updateSettingItemsUI()
             }
-            5 -> {
-                // 6. 关于
+            4 -> {
+                // 5. 关于
                 val config = io.github.cctyl.nokia.common.ui.about.NokiaAboutConfig.createDefault(this)
                     .setAuthor("cctyl")
                     .setDescription("KeydroidX 音乐是一款专为物理九键 / 全键盘 Android 按键机量身定制的轻量级音乐播放器，基于 KeydroidX 按键机生态构建，纯物理按键驱动，开箱即用获得生态能力。")
@@ -1614,8 +1603,8 @@ class MainActivity : NokiaBaseActivity() {
                     .setShowDetailedLogToggle(true)
                 io.github.cctyl.nokia.keycore.ui.NokiaAboutActivity.start(this, config)
             }
-            6 -> {
-                // 7. 退出应用：停止播放服务并结束任务
+            5 -> {
+                // 6. 退出应用：停止播放服务并结束任务
                 Log.d("MainActivity", "退出应用：停止 PlaybackService 并结束任务")
                 stopService(Intent(this, PlaybackService::class.java))
                 finishAffinity()
