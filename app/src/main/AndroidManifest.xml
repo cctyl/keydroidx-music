@@ -10,6 +10,7 @@
     <!-- ǰ̨����Ȩ�� -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Android 13+ 媒体通知需要通知权限 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

@@ -12,6 +12,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.LayoutInflater
 import android.view.View
@@ -614,6 +615,9 @@ class MainActivity : NokiaBaseActivity() {
      * 自动触发后台刷新。解决「离线进应用空白/报错 → 联网后不刷新」的问题。
      */
     private fun registerChartNetworkObserver() {
+        // NetworkRequest / NetworkCallback / registerNetworkCallback 均为 API 21+，
+        // Android 4.4 (API 19) 上这些类不存在，直接跳过即可（不影响核心播放功能）。
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
         if (chartNetworkCallback != null) return
         val req = NetworkRequest.Builder()
@@ -638,6 +642,7 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     private fun unregisterChartNetworkObserver() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
         chartNetworkCallback?.let {
             try {
@@ -1573,9 +1578,21 @@ class MainActivity : NokiaBaseActivity() {
                     loadDiscoverPlaylists() // 回退到默认推荐歌单
                     updateSettingItemsUI()
                 } else {
-                    loginLauncher.launch(
-                        Intent(this, WebLoginActivity::class.java)
-                    )
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                        // Android 4.4 的 WebView 不具备网页登录所需的 cookie 管理接口
+                        //（setAcceptThirdPartyCookies / removeAllCookies 均为 API 21+），
+                        // 直接打开会闪退。这里改为引导用户使用 Cookie 登录，而非崩溃。
+                        Toast.makeText(
+                            this,
+                            "当前系统版本不支持网页登录，请使用 Cookie 登录",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        loginLauncher.launch(Intent(this, CookieSettingsActivity::class.java))
+                    } else {
+                        loginLauncher.launch(
+                            Intent(this, WebLoginActivity::class.java)
+                        )
+                    }
                 }
             }
             1 -> {

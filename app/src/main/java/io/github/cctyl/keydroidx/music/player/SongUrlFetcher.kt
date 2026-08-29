@@ -35,7 +35,7 @@ object SongUrlFetcher {
                 try {
                     val payload = buildPayload(songId, tryLevel)
                     val response = RetrofitClient.eapiPost(SONG_URL_PATH, payload, useInterface = useIf)
-                    val body = response.body?.string() ?: continue
+                    val body = response.body()?.string() ?: continue
                     Log.d(TAG, "eapi response (if=$useIf, $tryLevel): $body")
                     val json = JSONObject(body)
                     val data = json.optJSONArray("data") ?: continue

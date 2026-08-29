@@ -3,6 +3,7 @@ package io.github.cctyl.keydroidx.music.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import io.github.cctyl.keydroidx.music.util.NLog as Log
 import android.view.Gravity
@@ -56,8 +57,10 @@ class WebLoginActivity : Activity() {
             settings.domStorageEnabled = true
             settings.useWideViewPort = true
             settings.loadWithOverviewMode = true
-            // 允许第三方 cookie，确保登录态完整
-            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            // 允许第三方 cookie，确保登录态完整（API 21+，4.4 上跳过：旧 WebView 默认允许）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            }
 
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView, url: String) {
@@ -96,7 +99,10 @@ class WebLoginActivity : Activity() {
             }
 
             // 进页前先清掉 WebView 旧 cookie，避免误判已登录
-            android.webkit.CookieManager.getInstance().removeAllCookies(null)
+            // removeAllCookies(ValueCallback) 为 API 21+；4.4 上跳过（本页在 4.4 不会被打开）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                android.webkit.CookieManager.getInstance().removeAllCookies(null)
+            }
             loadUrl(LOGIN_URL)
         }
         root.addView(webView)

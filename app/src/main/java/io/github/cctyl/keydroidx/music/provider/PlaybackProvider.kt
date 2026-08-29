@@ -52,7 +52,7 @@ class PlaybackProvider : ContentProvider() {
     private lateinit var context: Context
 
     override fun onCreate(): Boolean {
-        context = requireContext()
+        context = getContext()!!
         Log.d(TAG, "PlaybackProvider onCreate")
         return true
     }

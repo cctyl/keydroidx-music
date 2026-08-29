@@ -23,7 +23,7 @@ object PlaylistApi {
     suspend fun getCurrentUserId(): Long = withContext(Dispatchers.IO) {
         val payload = emptyMap<String, String>()
         val response = RetrofitClient.eapiPost(ACCOUNT_GET_PATH, payload)
-        val body = response.body?.string() ?: throw Exception("empty response")
+        val body = response.body()?.string() ?: throw Exception("empty response")
         val json = JSONObject(body)
         val account = json.optJSONObject("account")
             ?: json.optJSONObject("profile")
@@ -48,7 +48,7 @@ object PlaylistApi {
     suspend fun getUserProfile(): UserProfile = withContext(Dispatchers.IO) {
         val payload = emptyMap<String, String>()
         val response = RetrofitClient.eapiPost(ACCOUNT_GET_PATH, payload)
-        val body = response.body?.string() ?: throw Exception("empty response")
+        val body = response.body()?.string() ?: throw Exception("empty response")
         val json = JSONObject(body)
         Log.d(TAG, "account/get response code=${json.optInt("code", -1)}")
 
@@ -78,7 +78,7 @@ object PlaylistApi {
      */
     private suspend fun mergeUserDetail(base: UserProfile): UserProfile = withContext(Dispatchers.IO) {
         try {
-            val body = RetrofitClient.get("/api/v1/user/detail/${base.userId}").body?.string() ?: return@withContext base
+            val body = RetrofitClient.get("/api/v1/user/detail/${base.userId}").body()?.string() ?: return@withContext base
             val json = JSONObject(body)
             if (json.optInt("code", -1) != 200) {
                 Log.w(TAG, "user/detail code=${json.optInt("code", -1)}")
@@ -106,7 +106,7 @@ object PlaylistApi {
             "includeVideo" to "false"
         )
         val response = RetrofitClient.eapiPost(USER_PLAYLIST_PATH, payload)
-        val body = response.body?.string() ?: throw Exception("empty response")
+        val body = response.body()?.string() ?: throw Exception("empty response")
         val json = JSONObject(body)
         val code = json.optInt("code", -1)
         if (code != 200) throw Exception("API error: code=$code")
@@ -152,7 +152,7 @@ object PlaylistApi {
                 "s" to "0"
             )
             val response = RetrofitClient.eapiPost(PLAYLIST_DETAIL_PATH, payload)
-            val b = response.body?.string() ?: ""
+            val b = response.body()?.string() ?: ""
             val code = JSONObject(b).optInt("code", -1)
             if (code == 200) b else ""
         } catch (e: Exception) {
@@ -163,7 +163,7 @@ object PlaylistApi {
         val finalBody = if (body.isBlank()) {
             // 公开 GET 回退
             val response = RetrofitClient.get("/api/v6/playlist/detail?id=$playlistId&n=1000")
-            response.body?.string() ?: throw Exception("empty response")
+            response.body()?.string() ?: throw Exception("empty response")
         } else body
 
         parsePlaylistDetail(finalBody)
@@ -255,7 +255,7 @@ object PlaylistApi {
         repeat(2) { attempt ->
             try {
                 val response = RetrofitClient.eapiPost("/eapi/v3/song/detail", payload)
-                val body = response.body?.string() ?: return@repeat
+                val body = response.body()?.string() ?: return@repeat
                 val respJson = JSONObject(body)
                 val songArray = respJson.optJSONArray("songs") ?: return@repeat
                 val privilegesArray = respJson.optJSONArray("privileges")
@@ -308,7 +308,7 @@ object PlaylistApi {
 
     suspend fun getDailyRecommendSongs(): List<SongItem> = withContext(Dispatchers.IO) {
         val response = RetrofitClient.eapiPost("/eapi/v2/discovery/recommend/songs", emptyMap())
-        val body = response.body?.string() ?: throw Exception("empty response")
+        val body = response.body()?.string() ?: throw Exception("empty response")
         val json = JSONObject(body)
         val arr = json.optJSONArray("recommend") ?: json.optJSONArray("data")
             ?: return@withContext emptyList()
@@ -335,7 +335,7 @@ object PlaylistApi {
         if (!cookie.isNullOrBlank()) {
             try {
                 val response = RetrofitClient.eapiPost("/eapi/v1/discovery/recommend/resource", emptyMap())
-                val body = response.body?.string() ?: ""
+                val body = response.body()?.string() ?: ""
                 val arr = JSONObject(body).optJSONArray("recommend")
                 if (arr != null && arr.length() > 0) {
                     return@withContext (0 until minOf(arr.length(), 10)).map { i ->
@@ -357,7 +357,7 @@ object PlaylistApi {
         // 未登录或 eapi 失败时：平滑回退到公开推荐歌单接口
         try {
             val response = RetrofitClient.get("/api/personalized/playlist?limit=10")
-            val body = response.body?.string() ?: ""
+            val body = response.body()?.string() ?: ""
             val arr = JSONObject(body).optJSONArray("result") ?: return@withContext emptyList()
             (0 until minOf(arr.length(), 10)).map { i ->
                 val item = arr.getJSONObject(i)
@@ -378,7 +378,7 @@ object PlaylistApi {
 
     suspend fun getPersonalFm(): List<SongItem> = withContext(Dispatchers.IO) {
         val response = RetrofitClient.eapiPost("/eapi/v1/radio/get", emptyMap())
-        val body = response.body?.string() ?: throw Exception("empty response")
+        val body = response.body()?.string() ?: throw Exception("empty response")
         val arr = JSONObject(body).optJSONArray("data") ?: return@withContext emptyList()
         (0 until arr.length()).map { i ->
             val s = arr.getJSONObject(i)
@@ -405,7 +405,7 @@ object PlaylistApi {
             "time" to "3"
         )
         val response = RetrofitClient.eapiPost("/eapi/song/like", payload)
-        val body = response.body?.string() ?: return@withContext false
+        val body = response.body()?.string() ?: return@withContext false
         JSONObject(body).optInt("code", -1) == 200
     }
 }

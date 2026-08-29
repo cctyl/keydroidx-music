@@ -1,6 +1,7 @@
 package io.github.cctyl.keydroidx.music
 
 import android.app.Application
+import androidx.multidex.MultiDex
 import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
@@ -12,6 +13,11 @@ import io.github.cctyl.nokia.common.feedback.NokiaFeedbackConfig
 import io.github.cctyl.nokia.common.log.NokiaLog
 
 class MusicApplication : Application() {
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(base)
+        MultiDex.install(base)
+    }
+
     override fun onCreate() {
         super.onCreate()
         // 尽早初始化 NokiaClient（建立 Provider 同步与 ThemeProvider 注册）

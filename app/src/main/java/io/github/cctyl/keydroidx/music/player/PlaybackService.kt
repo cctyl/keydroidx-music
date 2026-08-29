@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.widget.Toast
 import io.github.cctyl.keydroidx.music.util.NLog as Log
 import androidx.core.app.NotificationCompat
@@ -43,6 +44,42 @@ class PlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private val handler = Handler(Looper.getMainLooper())
 
+    /**
+     * 换歌过渡期间的 partial wake lock。
+     *
+     * 锁屏后 CPU 会休眠：当前歌播完进入 STATE_ENDED 时音频轨道关闭、唤醒源消失，
+     * 而下一首要走 SongUrlFetcher 异步取链，这个间隙没有 wake lock 托底就会被
+     * 休眠挂起，表现为「锁屏播完一首就不再继续」。这里在开始加载下一首时获取锁，
+     * 成功进入 STATE_READY 后释放，精准覆盖取链/开播间隙。
+     */
+    private var transitionWakeLock: PowerManager.WakeLock? = null
+
+    private fun acquireTransitionWakeLock() {
+        try {
+            if (transitionWakeLock?.isHeld == true) return
+            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+            val lock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "keydroidx-music:transition"
+            ).apply { setReferenceCounted(false) }
+            // 上限 60s，兜底防泄漏；正常流程在 STATE_READY 后会主动 release
+            lock.acquire(60_000L)
+            transitionWakeLock = lock
+            Log.d(TAG, "acquireTransitionWakeLock: held=${lock.isHeld}")
+        } catch (e: Exception) {
+            Log.w(TAG, "acquireTransitionWakeLock failed: ${e.message}")
+        }
+    }
+
+    private fun releaseTransitionWakeLock() {
+        try {
+            transitionWakeLock?.let { if (it.isHeld) it.release() }
+        } catch (e: Exception) {
+            Log.w(TAG, "releaseTransitionWakeLock failed: ${e.message}")
+        }
+        transitionWakeLock = null
+    }
+
     /** 当前歌曲已加载的歌词行（后台歌词跟踪用） */
     private var loadedLyrics: List<LrcLine> = emptyList()
     private var lyricsSongId: Long = -1L
@@ -73,6 +110,11 @@ class PlaybackService : MediaSessionService() {
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
+            // 锁屏后 CPU 会休眠：取下一首播放链接（异步网络请求）的间隙没有唤醒源就会挂起，
+            // 表现为「播完当前这首就不再继续」。设置 WAKE_MODE_LOCAL 后，ExoPlayer 在
+            // playWhenReady=true 期间（含 STATE_ENDED 的换歌间隙）持续持有 partial wake lock，
+            // 保证取链与下一首开播不被休眠打断。
+            .setWakeMode(C.WAKE_MODE_LOCAL)
             .setMediaSourceFactory(
                 androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
                     AudioCacheManager.createCacheDataSourceFactory(this)
@@ -147,6 +189,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun loadAndPlaySong(song: SongItem) {
+        // 进入换歌流程：持锁覆盖取链间隙，避免锁屏后 CPU 休眠导致下一首不开播
+        acquireTransitionWakeLock()
         // 本地歌曲：直接读文件，不走网易云取链与 VIP/版权检查
         song.localPath?.let { path ->
             Log.d(TAG, "Playing local song: ${song.name}, path: $path")
@@ -415,6 +459,8 @@ class PlaybackService : MediaSessionService() {
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_READY) {
                 consecutiveFailures = 0   // 成功开播，重置连续失败计数
+                // 成功准备就绪：换歌过渡完成，释放过渡 wake lock
+                releaseTransitionWakeLock()
             }
             if (playbackState == Player.STATE_ENDED) {
                 Log.d(TAG, "onPlaybackStateChanged: STATE_ENDED")
@@ -647,6 +693,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         handler.removeCallbacks(progressRunnable)
+        releaseTransitionWakeLock()
         player?.release()
         player = null
         mediaSession?.release()

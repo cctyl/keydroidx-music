@@ -363,9 +363,9 @@ object DownloadManager {
                     .build()
                 val response = downloadHttpClient.newCall(request).execute()
                 if (!response.isSuccessful) {
-                    throw IllegalStateException("下载音频失败: HTTP ${response.code}")
+                    throw IllegalStateException("下载音频失败: HTTP ${response.code()}")
                 }
-                val body = response.body ?: throw IllegalStateException("响应体为空")
+                val body = response.body() ?: throw IllegalStateException("响应体为空")
                 val totalLength = body.contentLength()
                 updateTask(songId) {
                     it.totalBytes = totalLength
