@@ -21,10 +21,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
-import io.github.cctyl.keydroidx.music.library.LibraryManager
+import io.github.cctyl.keydroidx.music.cache.CommentCache
+import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.download.DownloadManager
+import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.lyric.LrcLine
 import io.github.cctyl.keydroidx.music.lyric.LrcParser
+import io.github.cctyl.keydroidx.music.network.CommentApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import io.github.cctyl.keydroidx.music.player.PlaybackMode
@@ -37,6 +40,7 @@ import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
 import io.github.cctyl.nokia.keycore.ui.NokiaIcons
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,9 +55,10 @@ import java.util.Locale
  * 3. 黑胶唱片（带右上角唱针，播放时匀速旋转 8s/圈）
  * 4. 歌曲标题 + 歌手 / 专辑
  * 5. 歌词预览框（高亮青色背景 + 当前单行歌词 + [按 * 全屏] 提示）
- * 6. 进度条 + 时间（current_time / [OK 播放/暂停] / total_time）
- * 7. 5 列按键指南（← 上曲 | → 下曲 | * 歌词 | # 模式 | 左软:选项）
- * 8. 底部软键栏（NokiaBaseActivity 注入，选项 / 暂停 / 返回）
+ * 6. 歌曲操作栏（红心[1] / 下载[2] / 评论+数量[3]，底部单行三等分，图标下方带按键说明）
+ * 7. 进度条 + 时间（current_time / [OK 播放/暂停] / total_time）
+ * 8. 5 列按键指南（← 上曲 | → 下曲 | * 歌词 | # 模式 | 左软:选项）
+ * 9. 底部软键栏（NokiaBaseActivity 注入，选项 / 暂停 / 返回）
  */
 class MusicPlayerActivity : NokiaBaseActivity() {
 
@@ -70,6 +75,16 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private var layoutUpper: View? = null
     private var scrollLyric: ScrollView? = null
     private var lyricListContainer: LinearLayout? = null
+
+    // ── 歌曲操作栏（红心 / 下载 / 评论+数量）──────────
+    private var iconActionFavorite: TextView? = null
+    private var iconActionDownload: TextView? = null
+    private var iconActionComment: TextView? = null
+    private var tvCommentCount: TextView? = null
+    /** 当前歌曲的评论总数（null = 未知/拉取失败/本地歌曲），进入评论页时透传 */
+    private var currentCommentTotal: Int? = null
+    /** 评论数拉取协程：切歌时取消上一个，防止慢响应覆盖新歌的数字 */
+    private var commentCountJob: Job? = null
 
     // ── 全屏歌词 ─────────────────────────────────────────────
     private var layoutLyricFullscreen: View? = null
@@ -129,6 +144,23 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_lyrics), NokiaIcons.ICON_SUBTITLES)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_mode), NokiaIcons.ICON_REPEAT)
         NokiaIcons.setIcon(findViewById(R.id.icon_guide_playpause), NokiaIcons.ICON_PLAY)
+
+        // ── 操作栏：红心 / 下载 / 评论 ─────────────────
+        iconActionFavorite = findViewById(R.id.icon_action_favorite)
+        iconActionDownload = findViewById(R.id.icon_action_download)
+        iconActionComment = findViewById(R.id.icon_action_comment)
+        tvCommentCount = findViewById(R.id.tv_comment_count)
+        NokiaIcons.setIcon(iconActionComment, MusicIcons.COMMENT)
+        // 红心 / 下载图标按当前状态渲染（收藏态、下载态）
+        updateFavoriteIcon()
+        updateDownloadIcon()
+
+        // 触屏点击：与数字键 1/2/3 共用同一套 action 函数，保证两条路径行为一致。
+        // 注意：这几个单元格不设 focusable（会抢走根视图焦点导致首键被吞），
+        // 因此只依赖普通 click 回调，不参与按键焦点导航。
+        findViewById<View>(R.id.action_favorite).setOnClickListener { actionFavorite() }
+        findViewById<View>(R.id.action_download).setOnClickListener { actionDownload() }
+        findViewById<View>(R.id.action_comment).setOnClickListener { actionComment() }
 
         // ── 文本兜底 ───────────────────────────────────────
         tvCurrentTime?.text = getString(R.string.unknown_time)
@@ -322,7 +354,21 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     currentLyricIndex = -1
                     showLyricPlaceholder()
                 }
+                // 操作栏随切歌刷新：评论数重新拉取，红心/下载态按新歌 id 重算
+                loadCommentCount(song)
+                updateFavoriteIcon()
+                updateDownloadIcon()
             }
+        }
+
+        // 收藏态：FavoriteStore 是全局唯一事实源（轻量 id 快照），任何页面改动红心都会推到这里
+        lifecycleScope.launch {
+            FavoriteStore.favoriteIds.collectLatest { updateFavoriteIcon() }
+        }
+
+        // 下载态：下载进度/完成/失败都会推送，驱动下载图标三态切换
+        lifecycleScope.launch {
+            DownloadManager.tasks.collectLatest { updateDownloadIcon() }
         }
 
         lifecycleScope.launch {
@@ -413,8 +459,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     true
                 }
                 NokiaKeyAction.SOFT_LEFT -> {
-                    // 收藏歌曲（占位）
-                    Toast.makeText(this, "已收藏：${tvTitle?.text ?: ""}", Toast.LENGTH_SHORT).show()
+                    // 全屏歌词模式下的左软键 = 收藏，与数字键 1 行为一致
+                    actionFavorite()
                     true
                 }
                 NokiaKeyAction.SOFT_RIGHT -> {
@@ -503,7 +549,18 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         updateFullscreenLyricHighlight(targetMs)
     }
 
+    /**
+     * 数字键 1 / 2 / 3 —— 操作栏快捷键。
+     *
+     * `NokiaKeyAction` 语义集合只覆盖方向、确定、左右软键、锁屏、拨号，
+     * 不含数字键，因此这里沿用本项目已有的 `*` / `#` 做法，在 `onKeyDown` 里直接拦截。
+     * 基类 `NokiaBaseActivity.dispatchKeyEvent` 对未映射的 keyCode 会放行到本方法。
+     *
+     * 长按会连续触发 repeat，这里只认第一次按下，避免长按把收藏反复开关。
+     */
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (event != null && event.repeatCount > 0) return true
+
         return when (keyCode) {
             KeyEvent.KEYCODE_STAR -> {
                 toggleLyricFull()
@@ -513,6 +570,21 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 val nextMode = PlaybackStateManager.togglePlayMode()
                 updateModeIcon(nextMode)
                 showModeToast(nextMode)
+                true
+            }
+            KeyEvent.KEYCODE_1 -> {
+                // 收藏：全屏歌词模式下同样可用
+                actionFavorite()
+                true
+            }
+            KeyEvent.KEYCODE_2 -> {
+                // 下载：全屏歌词模式下不响应，避免浏览歌词时误触
+                if (!isLyricFull) actionDownload()
+                true
+            }
+            KeyEvent.KEYCODE_3 -> {
+                // 评论：全屏歌词模式下不响应
+                if (!isLyricFull) actionComment()
                 true
             }
             else -> super.onKeyDown(keyCode, event)
@@ -543,7 +615,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         // 选项菜单：播放列表、收藏/取消收藏、音质设置、返回
         val currentSong = PlaybackStateManager.currentSong.value
-        val isFav = currentSong != null && LibraryManager.isFavorite(currentSong.id)
+        val isFav = currentSong != null && FavoriteStore.isFavorite(currentSong.id)
 
         val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
             .addItem(
@@ -591,7 +663,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 id = song.id,
                 title = song.name,
                 artist = song.artistName,
-                isFav = LibraryManager.isFavorite(song.id),
+                isFav = FavoriteStore.isFavorite(song.id),
                 isVip = song.fee == 1,
                 noCopyright = song.noCopyright
             )
@@ -610,9 +682,163 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private fun toggleFavorite() {
         val current = PlaybackStateManager.currentSong.value ?: return
         lifecycleScope.launch {
-            val isFavNow = LibraryManager.toggleFavorite(this@MusicPlayerActivity, current)
-            val msg = if (isFavNow) "已收藏到「我喜欢的音乐」" else "已取消收藏"
+            val isFavNow = FavoriteStore.toggle(
+                this@MusicPlayerActivity,
+                FavoriteStore.Entry(current.id, current.name, current.artistName)
+            )
+            val msg = if (isFavNow) getString(R.string.toast_favorited) else getString(R.string.toast_unfavorited)
             Toast.makeText(this@MusicPlayerActivity, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  操作栏：红心（1）/ 下载（2）/ 评论（3）
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * 数字键 1 / 触屏红心：收藏或取消收藏当前歌曲。
+     *
+     * 全屏歌词模式下同样生效（看到好歌词顺手收藏）。
+     */
+    private fun actionFavorite() {
+        val current = PlaybackStateManager.currentSong.value
+        if (current == null) {
+            Toast.makeText(this, getString(R.string.toast_no_song_playing), Toast.LENGTH_SHORT).show()
+            return
+        }
+        toggleFavorite()
+    }
+
+    /** 数字键 2 / 触屏下载：把当前歌曲丢进下载队列（复用 DownloadManager）。 */
+    private fun actionDownload() {
+        val current = PlaybackStateManager.currentSong.value
+        if (current == null) {
+            Toast.makeText(this, getString(R.string.toast_no_song_playing), Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!current.localPath.isNullOrBlank()) {
+            Toast.makeText(this, getString(R.string.toast_download_local_song), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val task = DownloadManager.getTask(current.id)
+        when {
+            DownloadManager.isDownloaded(current.id) -> {
+                Toast.makeText(this, getString(R.string.toast_download_already), Toast.LENGTH_SHORT).show()
+            }
+            task?.status == DownloadStatus.DOWNLOADING || task?.status == DownloadStatus.PENDING -> {
+                Toast.makeText(this, getString(R.string.toast_download_ongoing), Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                DownloadManager.enqueueDownload(current)
+                Toast.makeText(this, getString(R.string.toast_download_started), Toast.LENGTH_SHORT).show()
+            }
+        }
+        updateDownloadIcon()
+    }
+
+    /** 数字键 3 / 触屏评论：进入歌曲评论区。 */
+    private fun actionComment() {
+        val current = PlaybackStateManager.currentSong.value
+        if (current == null) {
+            Toast.makeText(this, getString(R.string.toast_no_song_playing), Toast.LENGTH_SHORT).show()
+            return
+        }
+        // 本地歌曲（有本地路径，或本地扫描生成的负数 id）没有云端评论区
+        if (!current.localPath.isNullOrBlank() || current.id <= 0L) {
+            Toast.makeText(this, getString(R.string.toast_comment_local_song), Toast.LENGTH_SHORT).show()
+            return
+        }
+        CommentActivity.start(this, current.id, current.name, currentCommentTotal)
+    }
+
+    /** 红心图标：已收藏=实心红心，未收藏=空心白心。 */
+    private fun updateFavoriteIcon() {
+        val iv = iconActionFavorite ?: return
+        val song = PlaybackStateManager.currentSong.value
+        val isFav = song != null && FavoriteStore.isFavorite(song.id)
+        NokiaIcons.setIcon(iv, if (isFav) NokiaIcons.ICON_FAVORITE else NokiaIcons.ICON_FAVORITE_BORDER)
+        iv.setTextColor(if (isFav) COLOR_FAV_RED else MusicTheme.current(this).text)
+    }
+
+    /** 下载图标三态：未下载=下载箭头 / 下载中=沙漏 / 已完成=对勾。 */
+    private fun updateDownloadIcon() {
+        val iv = iconActionDownload ?: return
+        val song = PlaybackStateManager.currentSong.value
+        val status = song?.let { DownloadManager.getTask(it.id)?.status }
+        when {
+            song != null && DownloadManager.isDownloaded(song.id) -> {
+                NokiaIcons.setIcon(iv, NokiaIcons.ICON_CHECK)
+                iv.setTextColor(MusicTheme.BRAND_ACCENT)
+            }
+            status == DownloadStatus.DOWNLOADING || status == DownloadStatus.PENDING -> {
+                NokiaIcons.setIcon(iv, NokiaIcons.ICON_HOURGLASS)
+                iv.setTextColor(MusicTheme.BRAND_SOFTKEY_CENTER)
+            }
+            else -> {
+                NokiaIcons.setIcon(iv, NokiaIcons.ICON_DOWNLOAD)
+                iv.setTextColor(MusicTheme.current(this).text)
+            }
+        }
+    }
+
+    /**
+     * 拉取当前歌曲的评论总数并显示在评论图标右侧。
+     *
+     * 只取 `total` 这一个标量（limit=1 最小化报文），结果进 [CommentCache]，
+     * 来回切歌不会重复打网络。拉取中/失败/本地歌曲一律隐藏数字，
+     * 绝不把上一首的数字留在屏幕上，也绝不影响播放主流程。
+     */
+    private fun loadCommentCount(song: SongItem?) {
+        commentCountJob?.cancel()
+        val tv = tvCommentCount ?: return
+
+        // 无曲目 / 本地歌曲：没有云端评论，直接隐藏
+        if (song == null || !song.localPath.isNullOrBlank() || song.id <= 0L) {
+            currentCommentTotal = null
+            tv.visibility = View.GONE
+            return
+        }
+
+        // 演示模式：不走网络，注入一个固定数量便于验收 999+ 的排版
+        if (DEMO_MODE) {
+            currentCommentTotal = DEMO_COMMENT_COUNT
+            tv.text = CommentApi.formatCount(DEMO_COMMENT_COUNT)
+            tv.visibility = View.VISIBLE
+            return
+        }
+
+        val cached = CommentCache.getCount(song.id)
+        if (cached != null) {
+            currentCommentTotal = cached
+            tv.text = CommentApi.formatCount(cached)
+            tv.visibility = View.VISIBLE
+            return
+        }
+
+        // 拉取中先隐藏，避免误显上一首的数字
+        currentCommentTotal = null
+        tv.visibility = View.GONE
+
+        val requestedId = song.id
+        commentCountJob = lifecycleScope.launch {
+            try {
+                val page = CommentApi.getSongComments(requestedId, offset = 0, limit = 1)
+                if (isDestroyed || isFinishing) return@launch
+                // 切歌竞态：只接受仍属于当前歌曲的结果
+                if (PlaybackStateManager.currentSong.value?.id != requestedId) return@launch
+                currentCommentTotal = page.total
+                CommentCache.putCount(requestedId, page.total)
+                tv.text = CommentApi.formatCount(page.total)
+                tv.visibility = View.VISIBLE
+                Log.d(TAG, "comment count for song $requestedId = ${page.total}")
+            } catch (e: Exception) {
+                // 评论是锦上添花的能力，失败静默降级：不提示、不打断播放
+                Log.w(TAG, "load comment count failed songId=$requestedId: ${e.message}")
+                if (PlaybackStateManager.currentSong.value?.id == requestedId) {
+                    currentCommentTotal = null
+                    tv.visibility = View.GONE
+                }
+            }
         }
     }
 
@@ -1048,6 +1274,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         super.onDestroy()
         mainHandler.removeCallbacks(demoRunnable)
         vinylRotateAnim?.cancel()
+        commentCountJob?.cancel()
     }
 
     /**
@@ -1067,6 +1294,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     companion object {
         private const val TAG = "MusicPlayerActivity"
 
+        /** 收藏态红心色（与 PlaylistDetailActivity 的红心保持一致） */
+        private const val COLOR_FAV_RED = 0xFFEF4444.toInt()
+
         /**
          * 统一入口：复用任务栈中已有的播放页，并清空其上方压着的页面。
          * 配合 manifest 的 singleTask，保证从任何入口（桌面组件 / 通知栏 /
@@ -1085,6 +1315,8 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         private const val DEMO_MODE = false
         private const val DEMO_DURATION_MS = 255_000L  // 4:15
         private const val DEMO_TICK_MS = 1000L        // 每秒推进
+        /** 演示模式下的评论数（与参考截图的 174 对齐，便于验收 999+ 排版） */
+        private const val DEMO_COMMENT_COUNT = 174
         private const val DEMO_LRC = """[00:00.00]顺风顺水 - 邹念慈
 [00:08.00]风起的时候 谁在等候
 [00:16.00]月先洒在 远方的山头

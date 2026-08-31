@@ -143,6 +143,14 @@ object PlaylistApi {
     }
 
     suspend fun getPlaylistDetail(playlistId: Long): List<SongItem> = withContext(Dispatchers.IO) {
+        parsePlaylistDetail(fetchPlaylistBody(playlistId))
+    }
+
+    /**
+     * 获取歌单详情原始 JSON（eapi 优先，失败回退公开 GET）。
+     * 由 [getPlaylistDetail] 与 [getPlaylistTrackIds] 共用，避免双通道策略两处漂移。
+     */
+    private suspend fun fetchPlaylistBody(playlistId: Long): String {
         // 优先 eapi（已登录场景体验更好）；失败时回退到公开 GET 接口
         // （榜单等无 cookie 环境也能正常拉取完整曲目）
         val body = try {
@@ -156,17 +164,50 @@ object PlaylistApi {
             val code = JSONObject(b).optInt("code", -1)
             if (code == 200) b else ""
         } catch (e: Exception) {
-            Log.w(TAG, "getPlaylistDetail eapi failed, fallback to plain GET: ${e.message}")
+            Log.w(TAG, "fetchPlaylistBody eapi failed, fallback to plain GET: ${e.message}")
             ""
         }
 
-        val finalBody = if (body.isBlank()) {
-            // 公开 GET 回退
-            val response = RetrofitClient.get("/api/v6/playlist/detail?id=$playlistId&n=1000")
-            response.body()?.string() ?: throw Exception("empty response")
-        } else body
+        if (body.isNotBlank()) return body
+        // 公开 GET 回退
+        val response = RetrofitClient.get("/api/v6/playlist/detail?id=$playlistId&n=1000")
+        return response.body()?.string() ?: throw Exception("empty response")
+    }
 
-        parsePlaylistDetail(finalBody)
+    /**
+     * 只取歌单曲目 id 列表（不含名称/专辑等详情）。
+     *
+     * 用途：冷启动预拉「我喜欢的音乐」做收藏索引回填。相比 [getPlaylistDetail]，
+     * 它不会构造上千个 SongItem、也不会触发 `fetchSongDetails` 批量补详情，
+     * 一次请求即可拿到全部 id，开销低一个量级。
+     *
+     * 解析优先取 `playlist.trackIds[].id`（完整且有序），缺失时回退 `playlist.tracks[].id`。
+     */
+    suspend fun getPlaylistTrackIds(playlistId: Long): List<Long> = withContext(Dispatchers.IO) {
+        val json = JSONObject(fetchPlaylistBody(playlistId))
+        val code = json.optInt("code", -1)
+        if (code != 200) throw Exception("API error: code=$code")
+        val playlistObj = json.optJSONObject("playlist") ?: return@withContext emptyList<Long>()
+
+        val ids = mutableListOf<Long>()
+        val trackIdsArray = playlistObj.optJSONArray("trackIds")
+        if (trackIdsArray != null) {
+            for (i in 0 until trackIdsArray.length()) {
+                val id = trackIdsArray.optJSONObject(i)?.optLong("id") ?: 0L
+                if (id != 0L) ids.add(id)
+            }
+        }
+        if (ids.isNotEmpty()) return@withContext ids
+
+        // 回退：部分接口形态只返回 tracks
+        val trackArray = playlistObj.optJSONArray("tracks")
+        if (trackArray != null) {
+            for (i in 0 until trackArray.length()) {
+                val id = trackArray.optJSONObject(i)?.optLong("id") ?: 0L
+                if (id != 0L) ids.add(id)
+            }
+        }
+        ids
     }
 
     private suspend fun parsePlaylistDetail(body: String): List<SongItem> {

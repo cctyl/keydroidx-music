@@ -104,6 +104,9 @@
     <string name="guide_lyrics">* 歌词</string>
     <string name="guide_mode"># 模式</string>
     <string name="guide_playpause">播放/暂停</string>
+    <string name="guide_favorite">1 收藏</string>
+    <string name="guide_download">2 下载</string>
+    <string name="guide_comment">3 评论</string>
 
     <!-- ── 音质选择 ── -->
     <string name="option_quality">音质设置</string>
@@ -138,6 +141,33 @@
     <string name="softkey_input">输入</string>
     <string name="softkey_done">完成</string>
     <string name="softkey_delete">删除</string>
+    <string name="softkey_refresh">刷新</string>
+    <string name="softkey_more">加载更多</string>
+
+    <!-- ── 播放页操作栏（红心 / 下载 / 评论，绑定数字键 1 2 3）── -->
+    <string name="toast_favorited">已收藏到「我喜欢的音乐」</string>
+    <string name="toast_unfavorited">已取消收藏</string>
+    <string name="toast_download_started">已加入下载队列</string>
+    <string name="toast_download_already">该歌曲已下载</string>
+    <string name="toast_download_ongoing">该歌曲正在下载中</string>
+    <string name="toast_download_local_song">本地歌曲无需下载</string>
+    <string name="toast_no_song_playing">当前没有正在播放的歌曲</string>
+    <string name="toast_comment_local_song">本地歌曲没有云端评论</string>
+
+    <!-- ── 歌曲评论页 ── -->
+    <string name="title_song_comment">歌曲评论</string>
+    <string name="comment_total">共 %1$s 条评论</string>
+    <string name="comment_loading">评论加载中…</string>
+    <string name="comment_load_failed">评论加载失败，按左软键重试</string>
+    <string name="comment_section_hot">热门评论</string>
+    <string name="comment_section_new">最新评论</string>
+    <string name="comment_load_more">加载更多评论</string>
+    <string name="comment_no_more">没有更多评论了</string>
+    <string name="comment_empty">还没有人评论，快来抢沙发</string>
+    <string name="comment_time_just_now">刚刚</string>
+    <string name="comment_time_minutes">%1$d 分钟前</string>
+    <string name="comment_time_hours">%1$d 小时前</string>
+    <string name="comment_time_days">%1$d 天前</string>
 
     <!-- Cookie 设置页 -->
     <string name="cookie_settings_title">网易云 Cookie 设置</string>

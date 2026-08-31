@@ -4,46 +4,73 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import io.github.cctyl.keydroidx.music.auth.CookieManager
-import io.github.cctyl.keydroidx.music.network.PlaylistApi
+import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * 歌曲收藏与本地音乐库管理
+ *
+ * 注：收藏（红心）已整体下沉到 [FavoriteStore]（O(1) 查询 + 轻量持久化 + 云端回填）。
+ * 本类中所有收藏相关 API 均改为委托到 FavoriteStore，仅保留签名以兼容既有调用点。
  */
 object LibraryManager {
     private const val PREFS_NAME = "keydroidx_music_library"
-    private const val KEY_FAVORITE_SONGS = "fav_songs"
     private const val KEY_RECENT_SONGS = "recent_songs"
     private const val MAX_RECENT_COUNT = 100
 
     private val gson = Gson()
     private var prefs: SharedPreferences? = null
 
+    /**
+     * 收藏数据已由 [FavoriteStore] 统一托管（O(1) 查询 + 轻量持久化 + 云端回填）。
+     * 这里仅为旧调用点保留一份**只读镜像**：持续订阅 FavoriteStore 并转成 SongItem。
+     * 见 #收藏兼容镜像
+     */
     private val _favoriteSongs = MutableStateFlow<List<SongItem>>(emptyList())
+    @Deprecated("改用 FavoriteStore.favoriteSongs（轻量 Entry，O(1) 查询）")
     val favoriteSongs: StateFlow<List<SongItem>> = _favoriteSongs.asStateFlow()
 
     private val _recentSongs = MutableStateFlow<List<SongItem>>(emptyList())
     val recentSongs: StateFlow<List<SongItem>> = _recentSongs.asStateFlow()
 
+    /** 驱动收藏镜像的独立作用域；Main.immediate 保证 StateFlow 当前值同步送达，启动即可见 */
+    private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     fun init(context: Context) {
         if (prefs == null) {
             prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             loadFromPrefs()
+            startFavoriteMirror()
+        }
+    }
+
+    private fun startFavoriteMirror() {
+        syncScope.launch {
+            FavoriteStore.favoriteSongs.collect { entries ->
+                _favoriteSongs.value = entries.map {
+                    SongItem(
+                        id = it.id,
+                        name = it.name,
+                        artists = listOfNotNull(it.artist.takeIf { a -> a.isNotBlank() }?.let { a -> ArtistItem(name = a) }),
+                        album = null,
+                        duration = null
+                    )
+                }
+            }
         }
     }
 
     private fun loadFromPrefs() {
         val sp = prefs ?: return
-        val favJson = sp.getString(KEY_FAVORITE_SONGS, null)
-        if (!favJson.isNullOrBlank()) {
-            val type = object : TypeToken<List<SongItem>>() {}.type
-            _favoriteSongs.value = runCatching { gson.fromJson<List<SongItem>>(favJson, type) }.getOrDefault(emptyList())
-        }
-
+        // 收藏数据不再从这里读取（FavoriteStore.init 会迁移旧 fav_songs 并通过镜像回流），
+        // 避免同时存在两个事实源导致状态打架。
         val recJson = sp.getString(KEY_RECENT_SONGS, null)
         if (!recJson.isNullOrBlank()) {
             val type = object : TypeToken<List<SongItem>>() {}.type
@@ -53,44 +80,22 @@ object LibraryManager {
 
     // ── 收藏管理 ───────────────────────────────────────────────────
 
+    @Deprecated("改用 FavoriteStore.isFavorite（O(1) 哈希查询）")
     fun isFavorite(songId: Long): Boolean {
-        return _favoriteSongs.value.any { it.id == songId }
+        return FavoriteStore.isFavorite(songId)
     }
 
+    @Deprecated("改用 FavoriteStore.toggle（单一事实源）")
     suspend fun toggleFavorite(context: Context, song: SongItem): Boolean {
-        val currentlyFav = isFavorite(song.id)
-        val targetFav = !currentlyFav
-
-        // 若已登录，优先同步云端
-        val cookie = CookieManager.getCookie(context)
-        if (!cookie.isNullOrBlank()) {
-            runCatching {
-                PlaylistApi.likeSong(song.id, targetFav)
-            }
-        }
-
-        // 更新本地
-        val currentList = _favoriteSongs.value.toMutableList()
-        if (targetFav) {
-            if (!currentList.any { it.id == song.id }) {
-                currentList.add(0, song)
-            }
-        } else {
-            currentList.removeAll { it.id == song.id }
-        }
-
-        _favoriteSongs.value = currentList
-        saveFavorites()
-        return targetFav
+        return FavoriteStore.toggle(context, FavoriteStore.Entry(song.id, song.name, song.artistName))
     }
 
+    @Deprecated("改用 FavoriteStore.seedEntries（云端为权威来源）")
     fun setFavoriteSongs(songs: List<SongItem>) {
-        _favoriteSongs.value = songs
-        saveFavorites()
-    }
-
-    private fun saveFavorites() {
-        prefs?.edit()?.putString(KEY_FAVORITE_SONGS, gson.toJson(_favoriteSongs.value))?.apply()
+        FavoriteStore.seedEntries(
+            songs.map { FavoriteStore.Entry(it.id, it.name, it.artistName) },
+            replace = true
+        )
     }
 
     // ── 最近播放 ───────────────────────────────────────────────────

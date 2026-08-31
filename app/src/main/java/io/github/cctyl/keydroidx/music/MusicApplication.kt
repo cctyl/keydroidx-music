@@ -3,6 +3,7 @@ package io.github.cctyl.keydroidx.music
 import android.app.Application
 import androidx.multidex.MultiDex
 import io.github.cctyl.keydroidx.music.download.DownloadManager
+import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
@@ -31,6 +32,9 @@ class MusicApplication : Application() {
         NokiaLog.installCrashHandler(this)
         NokiaLog.i("App", "MusicApplication onCreate, initializing managers and warmup")
         LibraryManager.init(this)
+        // 收藏唯一事实源：必须在 LibraryManager 之后（读得到旧 fav_songs 做迁移）、
+        // AppWarmup 之前（预拉依赖已装载的 cookie）初始化
+        FavoriteStore.init(this)
         DownloadManager.init(this)
         SearchHistoryManager.init(this)
         // 初始化播放状态广播 Context（供 Widget/Provider 监听刷新）

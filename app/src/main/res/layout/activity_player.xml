@@ -328,6 +328,125 @@
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
+
+        <!-- ⑤ 歌曲操作栏（红心 / 下载 / 评论+数量）
+             放在按键指南条正下方、紧贴底部软键栏，单行三等分。
+             物理按键：数字键 1=红心 2=下载 3=评论；触屏点击走同一套 action 函数。
+             注意：本行各单元格一律不设 focusable，避免抢走 layout_player_root 的焦点
+             （播放页靠根视图持焦来防「首个方向键被触摸模式吞掉」）。
+        -->
+        <LinearLayout
+            android:id="@+id/layout_song_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="#88000000"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:paddingLeft="2dp"
+            android:paddingRight="2dp">
+
+            <!-- 数字键 1：收藏 / 取消收藏 -->
+            <LinearLayout
+                android:id="@+id/action_favorite"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/icon_action_favorite"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textColor="#FDE047"
+                    android:textStyle="bold"
+                    android:text="@string/guide_favorite"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <!-- 数字键 2：下载 -->
+            <LinearLayout
+                android:id="@+id/action_download"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/icon_action_download"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textColor="#FDE047"
+                    android:textStyle="bold"
+                    android:text="@string/guide_download"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+
+            <!-- 数字键 3：进入评论区（图标右侧数字 = 评论总数，>999 显示 999+） -->
+            <LinearLayout
+                android:id="@+id/action_comment"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/icon_action_comment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="#FFFFFF"
+                        android:includeFontPadding="false" />
+
+                    <TextView
+                        android:id="@+id/tv_comment_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="2dp"
+                        android:textSize="8sp"
+                        android:textColor="#FDE047"
+                        android:singleLine="true"
+                        android:maxLength="4"
+                        android:visibility="gone"
+                        android:includeFontPadding="false" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="8sp"
+                    android:textColor="#FDE047"
+                    android:textStyle="bold"
+                    android:text="@string/guide_comment"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════ -->

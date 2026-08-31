@@ -26,6 +26,7 @@ import androidx.core.app.ActivityCompat
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.download.DownloadStatus
+import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
@@ -87,6 +88,8 @@ class MainActivity : NokiaBaseActivity() {
     private var realPlaylists: List<PlaylistApi.PlaylistInfo> = emptyList()
     /** specialType=5 的「我喜欢的音乐」歌单 ID（未拉到时为 null） */
     private var favPlaylistId: Long? = null
+    /** 上次拉到的「我喜欢的音乐」曲目数快照；仅在收藏索引尚未完成云端回填时作为兜底显示 */
+    private var cloudFavTrackCount: Int? = null
 
     // ── 发现 Tab ──
     private lateinit var discoverGridRoots: List<LinearLayout>
@@ -145,11 +148,12 @@ class MainActivity : NokiaBaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 刷新最近播放记录数量展示
+        // 刷新最近播放记录数量展示；收藏数量也一并同步（在其它页面收藏后返回本页要看到新数字）
         findViewById<View>(R.id.content_mine)?.let { mineRoot ->
             val recentCount = LibraryManager.recentSongs.value.size
             mineRoot.findViewById<TextView>(R.id.tv_history_sub)?.text = "${recentCount} 首播放记录"
             mineRoot.findViewById<TextView>(R.id.badge_history)?.text = "$recentCount"
+            updateFavoritesEntryCount()
         }
         // 返回桌面后再回到本页，窗口可能重新进入 touch mode（在桌面上的触屏操作
         // 会让本窗口重置为 touch mode），而 switchTab / onInitViews 不会在 onResume
@@ -294,12 +298,16 @@ class MainActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_download), NokiaIcons.ICON_DOWNLOAD)
         NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_local), NokiaIcons.ICON_SD_CARD)
 
-        // 副文字 / badge
-        mineRoot.findViewById<TextView>(R.id.tv_favorites_sub).text = "0 首歌曲"
-        mineRoot.findViewById<TextView>(R.id.badge_favorites).text = "0"
+        // 副文字 / badge（收藏数量由下方订阅驱动，优先取云端 trackCount）
         val recentCount = LibraryManager.recentSongs.value.size
         mineRoot.findViewById<TextView>(R.id.tv_history_sub).text = "${recentCount} 首播放记录"
         mineRoot.findViewById<TextView>(R.id.badge_history).text = "$recentCount"
+
+        // 收藏数量跟随全局索引实时刷新（未登录或未拉到云端歌单时的唯一数据源）
+        lifecycleScope.launch {
+            FavoriteStore.favoriteSongs.collect { updateFavoritesEntryCount() }
+        }
+        updateFavoritesEntryCount()
 
         // 监听下载任务更新下载入口副标题
         lifecycleScope.launch {
@@ -334,6 +342,27 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     /**
+     * 刷新「我喜欢的音乐」入口的副标题与角标。
+     *
+     * 数据优先级：
+     *  1. 收藏索引已完成云端回填（[FavoriteStore.isCloudSeeded]）→ 直接用索引条数。
+     *     索引 = 云端快照 + 本地收藏/取消的增量，是唯一随操作实时变化的数据源；
+     *     若改用 getUserPlaylists 那刻的 trackCount，收藏后计数会停留在旧值。
+     *  2. 尚未回填成功（离线 / 同步未跑完）→ 退回云端 trackCount 快照；
+     *  3. 连云端歌单都没有（未登录等）→ 退回本地索引条数。
+     */
+    private fun updateFavoritesEntryCount() {
+        val useIndex = FavoriteStore.isCloudSeeded() || favPlaylistId == null
+        val count = when {
+            useIndex -> FavoriteStore.size()
+            else -> cloudFavTrackCount ?: FavoriteStore.size()
+        }
+        val suffix = if (useIndex) "" else " · 云端"
+        findViewById<TextView>(R.id.tv_favorites_sub)?.text = "$count 首歌曲$suffix"
+        findViewById<TextView>(R.id.badge_favorites)?.text = "$count"
+    }
+
+    /**
      * 拉取当前用户的真实网易云歌单并填充到列表。
      * 未登录/失败时保留空列表。
      */
@@ -365,9 +394,13 @@ class MainActivity : NokiaBaseActivity() {
         val fav = playlists.firstOrNull { it.specialType == 5 }
         favPlaylistId = fav?.id
         if (fav != null) {
-            findViewById<TextView>(R.id.tv_favorites_sub)?.text = "${fav.trackCount} 首歌曲 · 云端已同步"
-            findViewById<TextView>(R.id.badge_favorites)?.text = "${fav.trackCount}"
+            // 记住歌单 id，冷启动预拉收藏时可复用，省掉一次 getUserPlaylists
+            FavoriteStore.rememberFavPlaylistId(fav.id)
+            cloudFavTrackCount = fav.trackCount
         }
+        // 统一由 updateFavoritesEntryCount 决定取索引还是云端快照，
+        // 保证收藏/取消后计数能立即跟随索引变化
+        updateFavoritesEntryCount()
         val listPlaylists = playlists.filter { it.specialType != 5 }
 
         findViewById<TextView>(R.id.tv_section_playlist)?.text = "自建与收藏歌单 (${listPlaylists.size})"
@@ -1275,16 +1308,26 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     /**
-     * 模拟数据：我喜欢的音乐
+     * 兜底数据：我喜欢的音乐（未登录 / 云端歌单未拉到时使用）
+     *
+     * 该列表语义上**全部都是已收藏歌曲**，因此 isFav 必须恒为 true —— 之前手写成
+     * true/false 混合，导致「我喜欢的音乐」里出现空心心。
      */
     private fun getFavoriteSongs(): ArrayList<SongDisplayItem> {
+        // 优先用全局收藏索引（含云端回填结果），为空时才回退到静态演示数据
+        val stored = FavoriteStore.favoriteSongs.value
+        if (stored.isNotEmpty()) {
+            return ArrayList(stored.map {
+                SongDisplayItem(id = it.id, title = it.name, artist = it.artist, isFav = true)
+            })
+        }
         return arrayListOf(
             SongDisplayItem(1, "顺风顺水", "邹念慈 / 繁星合唱团", isFav = true),
             SongDisplayItem(2, "唤晚风", "Night Trigger", isFav = true),
-            SongDisplayItem(3, "三笑", "王朝1982 / 朱旭", isFav = false),
+            SongDisplayItem(3, "三笑", "王朝1982 / 朱旭", isFav = true),
             SongDisplayItem(4, "什么时候告白啊？", "Hanser", isFav = true),
-            SongDisplayItem(5, "折柳记", "银临 / 施夏明", isFav = false),
-            SongDisplayItem(6, "Sada Nannu", "Mickey J. Meyer", isFav = false),
+            SongDisplayItem(5, "折柳记", "银临 / 施夏明", isFav = true),
+            SongDisplayItem(6, "Sada Nannu", "Mickey J. Meyer", isFav = true),
             SongDisplayItem(7, "归园田居", "lbg / 逆水寒", isFav = true)
         )
     }
@@ -1296,7 +1339,7 @@ class MainActivity : NokiaBaseActivity() {
                 id = song.id,
                 title = song.name,
                 artist = song.artistName,
-                isFav = LibraryManager.isFavorite(song.id),
+                isFav = FavoriteStore.isFavorite(song.id),
                 isVip = song.fee == 1,
                 noCopyright = song.noCopyright
             )
@@ -1304,22 +1347,23 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     private fun getPlaylistSongs(index: Int): ArrayList<SongDisplayItem> {
+        // 收藏态一律实时查全局索引，避免手写布尔导致与实际收藏状态打架
         return when (index) {
             0 -> getFavoriteSongs()
             1 -> arrayListOf(
-                SongDisplayItem(201, "南无阿弥陀佛", "佛乐", isFav = true),
-                SongDisplayItem(202, "心经", "王菲", isFav = true),
-                SongDisplayItem(203, "大悲咒", "齐豫", isFav = false)
+                SongDisplayItem(201, "南无阿弥陀佛", "佛乐", isFav = FavoriteStore.isFavorite(201L)),
+                SongDisplayItem(202, "心经", "王菲", isFav = FavoriteStore.isFavorite(202L)),
+                SongDisplayItem(203, "大悲咒", "齐豫", isFav = FavoriteStore.isFavorite(203L))
             )
             2 -> arrayListOf(
-                SongDisplayItem(301, "蝶恋", "大宇", isFav = true),
-                SongDisplayItem(302, "莫失莫忘", "大宇", isFav = true),
-                SongDisplayItem(303, "御剑江湖", "大宇", isFav = false)
+                SongDisplayItem(301, "蝶恋", "大宇", isFav = FavoriteStore.isFavorite(301L)),
+                SongDisplayItem(302, "莫失莫忘", "大宇", isFav = FavoriteStore.isFavorite(302L)),
+                SongDisplayItem(303, "御剑江湖", "大宇", isFav = FavoriteStore.isFavorite(303L))
             )
             3 -> arrayListOf(
-                SongDisplayItem(401, "牵丝戏", "银临 / Aki阿杰", isFav = true),
-                SongDisplayItem(402, "锦鲤抄", "云の泣 / 银临", isFav = true),
-                SongDisplayItem(403, "倾尽天下", "河图", isFav = false)
+                SongDisplayItem(401, "牵丝戏", "银临 / Aki阿杰", isFav = FavoriteStore.isFavorite(401L)),
+                SongDisplayItem(402, "锦鲤抄", "云の泣 / 银临", isFav = FavoriteStore.isFavorite(402L)),
+                SongDisplayItem(403, "倾尽天下", "河图", isFav = FavoriteStore.isFavorite(403L))
             )
             else -> arrayListOf()
         }

@@ -63,6 +63,12 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 
+        <!-- 歌曲评论页（从正在播放页数字键 3 / 评论按钮进入） -->
+        <activity
+            android:name="io.github.cctyl.keydroidx.music.ui.CommentActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
         <!-- 本地音乐页 -->
         <activity
             android:name="io.github.cctyl.keydroidx.music.ui.LocalMusicActivity"

@@ -33,3 +33,6 @@ bug清单（不要读取）.txt
 *.key
 feedback_priv.key
 
+# CodeBuddy 本地计划与会话数据（不入库）
+.codebuddy/
+

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    歌曲评论页
+    布局结构（ScrollView 内自上而下）：
+      ① 评论总数信息行（评论图标 + 「共 N 条评论」）
+      ② 「热门评论」分隔头 + 热门容器（仅首页有热门时显示）
+      ③ 「最新评论」分隔头 + 最新容器（分页追加）
+      ④ 加载更多 / 到底 / 失败状态行（可聚焦）
+    标题栏与软键栏由 NokiaBaseActivity 注入。
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll_comment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/music_dark_bg"
+    android:scrollbars="none"
+    android:overScrollMode="never"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ① 评论总数信息行                                     -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="30dp"
+            android:gravity="center_vertical"
+            android:background="#40000000"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/icon_comment_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textColor="@color/music_accent"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_comment_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:text="@string/comment_loading"
+                android:textColor="@color/music_item_normal_text"
+                android:textSize="9sp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ② 热门评论                                           -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_hot_header"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:gravity="center_vertical"
+            android:background="#4D000000"
+            android:paddingLeft="8dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="12dp"
+                android:background="@color/music_accent"
+                android:layout_marginRight="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/comment_section_hot"
+                android:textColor="@color/music_section_header_text"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_hot_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ③ 最新评论                                           -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_new_header"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:gravity="center_vertical"
+            android:background="#4D000000"
+            android:paddingLeft="8dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="12dp"
+                android:background="@color/music_accent"
+                android:layout_marginRight="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/comment_section_new"
+                android:textColor="@color/music_section_header_text"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_comment_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- ④ 加载更多 / 到底 / 失败                              -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/ll_load_more"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="34dp"
+            android:gravity="center"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_load_more"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/comment_load_more"
+                android:textColor="@color/music_subtext"
+                android:textSize="9sp"
+                android:gravity="center"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

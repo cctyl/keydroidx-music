@@ -14,6 +14,7 @@ import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.download.DownloadStatus
+import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
@@ -30,6 +31,7 @@ import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
 import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
 import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
 import java.io.Serializable
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -209,6 +211,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             else -> "共 ${songs.size} 首歌曲" + if (searchKeyword != null && searchHasMore) "（下滑加载更多）" else ""
         }
 
+        // 收藏态全局订阅：任何页面改了红心，本页已渲染行即时更新
+        observeFavorites()
+
         // 真实歌单：异步拉取歌曲列表；搜索：分页拉取；本地歌单：直接用传入数据
         if (playlistId != NO_ID && songs.isEmpty()) {
             fetchRealSongs()
@@ -244,6 +249,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                             id = s.id,
                             title = s.name,
                             artist = s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
+                            isFav = FavoriteStore.isFavorite(s.id),
                             isVip = (s.fee ?: 0) == 1,
                             noCopyright = s.noCopyright
                         )
@@ -295,12 +301,21 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     it.id,
                     it.title,
                     it.artist,
-                    isFav = allFav,
+                    // allFav 是同步未完成时的兜底：保证「我喜欢的音乐」永远全红心
+                    isFav = allFav || FavoriteStore.isFavorite(it.id),
                     isVip = it.isVip,
                     noCopyright = it.noCopyright
                 )
             }
             finishSetup()
+            // 离线场景：缓存里的「我喜欢的音乐」同样回填索引，保证弱网下红心依然正确
+            if (allFav && songs.isNotEmpty()) {
+                FavoriteStore.rememberFavPlaylistId(playlistId)
+                FavoriteStore.seedEntries(
+                    songs.map { FavoriteStore.Entry(it.id, it.title, it.artist) },
+                    replace = true
+                )
+            }
         }
 
         // ② 后台刷新最新数据（完成后重建列表，但按歌曲 id 锚定光标位置）
@@ -313,9 +328,18 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         s.id,
                         s.name,
                         s.artists?.joinToString("/") { it.name } ?: "未知艺术家",
-                        isFav = allFav,
+                        isFav = allFav || FavoriteStore.isFavorite(s.id),
                         isVip = (s.fee ?: 0) == 1,
                         noCopyright = s.noCopyright
+                    )
+                }
+                // 「我喜欢的音乐」：曲目即收藏，回填全局索引，使其它页面（最近播放/歌单/搜索）红心一致。
+                // 带完整标题回填，索引里的 name/artist 一并补齐。
+                if (allFav && songs.isNotEmpty()) {
+                    FavoriteStore.rememberFavPlaylistId(playlistId)
+                    FavoriteStore.seedEntries(
+                        songs.map { FavoriteStore.Entry(it.id, it.title, it.artist) },
+                        replace = true
                     )
                 }
                 // diff：内容没变化就不重绘，避免用户正在浏览时列表闪烁、光标跳动
@@ -438,13 +462,8 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 }
             }
 
-            if (song.isFav) {
-                NokiaIcons.setIcon(iconFav, NokiaIcons.ICON_FAVORITE)
-                iconFav.setTextColor(colorFavRed)
-            } else {
-                NokiaIcons.setIcon(iconFav, NokiaIcons.ICON_FAVORITE_BORDER)
-                iconFav.setTextColor(colorFavGray)
-            }
+            // 红心：渲染时实时求值（SongDisplayItem.isFav 只是构造期快照，收藏变化后会过期）
+            applyFavIcon(iconFav, song.id)
 
             llSongContainer.addView(itemView)
             songItemViews.add(itemView)
@@ -453,6 +472,40 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         // 动态创建的行错过了基类的字体初始化，主动补一次点阵字体+缩放，
         // 否则先显示系统默认大字，等异步 onFontChanged 才突然变小
         NokiaFontManager.applyToViewTree(llSongContainer)
+    }
+
+    /**
+     * 按当前收藏态渲染单行的红心图标。
+     *
+     * [allFav] 为真（「我喜欢的音乐」）时无条件实心：该歌单内所有歌曲必然已收藏，
+     * 即使云端同步尚未完成也不会显示空心。
+     */
+    private fun applyFavIcon(iconFav: TextView, songId: Long) {
+        val isFav = allFav || FavoriteStore.isFavorite(songId)
+        NokiaIcons.setIcon(iconFav, if (isFav) NokiaIcons.ICON_FAVORITE else NokiaIcons.ICON_FAVORITE_BORDER)
+        iconFav.setTextColor(if (isFav) colorFavRed else colorFavGray)
+    }
+
+    /**
+     * 收藏态变化后**单行局部刷新**：只改已渲染行的红心图标与颜色。
+     *
+     * 严禁走 populateSongs() / finishSetup() / focusHelper.setItems()：
+     * 重建列表会触发既有的「刷新后光标跳动」问题，并让懒加载分页回到第一页。
+     * 这里只遍历已渲染的 View（懒加载下通常 ≤ PAGE_SIZE 个），用下标回查歌曲 id。
+     */
+    private fun refreshFavIcons() {
+        val count = minOf(songItemViews.size, songs.size)
+        for (i in 0 until count) {
+            val iconFav = songItemViews[i].findViewById<TextView>(R.id.icon_fav) ?: continue
+            applyFavIcon(iconFav, songs[i].id)
+        }
+    }
+
+    /** 订阅全局收藏变化，驱动本页红心即时更新（不重建列表、不动焦点） */
+    private fun observeFavorites() {
+        lifecycleScope.launch {
+            FavoriteStore.favoriteIds.collect { refreshFavIcons() }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -781,7 +834,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                         id = song.id,
                         title = song.name,
                         artist = song.artistName,
-                        isFav = LibraryManager.isFavorite(song.id),
+                        isFav = FavoriteStore.isFavorite(song.id),
                         isVip = song.fee == 1,
                         noCopyright = song.noCopyright
                     )
