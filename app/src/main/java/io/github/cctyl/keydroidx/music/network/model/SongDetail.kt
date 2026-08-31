@@ -19,7 +19,11 @@ data class SongItem(
     @SerializedName("ar") val artists: List<ArtistItem>?,
     @SerializedName("al") val album: AlbumItem?,
     @SerializedName("dt") val duration: Long? = null,
-    /** 网易云 fee 字段：1=VIP 歌曲，0/null=免费 */
+    /**
+     * 网易云 fee 字段。注意：fee 非 0（如 8 = 付费数字单曲）**不代表**一定不能完整播放，
+     * 有些条目服务端仍会下发完整音频（freeTrialInfo 为 null）。
+     * 因此是否受限必须以取链返回的 freeTrialInfo 为准，不能仅凭 fee 判断。
+     */
     @SerializedName("fee") val fee: Int? = null,
     /** 网易云版权/状态：st < 0（如 -200）表示无版权/已下架 */
     @SerializedName("noCopyright") var noCopyright: Boolean = false,

@@ -63,6 +63,30 @@ object AudioCacheManager {
     }
 
     /**
+     * 判断整首歌是否已**完整**缓存。
+     *
+     * 与 isSongCached 的区别：isSongCached 只要缓存超过 100KB 就算命中，
+     * 但 ExoPlayer 的 CacheDataSource 只缓存实际播放过的区间，
+     * 「听过一半就切歌」会留下半截缓存甚至中间空洞。
+     * 只靠 isSongCached 就敢用占位 URL 播放，播到缓存断点回源会直接失败。
+     */
+    fun isFullyCached(context: Context, songId: Long): Boolean {
+        if (songId <= 0L) return false
+        return try {
+            val cache = getCache(context)
+            val key = buildCacheKey(songId)
+            val contentLength = androidx.media3.datasource.cache.ContentMetadata
+                .getContentLength(cache.getContentMetadata(key))
+            // 从未完整下载过时 contentLength 为未设置值，必然不完整
+            if (contentLength <= 0L) return false
+            val cached = cache.getCachedBytes(key, 0, contentLength)
+            cached >= contentLength
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * 创建基于缓存的 CacheDataSource.Factory
      */
     fun createCacheDataSourceFactory(context: Context): DataSource.Factory {

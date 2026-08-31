@@ -84,6 +84,9 @@ class PlaybackService : MediaSessionService() {
     private var loadedLyrics: List<LrcLine> = emptyList()
     private var lyricsSongId: Long = -1L
 
+    /** 当前播放的是否为试听片段（付费未解锁时服务端只下发片段，播完即跳下一首） */
+    private var currentIsTrial = false
+
     private val progressRunnable = object : Runnable {
         override fun run() {
             player?.let { p ->
@@ -191,6 +194,7 @@ class PlaybackService : MediaSessionService() {
     private fun loadAndPlaySong(song: SongItem) {
         // 进入换歌流程：持锁覆盖取链间隙，避免锁屏后 CPU 休眠导致下一首不开播
         acquireTransitionWakeLock()
+        currentIsTrial = false
         // 本地歌曲：直接读文件，不走网易云取链与 VIP/版权检查
         song.localPath?.let { path ->
             Log.d(TAG, "Playing local song: ${song.name}, path: $path")
@@ -231,8 +235,10 @@ class PlaybackService : MediaSessionService() {
         val isCached = AudioCacheManager.isSongCached(this, song.id)
         val hasNetwork = NetworkUtils.isNetworkAvailable(this)
         val isUserVip = UserProfileCache.isVip(this)
+        // 缓存是否覆盖了整首。半截缓存用占位 URL 播放会在断点处回源失败，必须单独判断。
+        val isFullyCached = isCached && AudioCacheManager.isFullyCached(this, song.id)
 
-        Log.i(TAG, "[VIP-CHECK] [PLAY-FLOW] Start playing -> id: ${song.id}, name: ${song.name}, fee: ${song.fee}, isCached: $isCached, hasNetwork: $hasNetwork, isUserVip: $isUserVip")
+        Log.i(TAG, "[VIP-CHECK] [PLAY-FLOW] Start playing -> id: ${song.id}, name: ${song.name}, fee: ${song.fee}, isCached: $isCached, isFullyCached: $isFullyCached, hasNetwork: $hasNetwork, isUserVip: $isUserVip")
 
         if (!hasNetwork && !isCached) {
             Log.w(TAG, "[VIP-CHECK] [PLAY-FLOW] No network and song not cached: ${song.name}")
@@ -242,10 +248,17 @@ class PlaybackService : MediaSessionService() {
             return
         }
 
-        if (isCached) {
+        // 只有「整首已缓存」或「离线（别无选择）」时才走占位 URL 的缓存分支。
+        // 半截缓存 + 联网 → 落到下面重新取链，用真实 URL 播放并顺带把缓存补齐，
+        // 避免播到缓存断点处回源失败导致「播一半就跳下一首」。
+        if (isCached && (isFullyCached || !hasNetwork)) {
             // 本地已有缓存，优先使用缓存播放（即便断网也能离线播）
-            Log.d(TAG, "[VIP-CHECK] [PLAY-FLOW] Playing cached song: ${song.name}, id: ${song.id}")
-            val dummyUri = "https://music.163.com/song/media/${song.id}.mp3"
+            Log.d(TAG, "[VIP-CHECK] [PLAY-FLOW] Playing cached song: ${song.name}, id: ${song.id}, fully: $isFullyCached, network: $hasNetwork")
+            // 注意：这里只是给 CacheDataSource 一个「能通过自定义 cacheKey 命中缓存」的占位 URI，
+            // 缓存缺失的部分会用它回源。旧的 song/media/{id}.mp3 外链已被网易云下线（恒返回 404），
+            // 一旦缓存不完整，播到缓存末尾回源 404 就会播放错误并跳下一首，
+            // 表现为「播到一定程度突然断了」。改用仍可用的 outer/url 外链兜底回源。
+            val dummyUri = "https://music.163.com/song/media/outer/url?id=${song.id}.mp3"
             val mediaItem = buildMediaItem(song, dummyUri)
             player?.let { p ->
                 p.setMediaItem(mediaItem)
@@ -255,10 +268,12 @@ class PlaybackService : MediaSessionService() {
             updateNotification()
             LibraryManager.addRecentSong(song)
 
-            // 如果是非 VIP 用户，检查是否是 VIP 歌曲
-            val isVipSong = (song.fee ?: 0) == 1
-            Log.i(TAG, "[VIP-CHECK] [CACHE-BRANCH] isUserVip: $isUserVip, isVipSong: $isVipSong, fee: ${song.fee}")
-            if (!isUserVip && isVipSong) {
+            // 缓存分支的提示只认「已确认的 VIP 歌（fee=1）」。
+            // 不能因为 fee 非 0 就提示付费：fee=8 的条目服务端常常仍下发完整音频
+            // （freeTrialInfo 为 null，如《晚安电子咩》），提示会变成误报。
+            val fee = song.fee ?: 0
+            Log.i(TAG, "[VIP-CHECK] [CACHE-BRANCH] isUserVip: $isUserVip, fee: $fee")
+            if (!isUserVip && fee == 1) {
                 Log.i(TAG, "[VIP-CHECK] Showing toast for cached VIP trial song: ${song.name}")
                 handler.post {
                     Toast.makeText(
@@ -267,28 +282,26 @@ class PlaybackService : MediaSessionService() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-            } else if (!isUserVip && song.fee == 0) {
-                // 如果历史记录里 fee 是 0，但在联网情况下异步核对是否为 VIP 歌曲，以便后续修正
-                if (hasNetwork) {
-                    serviceScope.launch {
-                        try {
-                            val checkResult = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
-                            Log.i(TAG, "[VIP-CHECK] [ASYNC-CHECK] result -> isTrial: ${checkResult.isTrial}, trialEnd: ${checkResult.trialEnd}")
-                            if (checkResult.isTrial) {
-                                val updatedSong = song.copy(fee = 1)
-                                LibraryManager.addRecentSong(updatedSong)
-                                val durationTip = if (checkResult.trialEnd > 0) "${checkResult.trialEnd}秒" else ""
-                                handler.post {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "VIP 歌曲，正在播放${durationTip}试听片段",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+            } else if (fee == 0 && hasNetwork) {
+                // 历史记录里 fee 是 0，但联网时仍异步核对一次，以便修正 fee 并提示真实原因
+                serviceScope.launch {
+                    try {
+                        val checkResult = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
+                        Log.i(TAG, "[VIP-CHECK] [ASYNC-CHECK] result -> isTrial: ${checkResult.isTrial}, trialEnd: ${checkResult.trialEnd}")
+                        if (checkResult.isTrial) {
+                            val updatedSong = song.copy(fee = 1)
+                            LibraryManager.addRecentSong(updatedSong)
+                            val durationTip = if (checkResult.trialEnd > 0) "${checkResult.trialEnd}秒" else ""
+                            handler.post {
+                                Toast.makeText(
+                                    applicationContext,
+                                    "VIP 歌曲，正在播放${durationTip}试听片段",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
-                        } catch (e: Exception) {
-                            Log.w(TAG, "[VIP-CHECK] [ASYNC-CHECK] Failed: ${e.message}")
                         }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "[VIP-CHECK] [ASYNC-CHECK] Failed: ${e.message}")
                     }
                 }
             }
@@ -314,16 +327,17 @@ class PlaybackService : MediaSessionService() {
                 }
                 Log.d(TAG, "[VIP-CHECK] [NET-BRANCH] Got url: $url, isTrial: ${result.isTrial}, trialStart: ${result.trialStart}, trialEnd: ${result.trialEnd}")
 
-                val isVipOrTrial = result.isTrial || (song.fee ?: 0) == 1
-                val updatedSong = if (isVipOrTrial && (song.fee ?: 0) != 1) {
-                    song.copy(fee = 1)
-                } else {
-                    song
-                }
+                val fee = song.fee ?: 0
+                currentIsTrial = result.isTrial
+                // 是否受限一律以服务端 freeTrialInfo 为准：
+                // 之前只看 fee==1，导致 fee=8 这类条目即便返回了试听片段也判成免费歌，漏报。
+                val updatedSong = if (result.isTrial && fee == 0) song.copy(fee = 1) else song
 
-                Log.i(TAG, "[VIP-CHECK] [NET-BRANCH] Decision -> isUserVip: $isUserVip, isVipOrTrial: $isVipOrTrial, showToast: ${!isUserVip && isVipOrTrial}")
+                // VIP 用户遇到非会员歌（fee 非 1）的试听同样要提示，说明会员也没解锁
+                val showToast = result.isTrial && (!isUserVip || fee != 1)
+                Log.i(TAG, "[VIP-CHECK] [NET-BRANCH] Decision -> isUserVip: $isUserVip, fee: $fee, isTrial: ${result.isTrial}, showToast: $showToast")
 
-                if (!isUserVip && isVipOrTrial) {
+                if (showToast) {
                     val durationTip = if (result.trialEnd > 0) "${result.trialEnd}秒" else ""
                     handler.post {
                         Toast.makeText(
@@ -463,7 +477,18 @@ class PlaybackService : MediaSessionService() {
                 releaseTransitionWakeLock()
             }
             if (playbackState == Player.STATE_ENDED) {
-                Log.d(TAG, "onPlaybackStateChanged: STATE_ENDED")
+                Log.d(TAG, "onPlaybackStateChanged: STATE_ENDED, currentIsTrial: $currentIsTrial")
+                // 试听片段播完是服务端限制，不是故障。之前没有任何提示，
+                // 用户只会看到「歌播到一半突然跳下一首」，这里明确告知原因。
+                if (currentIsTrial) {
+                    handler.post {
+                        Toast.makeText(
+                            applicationContext,
+                            "试听片段已结束，继续播放下一首",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
                 when (PlaybackStateManager.playMode.value) {
                     PlaybackMode.SINGLE_LOOP -> {
                         player?.seekTo(0)

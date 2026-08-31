@@ -886,6 +886,11 @@ data class SongDisplayItem(
     val title: String,
     val artist: String,
     val isFav: Boolean = false,
+    /**
+     * 是否 VIP 会员歌。仅认 fee=1：
+     * fee 非 0 并不等于不能完整播放（fee=8 的条目服务端常仍下发完整音频），
+     * 若按 fee!=0 标注会把《晚安电子咩》这类可正常播放的歌标成「付费」，与官方 APP 不一致。
+     */
     val isVip: Boolean = false,
     val noCopyright: Boolean = false
 ) : Serializable
