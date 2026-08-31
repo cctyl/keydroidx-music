@@ -33,9 +33,15 @@ import kotlinx.coroutines.launch
  *  - 确定键用 `NokiaConfirmDialog` 查看全文（列表内正文截断为 3 行）。
  *
  * 物理按键：
- *  UP/DOWN 移动光标（首尾循环）、SELECT 查看全文、左软键刷新、中软键加载更多、右软键返回。
+ *  UP/DOWN 移动光标（**非循环**，到头即停）、SELECT 查看全文、左软键刷新、中软键加载更多、右软键返回。
  *
- * 焦点与滚动统一交给 [NokiaListFocusHelper]（循环导航 + 防出界平滑滚动），
+ * 滚动策略（本页刻意与其它列表页不同，通过 [NokiaListFocusHelper.setCyclic] 关闭循环，
+ * 不改动 SDK / common 组件）：
+ *  - 顶部按上键停住，不跳到末尾；
+ *  - 底部按下键停住，不回弹到顶部 —— 若还有评论则继续加载下一页；
+ *  - 光标接近底部时静默预取下一页，走到底部时内容通常已就绪，滚动不中断。
+ *
+ * 焦点与滚动统一交给 [NokiaListFocusHelper]（防出界平滑滚动），
  * 配色一律取自 [MusicTheme]，不硬编码颜色。
  */
 class CommentActivity : NokiaBaseActivity() {
@@ -50,6 +56,14 @@ class CommentActivity : NokiaBaseActivity() {
 
         /** 每页评论条数 */
         private const val PAGE_SIZE = 20
+
+        /**
+         * 预加载提前量：光标进入末尾这么多行以内时，静默预取下一页。
+         *
+         * 让用户在「加载更多」行按下键时内容往往已就绪，滚动不会被打断。
+         * 新评论是追加在列表尾部，预取不会改变既有条目索引，因此光标不会跳位。
+         */
+        private const val PRELOAD_AHEAD = 3
 
         /** 「加载更多」行的状态 */
         private const val ROW_LOADING = 0
@@ -137,6 +151,9 @@ class CommentActivity : NokiaBaseActivity() {
         NokiaIcons.setIcon(findViewById(R.id.icon_comment_total), MusicIcons.COMMENT)
 
         focusHelper = NokiaListFocusHelper(this, scrollComment)
+        // 关闭首尾循环：本页是「无限追加」的长列表，循环滚动会把用户从底部弹回顶部、
+        // 从顶部弹到底部，与分页浏览方向完全冲突。到底 / 到头一律停住。
+        focusHelper.setCyclic(false)
         focusHelper.setOnFocusChangedListener { oldIdx, _, newView ->
             // 基类 setFocusIndex 已铺好生态主题高亮，这里换成音乐 App 的主题焦点色，
             // 并同步刷新副文字颜色（与 PlaylistDetailActivity 一致的做法）
@@ -368,23 +385,41 @@ class CommentActivity : NokiaBaseActivity() {
         return comments.getOrNull(index - hotComments.size)
     }
 
+    /**
+     * 光标接近底部时静默预取下一页。
+     *
+     * 新评论追加在列表尾部，既有条目索引不变，因此预取后光标仍停在原条目上，不会跳位；
+     * 加载中的状态由 [loading] 与 `loadMore()` 自身守卫，不会重复触发。
+     */
+    private fun maybePreload() {
+        if (loading || !hasMore || songId <= 0L) return
+        val count = focusHelper.itemCount
+        if (count <= 0 || focusIdx < 0) return
+        if (focusIdx >= count - 1 - PRELOAD_AHEAD) loadMore()
+    }
+
     // ══════════════════════════════════════════════════════════
     //  按键处理
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
         return when (action) {
             NokiaKeyAction.UP -> {
+                // 非循环（setCyclic(false)）：已在首项时按上键停住，不会跳到末尾
                 focusHelper.onDirection(action)
                 true
             }
             NokiaKeyAction.DOWN -> {
-                val atLoadMoreRow = llLoadMore.visibility == View.VISIBLE &&
-                    focusIdx >= 0 && focusIdx == focusHelper.itemCount - 1
-                if (atLoadMoreRow && hasMore) {
-                    // 光标停在「加载更多」行且有更多：直接加载，不循环回顶
-                    loadMore()
-                } else {
-                    focusHelper.onDirection(action)
+                val count = focusHelper.itemCount
+                when {
+                    count == 0 || focusIdx < 0 -> focusHelper.onDirection(action)
+                    // 已停在最后一行（「加载更多」）：还有评论就继续加载，
+                    // 没有则原地停住 —— 绝不循环回顶部
+                    focusIdx >= count - 1 -> if (hasMore) loadMore()
+                    else -> {
+                        focusHelper.onDirection(action)
+                        // 光标接近底部时静默预取下一页
+                        maybePreload()
+                    }
                 }
                 true
             }
