@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    全屏评论编辑页（CommentEditorFragment）
+    结构（自上而下）：
+      ① 目标歌曲提示行（评论图标 + 「评论：<歌名>」）
+      ② 输入区：占满剩余空间，左上角起排，可多行
+      ③ 字数计数器（0/140）
+    背景必须完全不透明：本页是叠加在评论列表之上的一层，透明会露出底层列表。
+    标题栏与软键栏由宿主 NokiaBaseActivity 注入。
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/music_dark_bg">
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ① 目标歌曲                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="30dp"
+        android:gravity="center_vertical"
+        android:background="#40000000"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:id="@+id/icon_editor_target"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:textColor="@color/music_accent"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_editor_song"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="6dp"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="9sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ② 输入区                                                     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <EditText
+        android:id="@+id/edit_comment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginLeft="6dp"
+        android:layout_marginRight="6dp"
+        android:layout_marginTop="6dp"
+        android:padding="6dp"
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textCapSentences"
+        android:imeOptions="flagNoFullscreen"
+        android:scrollbars="vertical"
+        android:scrollHorizontally="false"
+        android:overScrollMode="never"
+        android:textColor="@color/music_item_normal_text"
+        android:textColorHint="@color/music_subtext"
+        android:textSize="10sp"
+        android:lineSpacingExtra="1dp"
+        android:includeFontPadding="false" />
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ③ 字数                                                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end|center_vertical"
+        android:paddingRight="8dp"
+        android:paddingLeft="8dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:id="@+id/tv_editor_counter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/music_subtext"
+            android:textSize="8sp"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+</LinearLayout>

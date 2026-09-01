@@ -140,6 +140,12 @@
     <string name="softkey_save">保存</string>
     <string name="softkey_input">输入</string>
     <string name="softkey_done">完成</string>
+    <string name="softkey_send">发送</string>
+    <string name="softkey_menu">菜单</string>
+    <string name="title_comment_editor">写评论</string>
+    <string name="comment_editor_options">评论选项</string>
+    <string name="opt_comment_send">发送评论</string>
+    <string name="opt_comment_exit">退出编辑</string>
     <string name="softkey_delete">删除</string>
     <string name="softkey_refresh">刷新</string>
     <string name="softkey_more">加载更多</string>
@@ -156,9 +162,19 @@
 
     <!-- ── 歌曲评论页 ── -->
     <string name="title_song_comment">歌曲评论</string>
+    <string name="softkey_comment">评论</string>
     <string name="comment_total">共 %1$s 条评论</string>
     <string name="comment_loading">评论加载中…</string>
-    <string name="comment_load_failed">评论加载失败，按左软键重试</string>
+    <string name="comment_load_failed">评论加载失败，点按此处重试</string>
+    <string name="comment_sent">评论已发布</string>
+    <string name="comment_editor_song">评论：%1$s</string>
+    <string name="comment_editor_hint">说点什么吧…</string>
+    <string name="comment_empty_content">评论内容不能为空</string>
+    <string name="comment_send_failed_title">发送失败</string>
+    <string name="comment_send_failed_msg">评论未能发布，请检查网络与登录状态后重试。</string>
+    <string name="comment_send_rejected">评论未能发布：%1$s</string>
+    <string name="comment_need_login_title">尚未登录</string>
+    <string name="comment_need_login_msg">发表评论需要先登录网易云账号。</string>
     <string name="comment_section_hot">热门评论</string>
     <string name="comment_section_new">最新评论</string>
     <string name="comment_load_more">加载更多评论</string>

@@ -11,6 +11,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
+import io.github.cctyl.keydroidx.music.auth.CookieManager
 import io.github.cctyl.keydroidx.music.cache.CommentCache
 import io.github.cctyl.keydroidx.music.network.CommentApi
 import io.github.cctyl.keydroidx.music.network.CommentApi.Comment
@@ -32,8 +33,13 @@ import kotlinx.coroutines.launch
  *  - 向下移动到「加载更多」行（或按中软键）按 [PAGE_SIZE] 分页追加；
  *  - 确定键用 `NokiaConfirmDialog` 查看全文（列表内正文截断为 3 行）。
  *
- * 物理按键：
- *  UP/DOWN 移动光标（**非循环**，到头即停）、SELECT 查看全文、左软键刷新、中软键加载更多、右软键返回。
+ * 物理按键（列表层）：
+ *  UP/DOWN 移动光标（**非循环**，到头即停）、SELECT 查看全文、
+ *  左软键「评论」进入全屏编辑页、中软键加载更多、右软键返回。
+ *
+ * 编辑层（[CommentEditorFragment]）叠加在列表层之上，此时按键全部交给它：
+ *  左软键菜单 = 发送评论 / 退出编辑，中软键 = 发送，右软键 = 返回列表。
+ * 出栈后本页自动恢复列表的标题、软键与光标。
  *
  * 滚动策略（本页刻意与其它列表页不同，通过 [NokiaListFocusHelper.setCyclic] 关闭循环，
  * 不改动 SDK / common 组件）：
@@ -115,6 +121,12 @@ class CommentActivity : NokiaBaseActivity() {
     private lateinit var focusHelper: NokiaListFocusHelper
     private val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else -1
 
+    // ── 评论编辑层 ───────────────────────────────────────────
+    /** 非 null 且已挂载时表示当前处于编辑模式，按键全部转发给它 */
+    private var editorFragment: CommentEditorFragment? = null
+    /** 首页是否加载失败（失败时「加载更多」行变成重试入口，因为左软键已让位给「评论」） */
+    private var loadFailed = false
+
     // ══════════════════════════════════════════════════════════
     //  NokiaBaseActivity 回调
     // ══════════════════════════════════════════════════════════
@@ -134,10 +146,19 @@ class CommentActivity : NokiaBaseActivity() {
         setStatusBarVisible(true)
         registerBatteryReceiver()
         setSoftKeys(
-            getString(R.string.softkey_refresh),
+            getString(R.string.softkey_comment),
             getString(R.string.softkey_more),
             getString(R.string.softkey_back)
         )
+
+        // 编辑页出栈后要恢复列表的标题/软键/光标：列表不是 Fragment，
+        // 骨架的 refreshPageBar() 只会跟随 NokiaPage，故需自行订阅返回栈变化
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                editorFragment = null
+                restoreListBar()
+            }
+        }
 
         scrollComment = findViewById(R.id.scroll_comment)
         tvCommentTotal = findViewById(R.id.tv_comment_total)
@@ -161,8 +182,10 @@ class CommentActivity : NokiaBaseActivity() {
             newView?.let { applyItemStyle(it, true) }
         }
 
-        // 触屏点击「加载更多」行 = 确定键
-        llLoadMore.setOnClickListener { loadMore() }
+        // 触屏点击「加载更多」行 = 确定键；首页失败时该行兼作「重试」入口
+        llLoadMore.setOnClickListener {
+            if (loadFailed) loadFirstPage() else loadMore()
+        }
 
         if (songId <= 0L) {
             showFailed(getString(R.string.comment_load_failed))
@@ -196,6 +219,7 @@ class CommentActivity : NokiaBaseActivity() {
                 comments.addAll(page.comments)
                 offset = comments.size
                 hasMore = page.hasMore
+                loadFailed = false
                 Log.d(TAG, "loaded songId=$songId total=$total hot=${page.hot.size} page=${page.comments.size} hasMore=$hasMore")
                 renderAll()
             } catch (e: Exception) {
@@ -347,6 +371,8 @@ class CommentActivity : NokiaBaseActivity() {
     }
 
     private fun showFailed(msg: String) {
+        // 左软键已让位给「评论」，刷新入口改挂在「加载更多」行上（点按或选中确定键）
+        loadFailed = true
         tvCommentTotal.text = msg
         llHotHeader.visibility = View.GONE
         llNewHeader.visibility = View.GONE
@@ -402,6 +428,13 @@ class CommentActivity : NokiaBaseActivity() {
     //  按键处理
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
+        // 编辑层置顶时全权接管：软键由 Fragment 消费，方向键它返回 false，
+        // 事件便继续透传给 EditText 用于移动光标
+        val editor = editorFragment
+        if (editor != null && editor.isAdded && !editor.isHidden) {
+            return super.onAction(action)
+        }
+
         return when (action) {
             NokiaKeyAction.UP -> {
                 // 非循环（setCyclic(false)）：已在首项时按上键停住，不会跳到末尾
@@ -412,9 +445,12 @@ class CommentActivity : NokiaBaseActivity() {
                 val count = focusHelper.itemCount
                 when {
                     count == 0 || focusIdx < 0 -> focusHelper.onDirection(action)
-                    // 已停在最后一行（「加载更多」）：还有评论就继续加载，
-                    // 没有则原地停住 —— 绝不循环回顶部
-                    focusIdx >= count - 1 -> if (hasMore) loadMore()
+                    // 已停在最后一行（「加载更多」）：还有评论就继续加载，失败过则重试，
+                    // 否则原地停住 —— 绝不循环回顶部
+                    focusIdx >= count - 1 -> when {
+                        hasMore -> loadMore()
+                        loadFailed -> loadFirstPage()
+                    }
                     else -> {
                         focusHelper.onDirection(action)
                         // 光标接近底部时静默预取下一页
@@ -425,11 +461,15 @@ class CommentActivity : NokiaBaseActivity() {
             }
             NokiaKeyAction.SELECT -> {
                 val c = commentAt(focusIdx)
-                if (c != null) showFullComment(c) else if (hasMore) loadMore()
+                when {
+                    c != null -> showFullComment(c)
+                    hasMore -> loadMore()
+                    loadFailed -> loadFirstPage()
+                }
                 true
             }
             NokiaKeyAction.SOFT_LEFT -> {
-                if (!loading) loadFirstPage()
+                openCommentEditor()
                 true
             }
             NokiaKeyAction.SOFT_RIGHT -> {
@@ -445,6 +485,100 @@ class CommentActivity : NokiaBaseActivity() {
         NokiaConfirmDialog(this, c.nickname, c.content)
             .setPositiveButton(getString(R.string.dialog_confirm)) { }
             .show()
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  发表评论（左软键「评论」→ 全屏编辑页）
+    // ══════════════════════════════════════════════════════════
+
+    /** 左软键：叠加全屏编辑页。未登录时先用复古弹窗说明原因，避免白走一趟。 */
+    private fun openCommentEditor() {
+        if (editorFragment?.isAdded == true) return
+        if (songId <= 0L) return
+
+        if (!CookieManager.hasCookie(this)) {
+            NokiaConfirmDialog(
+                this,
+                getString(R.string.comment_need_login_title),
+                getString(R.string.comment_need_login_msg)
+            )
+                .setPositiveButton(getString(R.string.dialog_confirm)) { }
+                .show()
+            return
+        }
+
+        val editor = CommentEditorFragment.newInstance(songName).apply {
+            onSend = { text -> submitComment(text) }
+        }
+        editorFragment = editor
+        // add（而非 replace）：评论列表是直接 inflate 的普通 View，不受
+        // FragmentManager 管辖，编辑页不透明地盖在上面，出栈后列表自动显现
+        supportFragmentManager.beginTransaction()
+            .add(R.id.comment_root, editor)
+            .addToBackStack(TAG)
+            .commit()
+    }
+
+    /**
+     * 提交评论。
+     *
+     * 刻意用 Activity 的 `lifecycleScope` 而不是编辑页的：编辑页在回调后立刻出栈销毁，
+     * 协程挂在这里才跑得完、才能刷新列表。
+     */
+    private fun submitComment(text: String) {
+        lifecycleScope.launch {
+            // 区分「服务端有明确原因」与「网络/未知错误」：前者原样展示服务端文案，
+            // 后者才用通用提示，便于判断是限频、歌曲禁评还是网络问题
+            var serverReason: String? = null
+            val ok = try {
+                CommentApi.sendComment(songId, text)
+                true
+            } catch (e: CommentApi.SendException) {
+                Log.w(TAG, "send comment rejected songId=$songId code=${e.code} msg=${e.serverMessage}")
+                serverReason = e.serverMessage
+                false
+            } catch (e: Exception) {
+                Log.w(TAG, "send comment failed songId=$songId: ${e.message}")
+                false
+            }
+            if (isDestroyed || isFinishing) return@launch
+
+            if (!ok) {
+                NokiaConfirmDialog(
+                    this@CommentActivity,
+                    getString(R.string.comment_send_failed_title),
+                    serverReason?.let { getString(R.string.comment_send_rejected, it) }
+                        ?: getString(R.string.comment_send_failed_msg)
+                )
+                    .setPositiveButton(getString(R.string.dialog_confirm)) { }
+                    .show()
+                updateTotalText()
+                return@launch
+            }
+
+            // 新评论落在「最新评论」首位，重拉首页即可看到（完成后文案自动恢复为总数）
+            loadFirstPage()
+            tvCommentTotal.text = getString(R.string.comment_sent)
+        }
+    }
+
+    /**
+     * 编辑页出栈后恢复列表层的标题、软键与光标。
+     *
+     * 焦点必须主动拿回来：编辑期间焦点在 EditText 上，出栈后若不重新请求焦点，
+     * 第一次方向键会被系统拿去「退出触摸模式」而吞掉（首键防吞规范）。
+     */
+    private fun restoreListBar() {
+        setPageTitle(getString(R.string.title_song_comment))
+        setTitleIcon(MusicIcons.COMMENT)
+        setSoftKeys(
+            getString(R.string.softkey_comment),
+            getString(R.string.softkey_more),
+            getString(R.string.softkey_back)
+        )
+        if (::focusHelper.isInitialized && focusHelper.itemCount > 0) {
+            focusHelper.setFocusIndex(focusIdx.coerceAtLeast(0), true)
+        }
     }
 
     // ══════════════════════════════════════════════════════════
