@@ -11,6 +11,7 @@ import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.warmup.AppWarmup
 import io.github.cctyl.nokia.common.feedback.NokiaFeedback
 import io.github.cctyl.nokia.common.feedback.NokiaFeedbackConfig
+import io.github.cctyl.nokia.common.feedback.NokiaInstall
 import io.github.cctyl.nokia.common.log.NokiaLog
 
 class MusicApplication : Application() {
@@ -43,15 +44,18 @@ class MusicApplication : Application() {
         RetrofitClient.init(this)
         AppWarmup.startWarmup(this)
 
-        // 初始化意见反馈组件
+        // 初始化意见反馈 + 安装统计组件（共用同一份配置）
         NokiaFeedback.init(
             NokiaFeedbackConfig(
                 BuildConfig.FEEDBACK_UPLOAD_URL,
+                BuildConfig.FEEDBACK_INSTALL_URL,
                 BuildConfig.FEEDBACK_SECRET_KEY,
                 "KeydroidX-Music",
                 BuildConfig.VERSION_NAME,
                 null
             )
         )
+        // 首次安装 / 版本升级时自动上报一次设备信息（后台、幂等、静默）
+        NokiaInstall.reportOnce(this)
     }
 }
