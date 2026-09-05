@@ -965,17 +965,17 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = dp(5)
-                bottomMargin = dp(5)
+                topMargin = dp(4)
+                bottomMargin = dp(4)
             }
             gravity = Gravity.CENTER
-            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
+            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
             setTextColor(Color.parseColor("#E0FFFFFF"))
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
             setSingleLine(false)
             maxLines = 3
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(10), dp(5), dp(10), dp(5))
         }
     }
 
@@ -1032,28 +1032,28 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     tv.background = cyanBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                 }
                 // 2. 用户方向键选中的光标行（但不是当前播放行）
                 isCursor && !isPlaying -> {
                     tv.background = focusBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                 }
                 // 3. 当前播放行（但用户光标移到了其他行）
                 !isCursor && isPlaying -> {
                     tv.background = cyanBg
                     tv.setTextColor(cyan)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                 }
                 // 4. 普通歌词行
                 else -> {
                     tv.background = null
                     tv.setTextColor(normal)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
                 }
             }
         }
