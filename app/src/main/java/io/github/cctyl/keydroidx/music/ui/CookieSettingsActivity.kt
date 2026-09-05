@@ -9,8 +9,15 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.auth.CookieManager
+import io.github.cctyl.keydroidx.music.auth.UserProfileCache
+import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
+import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
 import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
@@ -218,14 +225,19 @@ class CookieSettingsActivity : NokiaBaseActivity() {
 
     /**
      * 保存输入框中的 Cookie：
-     * - 非空：去首尾空白后保存并同步网络层（只复制 MUSIC_U 值时自动补全）
+     * - 非空：去首尾空白后进行在线鉴权验证，有效才保存，无效提示并留在当前页
      * - 空白：视为清除 Cookie（退出登录）
      */
+    private var isVerifying = false
+
     private fun saveCookie() {
+        if (isVerifying) return
         val input = etCookie.text.toString().trim()
         if (input.isEmpty()) {
             Log.d(TAG, "saveCookie: empty input → clear")
             CookieManager.clearCookie(this)
+            UserProfileCache.clear(this)
+            PlaylistSongCache.clearAll(this)
             RetrofitClient.updateCookie(this, null)
             updateStatus("已清除 Cookie（未登录）")
             Toast.makeText(this, "Cookie 已清除", Toast.LENGTH_SHORT).show()
@@ -234,14 +246,47 @@ class CookieSettingsActivity : NokiaBaseActivity() {
             finish()
             return
         }
+
         val normalized = if (input.contains("=")) input else "MUSIC_U=$input"
         Log.d(TAG, "saveCookie: length=${normalized.length} hasMUSICU=${normalized.contains("MUSIC_U")}")
-        RetrofitClient.updateCookie(this, normalized)  // 内部会持久化
-        updateStatus("已保存")
-        Toast.makeText(this, "Cookie 已保存 ✓", Toast.LENGTH_SHORT).show()
-        // 保存成功立即通知宿主刷新登录态，并返回设置页
-        setResult(RESULT_OK)
-        finish()
+
+        isVerifying = true
+        updateStatus("正在验证 Cookie 有效性...")
+        Toast.makeText(this, "正在验证...", Toast.LENGTH_SHORT).show()
+
+        // 临时同步给网络层用于请求验证
+        RetrofitClient.updateCookie(this, normalized)
+
+        lifecycleScope.launch {
+            try {
+                val profile = PlaylistApi.getUserProfile()
+                if (profile.userId > 0L) {
+                    // 验证成功
+                    UserProfileCache.save(this@CookieSettingsActivity, profile)
+                    updateStatus("验证通过：${profile.nickname}")
+                    Toast.makeText(this@CookieSettingsActivity, "登录成功：${profile.nickname} ✓", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    // 服务端返回 empty (userId == 0) → 无效/过期
+                    Log.w(TAG, "cookie validation failed: server returned userId=0")
+                    CookieManager.clearCookie(this@CookieSettingsActivity)
+                    UserProfileCache.clear(this@CookieSettingsActivity)
+                    PlaylistSongCache.clearAll(this@CookieSettingsActivity)
+                    RetrofitClient.updateCookie(this@CookieSettingsActivity, null)
+                    updateStatus("Cookie 无效或已过期，请检查")
+                    Toast.makeText(this@CookieSettingsActivity, "Cookie 无效或已过期，请重新获取", Toast.LENGTH_LONG).show()
+                    isVerifying = false
+                }
+            } catch (e: Exception) {
+                // 网络异常等：保留已保存状态（避免无网络时无法保存）
+                Log.w(TAG, "cookie validation network error: ${e.message}")
+                updateStatus("网络连接失败，已保存但未验证")
+                Toast.makeText(this@CookieSettingsActivity, "Cookie 已保存（网络异常暂未验证）", Toast.LENGTH_SHORT).show()
+                setResult(RESULT_OK)
+                finish()
+            }
+        }
     }
 
     override fun onDestroy() {

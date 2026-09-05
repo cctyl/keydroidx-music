@@ -1438,8 +1438,12 @@ class MainActivity : NokiaBaseActivity() {
                     Log.w("MainActivity", "cookie 已过期，自动清除")
                     CookieManager.clearCookie(this@MainActivity)
                     UserProfileCache.clear(this@MainActivity)
+                    PlaylistSongCache.clearAll(this@MainActivity)
                     RetrofitClient.updateCookie(this@MainActivity, null)
+                    Toast.makeText(this@MainActivity, "登录已过期，请重新登录", Toast.LENGTH_SHORT).show()
                     renderUserHeader(iconAvatar, ivAvatar, tvNickname, tvSub, badgeVip, null)
+                    updateSettingItemsUI()
+                    loadDiscoverPlaylists()
                     return@launch
                 }
                 Log.d("MainActivity", "profile refreshed: ${profile.nickname} uid=${profile.userId} level=${profile.level}")
@@ -1520,12 +1524,9 @@ class MainActivity : NokiaBaseActivity() {
                 val cookie = CookieManager.getCookie(this)
                 Log.d("MainActivity", "login返回, hasCookie=${CookieManager.hasCookie(this)}, cookie长度=${cookie?.length ?: -1}")
                 if (CookieManager.hasCookie(this)) {
-                    Toast.makeText(this, "登录成功 ✓", Toast.LENGTH_SHORT).show()
                     loadUserProfile()   // 刷新用户信息头部
                     loadDiscoverPlaylists() // 刷新发现页推荐
                 } else {
-                    // Cookie 已清除（退出登录 / 手动清空）
-                    Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show()
                     loadUserProfile()        // 回到未登录态
                     loadDiscoverPlaylists()  // 回退到默认推荐歌单
                 }
