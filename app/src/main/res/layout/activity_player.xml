@@ -78,7 +78,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textSize="@dimen/nokia_font_body"
+                    android:textSize="@dimen/nokia_font_title"
                     android:textColor="#FFFFFF"
                     android:singleLine="true"
                     android:ellipsize="end"
