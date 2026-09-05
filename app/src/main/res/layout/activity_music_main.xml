@@ -56,7 +56,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tab_mine"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_small_title"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -99,7 +99,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tab_discover"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_small_title"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -141,7 +141,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tab_chart"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_small_title"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -183,7 +183,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tab_search"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_small_title"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -225,7 +225,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/tab_setting"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_small_title"
                     android:includeFontPadding="false" />
             </LinearLayout>
 

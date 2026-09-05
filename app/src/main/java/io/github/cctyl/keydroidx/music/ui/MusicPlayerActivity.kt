@@ -1032,21 +1032,21 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     tv.background = cyanBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 2. 用户方向键选中的光标行（但不是当前播放行）
                 isCursor && !isPlaying -> {
                     tv.background = focusBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 3. 当前播放行（但用户光标移到了其他行）
                 !isCursor && isPlaying -> {
                     tv.background = cyanBg
                     tv.setTextColor(cyan)
                     tv.setTypeface(null, android.graphics.Typeface.BOLD)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 4. 普通歌词行
                 else -> {

@@ -24,7 +24,7 @@
         android:layout_width="18dp"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textSize="8sp"
+        android:textSize="@dimen/nokia_font_caption"
         android:textColor="@color/music_subtext"
         android:includeFontPadding="false" />
 
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/music_item_normal_text"
-                android:textSize="9sp"
+                android:textSize="@dimen/nokia_font_body"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:includeFontPadding="false" />
@@ -69,7 +69,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/music_subtext"
-            android:textSize="8sp"
+            android:textSize="@dimen/nokia_font_caption"
             android:singleLine="true"
             android:ellipsize="end"
             android:includeFontPadding="false" />

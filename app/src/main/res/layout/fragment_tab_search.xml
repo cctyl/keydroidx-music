@@ -47,7 +47,7 @@
             android:paddingBottom="0dp"
             android:textColorHint="@color/music_search_hint"
             android:textColor="@color/music_item_normal_text"
-            android:textSize="10sp"
+            android:textSize="@dimen/nokia_font_body"
             android:inputType="text"
             android:imeOptions="actionSearch"
             android:singleLine="true"
@@ -62,7 +62,7 @@
             android:layout_height="wrap_content"
             android:text="@string/search_pinyin"
             android:textColor="@color/music_search_hint"
-            android:textSize="8sp"
+            android:textSize="@dimen/nokia_font_caption"
             android:background="@drawable/bg_badge"
             android:paddingLeft="4dp"
             android:paddingRight="4dp"
@@ -92,8 +92,7 @@
             android:layout_marginLeft="6dp"
             android:text="@string/search_hot_history"
             android:textColor="@color/music_section_header_text"
-            android:textSize="8sp"
-            android:textStyle="bold"
+            android:textSize="@dimen/nokia_font_caption"
             android:includeFontPadding="false" />
     </LinearLayout>
 

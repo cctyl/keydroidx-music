@@ -58,7 +58,7 @@
                     android:layout_marginLeft="6dp"
                     android:text="@string/comment_loading"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:includeFontPadding="false" />
@@ -87,8 +87,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/comment_section_hot"
                     android:textColor="@color/music_section_header_text"
-                    android:textSize="8sp"
-                    android:textStyle="bold"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -121,8 +120,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/comment_section_new"
                     android:textColor="@color/music_section_header_text"
-                    android:textSize="8sp"
-                    android:textStyle="bold"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -153,7 +151,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/comment_load_more"
                     android:textColor="@color/music_subtext"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     android:gravity="center"
                     android:includeFontPadding="false" />
             </LinearLayout>

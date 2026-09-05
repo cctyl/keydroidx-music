@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/music_item_normal_text"
-                android:textSize="9sp"
+                android:textSize="@dimen/nokia_font_body"
                 android:singleLine="true"
                 android:ellipsize="end"
                 android:includeFontPadding="false" />
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="4dp"
                 android:textColor="@color/music_subtext"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -87,7 +87,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textColor="@color/music_subtext"
-            android:textSize="9sp"
+            android:textSize="@dimen/nokia_font_body"
             android:maxLines="3"
             android:ellipsize="end"
             android:lineSpacingExtra="1dp"
@@ -115,7 +115,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="2dp"
                 android:textColor="@color/music_subtext"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>

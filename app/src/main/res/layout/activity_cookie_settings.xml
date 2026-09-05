@@ -33,7 +33,7 @@
             android:hint="在此粘贴网易云音乐 Cookie…"
             android:textColorHint="#66FFFFFF"
             android:textColor="@color/music_item_normal_text"
-            android:textSize="10sp"
+            android:textSize="@dimen/nokia_font_body"
             android:inputType="textMultiLine"
             android:textIsSelectable="true"
             android:background="#33000000"
@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textSize="8sp"
+            android:textSize="@dimen/nokia_font_caption"
             android:textColor="@color/music_accent" />
 
         <!-- ═══════════════════════════════════════════════════ -->
@@ -56,7 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:lineSpacingExtra="3dp"
-            android:textSize="8sp"
+            android:textSize="@dimen/nokia_font_caption"
             android:textColor="#B0B0B0"
             android:text="@string/cookie_settings_help" />
 

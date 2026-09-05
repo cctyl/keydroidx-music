@@ -36,8 +36,7 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:textColor="@color/music_item_normal_text"
-            android:textSize="10sp"
-            android:textStyle="bold"
+            android:textSize="@dimen/nokia_font_body"
             android:includeFontPadding="false" />
 
         <TextView
@@ -48,7 +47,7 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:textColor="@color/music_subtext"
-            android:textSize="8sp"
+            android:textSize="@dimen/nokia_font_caption"
             android:includeFontPadding="false" />
     </LinearLayout>
 
@@ -59,7 +58,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="6dp"
         android:textColor="@color/music_subtext"
-        android:textSize="8sp"
+        android:textSize="@dimen/nokia_font_caption"
         android:includeFontPadding="false" />
 
 </LinearLayout>

@@ -66,7 +66,7 @@
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     
                     android:includeFontPadding="false" />
 
@@ -78,7 +78,7 @@
                     android:singleLine="true"
                     android:ellipsize="end"
                     android:textColor="@color/music_subtext"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -93,7 +93,7 @@
                 android:paddingBottom="1dp"
                 android:text="VIP"
                 android:textColor="#8B5A2B"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 
                 android:background="@drawable/bg_badge"
                 android:visibility="gone"
@@ -139,7 +139,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_favorites"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     
                     android:includeFontPadding="false" />
 
@@ -148,7 +148,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/music_subtext"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -161,7 +161,7 @@
                 android:paddingTop="1dp"
                 android:paddingBottom="1dp"
                 android:textColor="#FFFFFF"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -201,7 +201,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_history"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     
                     android:includeFontPadding="false" />
 
@@ -210,7 +210,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/music_subtext"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -223,7 +223,7 @@
                 android:paddingTop="1dp"
                 android:paddingBottom="1dp"
                 android:textColor="#FFFFFF"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -263,7 +263,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_download"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     
                     android:includeFontPadding="false" />
 
@@ -273,7 +273,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_download_sub"
                     android:textColor="@color/music_subtext"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -287,7 +287,7 @@
                 android:paddingBottom="1dp"
                 android:text="@string/mine_download_badge"
                 android:textColor="#FFFFFF"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -327,7 +327,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_local"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="9sp"
+                    android:textSize="@dimen/nokia_font_body"
                     
                     android:includeFontPadding="false" />
 
@@ -336,7 +336,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mine_local_sub"
                     android:textColor="@color/music_subtext"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
 
@@ -349,7 +349,7 @@
                 android:paddingBottom="1dp"
                 android:text="@string/mine_local_badge"
                 android:textColor="#FFFFFF"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_caption"
                 android:background="@drawable/bg_badge"
                 android:includeFontPadding="false" />
         </LinearLayout>
@@ -379,7 +379,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="6dp"
                 android:textColor="@color/music_section_header_text"
-                android:textSize="9sp"
+                android:textSize="@dimen/nokia_font_small_title"
                 
                 android:includeFontPadding="false" />
         </LinearLayout>

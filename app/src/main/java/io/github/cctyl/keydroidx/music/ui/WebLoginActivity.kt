@@ -111,7 +111,7 @@ class WebLoginActivity : Activity() {
         val closeBtn = TextView(this).apply {
             text = "✕"
             setTextColor(0xFFFFFFFF.toInt())
-            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 18f)
+            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
             setPadding(28, 18, 28, 18)
             setBackgroundColor(0x88000000.toInt())
             setOnClickListener { finish() }

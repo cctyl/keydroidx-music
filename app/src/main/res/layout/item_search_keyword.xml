@@ -31,7 +31,7 @@
         android:layout_weight="1"
         android:layout_marginLeft="8dp"
         android:textColor="@color/music_item_normal_text"
-        android:textSize="9sp"
+        android:textSize="@dimen/nokia_font_body"
         android:singleLine="true"
         android:ellipsize="end"
         android:includeFontPadding="false" />

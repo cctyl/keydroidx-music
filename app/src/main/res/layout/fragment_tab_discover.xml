@@ -62,7 +62,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/discover_fm"
                             android:textColor="@color/music_item_normal_text"
-                            android:textSize="9sp"
+                            android:textSize="@dimen/nokia_font_body"
                             
                             android:includeFontPadding="false" />
 
@@ -71,7 +71,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/discover_fm_sub"
                             android:textColor="@color/music_subtext"
-                            android:textSize="8sp"
+                            android:textSize="@dimen/nokia_font_caption"
                             android:includeFontPadding="false" />
                     </LinearLayout>
                 </LinearLayout>
@@ -111,7 +111,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/discover_daily"
                             android:textColor="@color/music_item_normal_text"
-                            android:textSize="9sp"
+                            android:textSize="@dimen/nokia_font_body"
                             
                             android:includeFontPadding="false" />
 
@@ -120,7 +120,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/discover_daily_sub"
                             android:textColor="@color/music_subtext"
-                            android:textSize="8sp"
+                            android:textSize="@dimen/nokia_font_caption"
                             android:includeFontPadding="false" />
                     </LinearLayout>
                 </LinearLayout>
@@ -148,7 +148,7 @@
                 android:layout_marginLeft="6dp"
                 android:text="@string/discover_section_today"
                 android:textColor="@color/music_section_header_text"
-                android:textSize="8sp"
+                android:textSize="@dimen/nokia_font_small_title"
                 
                 android:includeFontPadding="false" />
         </LinearLayout>

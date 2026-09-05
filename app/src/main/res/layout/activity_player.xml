@@ -78,8 +78,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:textSize="@dimen/nokia_font_body"
                     android:textColor="#FFFFFF"
                     android:singleLine="true"
                     android:ellipsize="end"
@@ -91,7 +90,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:gravity="center"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="@color/music_subtext"
                     android:singleLine="true"
                     android:ellipsize="end"
@@ -164,7 +163,7 @@
                     android:id="@+id/tv_current_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
 
@@ -174,7 +173,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
 
@@ -182,7 +181,7 @@
                     android:id="@+id/tv_total_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="@color/music_subtext"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -220,9 +219,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#FDE047"
-                    android:textStyle="bold"
                     android:text="@string/guide_lyrics"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -246,7 +244,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#94A3B8"
                     android:text="@string/guide_prev"
                     android:includeFontPadding="false" />
@@ -271,7 +269,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#94A3B8"
                     android:text="@string/guide_playpause"
                     android:includeFontPadding="false" />
@@ -296,7 +294,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#94A3B8"
                     android:text="@string/guide_next"
                     android:includeFontPadding="false" />
@@ -321,9 +319,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#FDE047"
-                    android:textStyle="bold"
                     android:text="@string/guide_mode"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -367,9 +364,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#FDE047"
-                    android:textStyle="bold"
                     android:text="@string/guide_favorite"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -394,9 +390,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#FDE047"
-                    android:textStyle="bold"
                     android:text="@string/guide_download"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -429,7 +424,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="2dp"
-                        android:textSize="8sp"
+                        android:textSize="@dimen/nokia_font_caption"
                         android:textColor="#FDE047"
                         android:singleLine="true"
                         android:maxLength="4"
@@ -440,9 +435,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="8sp"
+                    android:textSize="@dimen/nokia_font_caption"
                     android:textColor="#FDE047"
-                    android:textStyle="bold"
                     android:text="@string/guide_comment"
                     android:includeFontPadding="false" />
             </LinearLayout>
