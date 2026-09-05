@@ -225,6 +225,7 @@
 | **琥珀暖金** | `THEME_AMBER` | `#291500` | `#78350f` | `#fbbf24` (琥珀金) | 复古暖色荧光风 |
 
 ### 2. 字体与图标标准
+- **排版字号**：统一使用 `keydroidx-core` 规范的 6 级 `@dimen/nokia_font_*` 语义 Token（`display:16sp`, `title:13sp`, `body:12sp`, `small_title:11sp`, `caption:9sp`, `micro:7sp`），禁止在 XML 中裸写字号数字。
 - **字体**：全部采用 `ArkPixel` (方舟像素点阵体) 或 `FusionPixel`，通过 `NokiaBaseActivity` 全局递归注入。
 - **图标**：一律使用 `keydroidx-core` 内置的 `NokiaIcons` (MaterialIcons 矢量字体编码)，禁止引入第三方位图 PNG 以确保极佳的 240dp 锐利度。
 

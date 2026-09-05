@@ -1,5 +1,7 @@
 # 页面描述：KeydroidX Music — 音乐库主页（我的 Tab）
 
+> 📌 **注**：本文档为原型视觉描述（含原型示意数值）。Android Native 实际落地规范以 **`UI_DESIGN_SPEC.md`** 为准，排版字号统一采用 `keydroidx-core` 的 **`11-typography-and-font-spec.md`** 6 级 `@dimen/nokia_font_*` 语义 Token。
+
 ---
 
 ## 一、整体布局层级
