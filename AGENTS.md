@@ -294,6 +294,20 @@ switch (action) {
   NokiaFontManager.applyToViewTree(newView);
   ```
 
+#### 5.1.1 语义字号规范（6 级标准 Token）
+- ❌ **严禁**：在 XML 中硬编码裸写数字字号（如 `android:textSize="14sp"`）或使用非整数 sp。
+- ❌ **严禁**：在 ≤13sp 的点阵字体上滥用 `android:textStyle="bold"`（算法加粗会导致像素粘连模糊）。
+- ✅ **强制**：统一引用生态 `@dimen/nokia_font_*` 语义 Token：
+
+| 语义 Token | 基准字号 (1.0x) | 适用场景 |
+| :--- | :---: | :--- |
+| **`@dimen/nokia_font_display`** | **16sp** | 待机大时钟、关于页应用名、品牌大标题 |
+| **`@dimen/nokia_font_title`** | **13sp** | 顶栏页面标题、弹窗标题栏、播放器歌曲大名、OK 中键 |
+| **`@dimen/nokia_font_body`** | **12sp** | **核心正文**：单列设置列表项、反馈表单主项、歌曲/歌单名 |
+| **`@dimen/nokia_font_small_title`** | **11sp** | 左右软键文本、表单提交按钮、分组小标题、选项弹窗行 |
+| **`@dimen/nokia_font_caption`** | **9sp** | 副标题（歌手/专辑）、输入框占位符/提示、底部说明、九宫格应用名 |
+| **`@dimen/nokia_font_micro`** | **7sp** | 极小角标（未读数/下载进度等徽标） |
+
 ### 5.2 配色规范：动态生态主题跟随
 - ❌ **严禁**：在布局 XML 或 Java 代码中硬编码具体颜色值（如 `#FF0000` / `#2196F3` / `#000000`）。
 - ✅ **强制**：所有前景色、背景色、高亮色必须从 `NokiaTheme.ThemeDef` 或 `NokiaTheme.getCurrentTheme()` 中获取：
