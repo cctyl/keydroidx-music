@@ -45,10 +45,10 @@ class MusicApplication : Application() {
         AppWarmup.startWarmup(this)
 
         // 初始化意见反馈 + 安装统计组件（共用同一份配置）
+        // 只传一个根地址 baseUrl，SDK 内部自动拼接 /upload、/install 路径
         KeydroidxFeedback.init(
             KeydroidxFeedbackConfig(
-                BuildConfig.FEEDBACK_UPLOAD_URL,
-                BuildConfig.FEEDBACK_INSTALL_URL,
+                BuildConfig.FEEDBACK_URL,
                 BuildConfig.FEEDBACK_SECRET_KEY,
                 "KeydroidX-Music",
                 BuildConfig.VERSION_NAME,
