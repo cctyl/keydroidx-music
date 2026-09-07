@@ -58,7 +58,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/local_pick_folder"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="@dimen/nokia_font_body"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -68,7 +68,7 @@
                     android:singleLine="true"
                     android:ellipsize="start"
                     android:textColor="@color/music_subtext"
-                    android:textSize="@dimen/nokia_font_caption"
+                    android:textSize="@dimen/keydroidx_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -117,7 +117,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/local_scan_title"
                     android:textColor="@color/music_item_normal_text"
-                    android:textSize="@dimen/nokia_font_body"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -125,7 +125,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/music_subtext"
-                    android:textSize="@dimen/nokia_font_caption"
+                    android:textSize="@dimen/keydroidx_font_caption"
                     android:includeFontPadding="false" />
             </LinearLayout>
         </LinearLayout>
@@ -160,7 +160,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/song_list"
                 android:textColor="@color/music_section_header_text"
-                android:textSize="@dimen/nokia_font_small_title"
+                android:textSize="@dimen/keydroidx_font_small_title"
                 android:includeFontPadding="false" />
         </LinearLayout>
 

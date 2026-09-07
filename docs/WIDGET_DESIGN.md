@@ -97,7 +97,7 @@ public static final int MAX_COUNT = 15;  // 保持不变
 | `getDefaultLabel(11)` | "正在播放" |
 | `getTypeTag(11)` | "[音乐]" |
 | `getTypeIconUnicode(11)` | `KeydroidxIcons.ICON_MUSIC_NOTE` |
-| `getTypeIcon(11)` | `R.drawable.ic_nokia_music` (新增) |
+| `getTypeIcon(11)` | `R.drawable.ic_keydroidx_music` (新增) |
 | `isEditable()` | `false` |
 
 ### 2.3 KeydroidxDesktopFragment 组件行渲染
@@ -120,7 +120,7 @@ private View createMusicPlayerWidgetRow(KeydroidxWidgetItem item) {
     // 4. 进度条（可选，极简横条）
     // 数据来源：ContentResolver.query(PlaybackProvider.CONTENT_URI)
     // 点击/SELECT：启动 MusicPlayerActivity
-    // 焦点高亮：复用 bg_nokia_selected / KeydroidxTheme.createFocusDrawable
+    // 焦点高亮：复用 bg_keydroidx_selected / KeydroidxTheme.createFocusDrawable
 }
 ```
 
@@ -209,7 +209,7 @@ private View createMusicPlayerWidgetRow(KeydroidxWidgetItem item) {
 |------|----------|------|
 | `app/src/main/java/.../nokia/KeydroidxWidgetItem.java` | 修改 | 新增 TYPE_MUSIC_PLAYER 常量与元数据 |
 | `app/src/main/java/.../nokia/KeydroidxDesktopFragment.java` | 修改 | 新增 `createMusicPlayerWidgetRow`、ContentObserver、点击启动 |
-| `app/src/main/res/drawable/ic_nokia_music.xml` | 新建 | 音乐组件图标（矢量） |
+| `app/src/main/res/drawable/ic_keydroidx_music.xml` | 新建 | 音乐组件图标（矢量） |
 | `app/src/main/AndroidManifest.xml` | 修改 | `<queries>` 包可见性 |
 
 ---

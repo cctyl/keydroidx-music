@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.KeydroidX.Music" parent="Theme.NokiaKeyCore">
+    <style name="Theme.KeydroidX.Music" parent="Theme.KeydroidxKeyCore">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/music_bg</item>
 

@@ -48,7 +48,7 @@
   - `MineTabFragment : KeydroidxPageFragment`（我的音乐库：用户信息、喜欢/历史/本地入口、自建与收藏歌单列表、`KeydroidxOptionsDialog` 与 `KeydroidxConfirmDialog` 选项）
   - `DiscoverTabFragment : KeydroidxPageFragment`（发现音乐：私人 FM、每日推荐、今日推荐歌单动态拉取）
   - `ChartTabFragment : KeydroidxListPageFragment`（云音乐排行榜：10 大官方榜单单列循环列表，继承基类自动滚动与焦点高亮）
-  - `SearchTabFragment : KeydroidxPageFragment`（歌曲搜索：`NokiaInputDialog` 拼音搜索弹窗、热门搜索词、云端搜索结果列表与一键播放）
+  - `SearchTabFragment : KeydroidxPageFragment`（歌曲搜索：`KeydroidxTextInputFragment` 拼音搜索弹窗、热门搜索词、云端搜索结果列表与一键播放）
 - **二级与独立页面**：
   - `ui/PlaylistDetailActivity`（歌单歌曲列表，接入 `KeydroidxListFocusHelper` 管理歌曲焦点与自动平滑滚动，懒加载分页）
   - `ui/LocalMusicActivity`（本地音乐扫描与播放，接入 `KeydroidxListFocusHelper`）
@@ -104,7 +104,7 @@ SDK 已经将 240×320 设计基准的响应式原生 DP 布局（无运行时�
        │ 派生                 │ 派生                 │ 派生
        ▼                      ▼                      ▼
 ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
-│NokiaListPageFrag │   │NokiaScrollPageFr │   │ 业务自定义页面    │
+│KeydroidxListPage│   │KeydroidxScrollPa│   │ 业务自定义页面    │
 │(单列列表黄金基类)│   │ (长文本滚动页)   │   │ (播放器/九宫格等)│
 └──────────────────┘   └──────────────────┘   └──────────────────┘
 ```
@@ -297,16 +297,16 @@ switch (action) {
 #### 5.1.1 语义字号规范（6 级标准 Token）
 - ❌ **严禁**：在 XML 中硬编码裸写数字字号（如 `android:textSize="14sp"`）或使用非整数 sp。
 - ❌ **严禁**：在 ≤13sp 的点阵字体上滥用 `android:textStyle="bold"`（算法加粗会导致像素粘连模糊）。
-- ✅ **强制**：统一引用生态 `@dimen/nokia_font_*` 语义 Token：
+- ✅ **强制**：统一引用生态 `@dimen/keydroidx_font_*` 语义 Token：
 
 | 语义 Token | 基准字号 (1.0x) | 适用场景 |
 | :--- | :---: | :--- |
-| **`@dimen/nokia_font_display`** | **16sp** | 待机大时钟、关于页应用名、品牌大标题 |
-| **`@dimen/nokia_font_title`** | **13sp** | 顶栏页面标题、弹窗标题栏、播放器歌曲大名、OK 中键 |
-| **`@dimen/nokia_font_body`** | **12sp** | **核心正文**：单列设置列表项、反馈表单主项、歌曲/歌单名 |
-| **`@dimen/nokia_font_small_title`** | **11sp** | 左右软键文本、表单提交按钮、分组小标题、选项弹窗行 |
-| **`@dimen/nokia_font_caption`** | **9sp** | 副标题（歌手/专辑）、输入框占位符/提示、底部说明、九宫格应用名 |
-| **`@dimen/nokia_font_micro`** | **7sp** | 极小角标（未读数/下载进度等徽标） |
+| **`@dimen/keydroidx_font_display`** | **16sp** | 待机大时钟、关于页应用名、品牌大标题 |
+| **`@dimen/keydroidx_font_title`** | **13sp** | 顶栏页面标题、弹窗标题栏、播放器歌曲大名、OK 中键 |
+| **`@dimen/keydroidx_font_body`** | **12sp** | **核心正文**：单列设置列表项、反馈表单主项、歌曲/歌单名 |
+| **`@dimen/keydroidx_font_small_title`** | **11sp** | 左右软键文本、表单提交按钮、分组小标题、选项弹窗行 |
+| **`@dimen/keydroidx_font_caption`** | **9sp** | 副标题（歌手/专辑）、输入框占位符/提示、底部说明、九宫格应用名 |
+| **`@dimen/keydroidx_font_micro`** | **7sp** | 极小角标（未读数/下载进度等徽标） |
 
 ### 5.2 配色规范：动态生态主题跟随
 - ❌ **严禁**：在布局 XML 或 Java 代码中硬编码具体颜色值（如 `#FF0000` / `#2196F3` / `#000000`）。
@@ -346,7 +346,7 @@ imageView.setImageDrawable(icon);
 
 ### 5.4 软键栏规范：静态标签与 INVISIBLE 占位
 1. **软键栏禁止高亮**：
-   - 底部左/中/右文字只是物理按键的静态标签，**绝对禁止**为软键加 `bg_nokia_selected` 选中背景，**绝对禁止**用左右方向键在软键间切换高亮。
+   - 底部左/中/右文字只是物理按键的静态标签，**绝对禁止**为软键加 `bg_keydroidx_selected` 选中背景，**绝对禁止**用左右方向键在软键间切换高亮。
 2. **隐藏必须用 `View.INVISIBLE`**：
    - 软键栏为三栏等宽布局（`0dp + weight=1`）。
    - 当某个软键为空时，底层通过 `View.INVISIBLE` 隐藏，**严禁使用 `View.GONE`**（`GONE` 会丢失占位宽度，导致三栏塌陷，中间标题偏向一侧）。
@@ -402,12 +402,16 @@ new KeydroidxConfirmDialog(context, "删除确认", "确定要删除该条记录
 ```
 > **注意**：`KeydroidxConfirmDialog` 采用“先 dismiss 再回调”机制，杜绝弹窗叠加造成的窗口 Token 泄漏。
 
-### 6.3 文本输入框：`NokiaInputDialog`
-用于快速单行文本输入（如重命名、新建歌单、搜索输入）：
+### 6.3 文本输入：`KeydroidxTextInputFragment`（全屏输入页）
+用于文本输入（如重命名、新建歌单、搜索输入）。全屏页面压入宿主 `midPanel`，软键条由骨架恒定绘制：
 ```java
-new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
-    .setOnInputConfirmListener(text -> createPlaylist(text))
-    .show();
+KeydroidxTextInputFragment page = KeydroidxTextInputFragment.newInstance(
+        "新建歌单", "", "请输入歌单名称", false, 0);
+page.setOnConfirmListener(text -> createPlaylist(text));
+getSupportFragmentManager().beginTransaction()
+        .replace(R.id.midPanel, page)
+        .addToBackStack(null)
+        .commit();
 ```
 
 ---
@@ -511,7 +515,7 @@ new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
 - [ ] **按键语义**：物理按键全走 `KeydroidxKeyBinding.resolveAction(event)`，无硬编码 KeyCode。
 - [ ] **按键配对**：所有自定义消费 DOWN 事件之处均已拦截 UP 事件。
 - [ ] **首键防吞**：条目声明了 `focusableInTouchMode="true"`，外层 ScrollView 声明了 `focusable="false"`，页面进入后第 1 次按方向键立即响应。
-- [ ] **弹窗合规**：无原生 `AlertDialog` / `Toast`，全部使用 `KeydroidxOptionsDialog` / `KeydroidxConfirmDialog` / `NokiaInputDialog`。
+- [ ] **弹窗合规**：无原生 `AlertDialog` / `Toast`，全部使用 `KeydroidxOptionsDialog` / `KeydroidxConfirmDialog` / `KeydroidxTextInputFragment`。
 - [ ] **包可见性**：`AndroidManifest.xml` 中已包含 `<queries>` 桌面 Provider 声明。
 
 ---
@@ -519,7 +523,7 @@ new NokiaInputDialog(context, "新建歌单", "", "请输入歌单名称")
 ## 十一、参考文档与设计资产
 
 - **UI 布局与按键状态机详细规范**：👉 **[UI_DESIGN_SPEC.md](./UI_DESIGN_SPEC.md)**
-- **交互原型单文件（浏览器可用键盘验证）**：`nokia_music_ui_mockup.html`
+- **交互原型单文件（浏览器可用键盘验证）**：`keydroidx_music_ui_mockup.html`
 - **页面视觉描述文档**：
   - `ui_desc_01_我的音乐库.md`
   - `ui_desc_02_发现音乐.md`
