@@ -3,12 +3,12 @@ package io.github.cctyl.keydroidx.music.ui
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import io.github.cctyl.nokia.keycore.NokiaClient
+import io.github.cctyl.nokia.keycore.KeydroidxClient
 
 /**
  * 音乐 App 专属主题色表。
  *
- * 与桌面的关系：桌面（KeydroidX Launcher）只通过 NokiaClient 告知「当前是哪套主题」，
+ * 与桌面的关系：桌面（KeydroidX Launcher）只通过 KeydroidxClient 告知「当前是哪套主题」，
  * 具体每一套主题在音乐 App 内的配色由本表定义，取值与交互原型
  * docs/nokia_music_ui_mockup.html 中 themes 表完全一致。
  *
@@ -94,7 +94,7 @@ object MusicTheme {
     /** 当前生效主题（桌面同步；未装桌面时回退本地配置；最终兜底经典深蓝） */
     fun current(context: Context): Palette {
         val id = try {
-            NokiaClient.get(context).currentThemeId
+            KeydroidxClient.get(context).currentThemeId
         } catch (e: Exception) {
             CLASSIC_BLUE.id
         }

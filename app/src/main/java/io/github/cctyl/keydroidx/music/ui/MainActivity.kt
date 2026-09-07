@@ -29,14 +29,14 @@ import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.log.NokiaLog
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.common.ui.NokiaTheme
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaFeedbackActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.common.log.KeydroidxLog
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxTheme
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.keycore.ui.KeydroidxFeedbackActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
 import io.github.cctyl.keydroidx.music.auth.CookieManager
 import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.cache.DiscoverCache
@@ -61,10 +61,10 @@ import java.net.URL
  * 音乐库主界面，包含 5 个 Tab：我的 / 发现 / 榜单 / 搜索 / 设置
  *
  * 布局结构（activity_music_main.xml）：
- *   NokiaBaseActivity 骨架提供 顶部标题栏 + 底部软键栏
+ *   KeydroidxBaseActivity 骨架提供 顶部标题栏 + 底部软键栏
  *   本布局只负责: Tab栏 + 5个内容页
  */
-class MainActivity : NokiaBaseActivity() {
+class MainActivity : KeydroidxBaseActivity() {
 
     // ── Tab 索引 ──
     private val TAB_MINE = 0
@@ -142,7 +142,7 @@ class MainActivity : NokiaBaseActivity() {
     private val colorSectionBg get() = MusicTheme.current(this).cardBg
 
     // ══════════════════════════════════════════════════════════
-    //  NokiaBaseActivity 回调
+    //  KeydroidxBaseActivity 回调
     // ══════════════════════════════════════════════════════════
     override fun getContentLayoutRes(): Int = R.layout.activity_music_main
 
@@ -265,13 +265,13 @@ class MainActivity : NokiaBaseActivity() {
 
         // 设置 Tab 图标
         val iconCodes = listOf(
-            NokiaIcons.ICON_PERSON,
-            NokiaIcons.ICON_EXPLORE,
-            NokiaIcons.ICON_LEADERBOARD,
-            NokiaIcons.ICON_SEARCH,
-            NokiaIcons.ICON_SETTINGS
+            KeydroidxIcons.ICON_PERSON,
+            KeydroidxIcons.ICON_EXPLORE,
+            KeydroidxIcons.ICON_LEADERBOARD,
+            KeydroidxIcons.ICON_SEARCH,
+            KeydroidxIcons.ICON_SETTINGS
         )
-        tabIcons.forEachIndexed { i, tv -> NokiaIcons.setIcon(tv, iconCodes[i]) }
+        tabIcons.forEachIndexed { i, tv -> KeydroidxIcons.setIcon(tv, iconCodes[i]) }
 
         // Tab 触屏点击
         tabViews.forEachIndexed { i, v -> v.setOnClickListener { switchTab(i) } }
@@ -293,10 +293,10 @@ class MainActivity : NokiaBaseActivity() {
         )
 
         // 图标
-        NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_favorites), NokiaIcons.ICON_FAVORITE)
-        NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_history), NokiaIcons.ICON_HISTORY)
-        NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_download), NokiaIcons.ICON_DOWNLOAD)
-        NokiaIcons.setIcon(mineRoot.findViewById(R.id.icon_local), NokiaIcons.ICON_SD_CARD)
+        KeydroidxIcons.setIcon(mineRoot.findViewById(R.id.icon_favorites), KeydroidxIcons.ICON_FAVORITE)
+        KeydroidxIcons.setIcon(mineRoot.findViewById(R.id.icon_history), KeydroidxIcons.ICON_HISTORY)
+        KeydroidxIcons.setIcon(mineRoot.findViewById(R.id.icon_download), KeydroidxIcons.ICON_DOWNLOAD)
+        KeydroidxIcons.setIcon(mineRoot.findViewById(R.id.icon_local), KeydroidxIcons.ICON_SD_CARD)
 
         // 副文字 / badge（收藏数量由下方订阅驱动，优先取云端 trackCount）
         val recentCount = LibraryManager.recentSongs.value.size
@@ -410,8 +410,8 @@ class MainActivity : NokiaBaseActivity() {
                 .inflate(R.layout.item_playlist, container, false) as LinearLayout
             // 按歌单名哈希轮换图标，保持视觉区分
             val iconCode = playlistIcons[pl.name.hashCode().mod(playlistIcons.size)]
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist), iconCode)
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_playlist_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
+            KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_playlist), iconCode)
+            KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_playlist_arrow), KeydroidxIcons.ICON_CHEVRON_RIGHT)
             itemView.findViewById<TextView>(R.id.tv_playlist_name).text = pl.name
             itemView.findViewById<TextView>(R.id.tv_playlist_sub).text = "${pl.trackCount} 首歌曲"
             // 记住真实歌单 ID，点击时用
@@ -431,16 +431,16 @@ class MainActivity : NokiaBaseActivity() {
             applyFocus()
         }
         // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
     }
 
     // 真实歌单条目轮换用的图标池
     private val playlistIcons = listOf(
-        NokiaIcons.ICON_QUEUE_MUSIC,
-        NokiaIcons.ICON_ALBUM,
-        NokiaIcons.ICON_MUSIC_NOTE,
-        NokiaIcons.ICON_FAVORITE,
-        NokiaIcons.ICON_LIBRARY_MUSIC
+        KeydroidxIcons.ICON_QUEUE_MUSIC,
+        KeydroidxIcons.ICON_ALBUM,
+        KeydroidxIcons.ICON_MUSIC_NOTE,
+        KeydroidxIcons.ICON_FAVORITE,
+        KeydroidxIcons.ICON_LIBRARY_MUSIC
     )
 
     // ══════════════════════════════════════════════════════════
@@ -450,8 +450,8 @@ class MainActivity : NokiaBaseActivity() {
         val discRoot = findViewById<View>(R.id.content_discover)
 
         // 宫格图标（仅保留 私人FM 与 每日推荐）
-        NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_fm), NokiaIcons.ICON_RADIO)
-        NokiaIcons.setIcon(discRoot.findViewById(R.id.icon_grid_daily), NokiaIcons.ICON_TODAY)
+        KeydroidxIcons.setIcon(discRoot.findViewById(R.id.icon_grid_fm), KeydroidxIcons.ICON_RADIO)
+        KeydroidxIcons.setIcon(discRoot.findViewById(R.id.icon_grid_daily), KeydroidxIcons.ICON_TODAY)
 
         discoverGridRoots = listOf(
             discRoot.findViewById(R.id.grid_fm),
@@ -550,7 +550,7 @@ class MainActivity : NokiaBaseActivity() {
             }
         }
 
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
 
         if (currentTab == TAB_DISCOVER) {
             focusItems = discoverGridRoots + discoverListRoots
@@ -598,14 +598,14 @@ class MainActivity : NokiaBaseActivity() {
             .inflate(R.layout.item_chart, container, false) as LinearLayout
         itemView.findViewById<LinearLayout>(R.id.ll_chart_thumb)
             .setBackgroundColor(Color.parseColor("#666666"))
-        NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), NokiaIcons.ICON_LEADERBOARD)
-        NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
+        KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), KeydroidxIcons.ICON_LEADERBOARD)
+        KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), KeydroidxIcons.ICON_CHEVRON_RIGHT)
         itemView.findViewById<TextView>(R.id.tv_chart_name).text = "排行榜"
         itemView.findViewById<TextView>(R.id.tv_chart_update).text = ""
         itemView.findViewById<TextView>(R.id.tv_chart_song).text = text
         container.addView(itemView)
         chartItemRoots.add(itemView)
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
     }
 
     /** 拉取云音乐官方真实榜单数据（无需登录），失败时保留占位提示或缓存视图 */
@@ -696,9 +696,9 @@ class MainActivity : NokiaBaseActivity() {
         // 主题色循环（与设计稿配色风格一致）
         val colors = listOf("#CC3333", "#336633", "#224488", "#884422", "#6A1B9A", "#00695C", "#AD1457", "#37474F")
         val icons = listOf(
-            NokiaIcons.ICON_LEADERBOARD, NokiaIcons.ICON_MUSIC_NOTE, NokiaIcons.ICON_STAR,
-            NokiaIcons.ICON_FAVORITE, NokiaIcons.ICON_TODAY, NokiaIcons.ICON_EXPLORE,
-            NokiaIcons.ICON_QUEUE_MUSIC, NokiaIcons.ICON_LEADERBOARD
+            KeydroidxIcons.ICON_LEADERBOARD, KeydroidxIcons.ICON_MUSIC_NOTE, KeydroidxIcons.ICON_STAR,
+            KeydroidxIcons.ICON_FAVORITE, KeydroidxIcons.ICON_TODAY, KeydroidxIcons.ICON_EXPLORE,
+            KeydroidxIcons.ICON_QUEUE_MUSIC, KeydroidxIcons.ICON_LEADERBOARD
         )
 
         chartItemRoots = mutableListOf()
@@ -709,8 +709,8 @@ class MainActivity : NokiaBaseActivity() {
             itemView.findViewById<LinearLayout>(R.id.ll_chart_thumb)
                 .setBackgroundColor(Color.parseColor(colors[i % colors.size]))
 
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), icons[i % icons.size])
-            NokiaIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), NokiaIcons.ICON_CHEVRON_RIGHT)
+            KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_chart_thumb), icons[i % icons.size])
+            KeydroidxIcons.setIcon(itemView.findViewById(R.id.icon_chart_arrow), KeydroidxIcons.ICON_CHEVRON_RIGHT)
             itemView.findViewById<TextView>(R.id.tv_chart_name).text = board.name
             itemView.findViewById<TextView>(R.id.tv_chart_update).text =
                 board.updateFrequency?.let { "（$it）" } ?: ""
@@ -730,7 +730,7 @@ class MainActivity : NokiaBaseActivity() {
             }
         }
 
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
 
         // 当前正停留在榜单 Tab 时，刷新焦点体系并保持焦点位置
         if (currentTab == TAB_CHART) {
@@ -751,7 +751,7 @@ class MainActivity : NokiaBaseActivity() {
             Toast.makeText(this, "榜单尚未加载完成，请稍后再试", Toast.LENGTH_SHORT).show()
             return
         }
-        PlaylistDetailActivity.start(this, board.id, board.name, NokiaIcons.ICON_LEADERBOARD)
+        PlaylistDetailActivity.start(this, board.id, board.name, KeydroidxIcons.ICON_LEADERBOARD)
     }
 
     // ══════════════════════════════════════════════════════════
@@ -762,7 +762,7 @@ class MainActivity : NokiaBaseActivity() {
 
         // 搜索框：纳入焦点体系，持焦后直接在 EditText 里物理键入
         searchFieldRoot = searchRoot.findViewById(R.id.layout_search_field)
-        NokiaIcons.setIcon(searchRoot.findViewById(R.id.icon_search_field), NokiaIcons.ICON_SEARCH)
+        KeydroidxIcons.setIcon(searchRoot.findViewById(R.id.icon_search_field), KeydroidxIcons.ICON_SEARCH)
 
         renderSearchKeywords()
     }
@@ -772,7 +772,7 @@ class MainActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     private fun setupSettingTab() {
         val settingRoot = findViewById<View>(R.id.content_setting)
-        NokiaFontManager.applyToViewTree(settingRoot)
+        KeydroidxFontManager.applyToViewTree(settingRoot)
         settingRoots = listOf(
             settingRoot.findViewById(R.id.item_setting_auth),
             settingRoot.findViewById(R.id.item_setting_cookie),
@@ -807,9 +807,9 @@ class MainActivity : NokiaBaseActivity() {
         keywords.forEachIndexed { i, text ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_search_keyword, container, false) as LinearLayout
-            NokiaIcons.setIcon(
+            KeydroidxIcons.setIcon(
                 itemView.findViewById(R.id.icon_keyword),
-                if (history.isNotEmpty()) NokiaIcons.ICON_HISTORY else NokiaIcons.ICON_STAR
+                if (history.isNotEmpty()) KeydroidxIcons.ICON_HISTORY else KeydroidxIcons.ICON_STAR
             )
             itemView.findViewById<TextView>(R.id.tv_keyword).text = text
             itemView.tag = text
@@ -819,7 +819,7 @@ class MainActivity : NokiaBaseActivity() {
                 container.addView(makeDivider(8, 8))
             }
         }
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
         // 若当前正处于搜索 Tab，刷新焦点链（保持焦点在搜索框上）
         if (currentTab == TAB_SEARCH) {
             focusItems = listOf(searchFieldRoot) + searchKeywordRoots
@@ -864,31 +864,31 @@ class MainActivity : NokiaBaseActivity() {
         when (index) {
             TAB_MINE -> {
                 setPageTitle("我的音乐库")
-                setTitleIcon(NokiaIcons.ICON_LIBRARY_MUSIC)
+                setTitleIcon(KeydroidxIcons.ICON_LIBRARY_MUSIC)
                 setSoftKeys("选项", "播放/查看", "正在播放")
                 focusItems = mineFocusItems()
             }
             TAB_DISCOVER -> {
                 setPageTitle("发现音乐")
-                setTitleIcon(NokiaIcons.ICON_EXPLORE)
+                setTitleIcon(KeydroidxIcons.ICON_EXPLORE)
                 setSoftKeys("选项", "进入", "正在播放")
                 focusItems = discoverGridRoots + discoverListRoots
             }
             TAB_CHART -> {
                 setPageTitle("云音乐排行榜")
-                setTitleIcon(NokiaIcons.ICON_LEADERBOARD)
+                setTitleIcon(KeydroidxIcons.ICON_LEADERBOARD)
                 setSoftKeys("选项", "查看榜单", "正在播放")
                 focusItems = chartItemRoots
             }
             TAB_SEARCH -> {
                 setPageTitle("歌曲搜索")
-                setTitleIcon(NokiaIcons.ICON_SEARCH)
+                setTitleIcon(KeydroidxIcons.ICON_SEARCH)
                 setSoftKeys("选项", "搜索", "删除")
                 focusItems = listOf(searchFieldRoot) + searchKeywordRoots
             }
             TAB_SETTING -> {
                 setPageTitle("系统设置")
-                setTitleIcon(NokiaIcons.ICON_SETTINGS)
+                setTitleIcon(KeydroidxIcons.ICON_SETTINGS)
                 setSoftKeys(null, "选择", "正在播放")
                 updateSettingItemsUI()
                 focusItems = settingRoots
@@ -965,7 +965,7 @@ class MainActivity : NokiaBaseActivity() {
      * 桌面/本地主题切换回调：基类已刷标题栏、软键栏与窗口底色，
      * 这里重刷本页所有依赖主题色的动态元素。
      */
-    override fun onThemeChanged(themeId: String, theme: NokiaTheme.ThemeDef) {
+    override fun onThemeChanged(themeId: String, theme: KeydroidxTheme.ThemeDef) {
         super.onThemeChanged(themeId, theme)
         Log.d("MainActivity", "theme changed -> $themeId")
         if (isDestroyed || isFinishing) return
@@ -989,7 +989,7 @@ class MainActivity : NokiaBaseActivity() {
             when (child) {
                 is TextView -> {
                     // 判断是否是图标 TextView（通过 typeface）
-                    val iconTf = NokiaIcons.getTypeface(this)
+                    val iconTf = KeydroidxIcons.getTypeface(this)
                     if (child.typeface == iconTf) {
                         child.setTextColor(iconColor)
                     } else {
@@ -1001,7 +1001,7 @@ class MainActivity : NokiaBaseActivity() {
                     for (j in 0 until child.childCount) {
                         val grandChild = child.getChildAt(j)
                         if (grandChild is TextView) {
-                            val iconTf = NokiaIcons.getTypeface(this)
+                            val iconTf = KeydroidxIcons.getTypeface(this)
                             if (grandChild.typeface == iconTf) {
                                 grandChild.setTextColor(iconColor)
                             } else {
@@ -1016,34 +1016,34 @@ class MainActivity : NokiaBaseActivity() {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  按键处理（NokiaBaseActivity 通过 onAction 分发）
+    //  按键处理（KeydroidxBaseActivity 通过 onAction 分发）
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
         Log.d("MainActivity", "onAction=$action tab=$currentTab focusIdx=$focusIdx items=${focusItems.size} favId=$favPlaylistId")
         return when (action) {
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 if (focusItems.isNotEmpty() && focusIdx > 0) {
                     focusIdx--
                     applyFocus()
                 }
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 if (focusItems.isNotEmpty() && focusIdx < focusItems.size - 1) {
                     focusIdx++
                     applyFocus()
                 }
                 true
             }
-            NokiaKeyAction.LEFT -> {
+            KeydroidxKeyAction.LEFT -> {
                 if (currentTab > 0) switchTab(currentTab - 1)
                 true
             }
-            NokiaKeyAction.RIGHT -> {
+            KeydroidxKeyAction.RIGHT -> {
                 if (currentTab < 4) switchTab(currentTab + 1)
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 when (currentTab) {
                     TAB_MINE -> onSelectMineItem()
                     TAB_DISCOVER -> onSelectDiscoverItem()
@@ -1054,14 +1054,14 @@ class MainActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 // 左软键：设置 Tab 无左软键，其余 Tab 唤出选项菜单
                 if (currentTab != TAB_SETTING) {
                     showOptionsDialog()
                 }
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 // 搜索 Tab 右软键=「删除」：删选中历史词条/清空输入框；其余 Tab 进入正在播放
                 if (currentTab == TAB_SEARCH) {
                     onDeleteSearchItem()
@@ -1158,7 +1158,7 @@ class MainActivity : NokiaBaseActivity() {
             val view = minePlaylistRoots.getOrNull(focusIdx - 1 - fixedCount) ?: return
             val plId = view.tag as? Long ?: return
             val name = view.findViewById<TextView>(R.id.tv_playlist_name).text.toString()
-            PlaylistDetailActivity.start(this, plId, name, NokiaIcons.ICON_QUEUE_MUSIC)
+            PlaylistDetailActivity.start(this, plId, name, KeydroidxIcons.ICON_QUEUE_MUSIC)
             return
         }
 
@@ -1168,9 +1168,9 @@ class MainActivity : NokiaBaseActivity() {
                 // 我喜欢的音乐 → specialType=5 真实歌单；无则退回 mock
                 val favId = favPlaylistId
                 if (favId != null) {
-                    PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", NokiaIcons.ICON_FAVORITE, allFav = true)
+                    PlaylistDetailActivity.start(this, favId, "我喜欢的音乐", KeydroidxIcons.ICON_FAVORITE, allFav = true)
                 } else {
-                    PlaylistDetailActivity.start(this, getString(R.string.mine_favorites), NokiaIcons.ICON_FAVORITE, getFavoriteSongs())
+                    PlaylistDetailActivity.start(this, getString(R.string.mine_favorites), KeydroidxIcons.ICON_FAVORITE, getFavoriteSongs())
                 }
             }
             1 -> {
@@ -1182,7 +1182,7 @@ class MainActivity : NokiaBaseActivity() {
                     PlaylistDetailActivity.start(
                         this,
                         getString(R.string.mine_history),
-                        NokiaIcons.ICON_HISTORY,
+                        KeydroidxIcons.ICON_HISTORY,
                         recentDisplayItems,
                         isHistory = true
                     )
@@ -1214,7 +1214,7 @@ class MainActivity : NokiaBaseActivity() {
                     this,
                     playlist.id,
                     playlist.name,
-                    NokiaIcons.ICON_QUEUE_MUSIC
+                    KeydroidxIcons.ICON_QUEUE_MUSIC
                 )
             }
         }
@@ -1295,7 +1295,7 @@ class MainActivity : NokiaBaseActivity() {
                 PlaylistDetailActivity.start(
                     this@MainActivity,
                     getString(R.string.discover_daily_title),
-                    NokiaIcons.ICON_TODAY,
+                    KeydroidxIcons.ICON_TODAY,
                     displayItems
                 )
             } catch (e: Exception) {
@@ -1392,7 +1392,7 @@ class MainActivity : NokiaBaseActivity() {
         val tvSub = findViewById<TextView>(R.id.tv_user_sub)
         val badgeVip = findViewById<View>(R.id.badge_vip)
 
-        NokiaIcons.setIcon(iconAvatar, NokiaIcons.ICON_PERSON)
+        KeydroidxIcons.setIcon(iconAvatar, KeydroidxIcons.ICON_PERSON)
 
         // ① 先渲染本地缓存（若有），保证离线可用；头像直接读本地文件
         val cached = UserProfileCache.load(this)
@@ -1538,15 +1538,15 @@ class MainActivity : NokiaBaseActivity() {
     private fun showOptionsDialog() {
         val iconColor = Color.WHITE
         val iconSize = (18 * resources.displayMetrics.density).toInt()
-        val dialog = NokiaOptionsDialog(this, "选项")
+        val dialog = KeydroidxOptionsDialog(this, "选项")
 
         dialog.addItem(
             1, "后台播放",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_VOLUME_UP, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_VOLUME_UP, iconSize, iconColor)
         )
         dialog.addItem(
             2, "退出应用",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
         dialog.setOnOptionSelectedListener { index, _ ->
@@ -1576,35 +1576,35 @@ class MainActivity : NokiaBaseActivity() {
         findViewById<TextView>(R.id.tv_setting_auth_title)?.text = if (isLogin) "退出登录" else "登录网易云"
         findViewById<TextView>(R.id.tv_setting_auth_sub)?.text = if (isLogin) "当前已登录，按确定可退出账号" else "登录网易云音乐账号同步歌单"
         findViewById<TextView>(R.id.icon_setting_auth)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_PERSON)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_PERSON)
         }
 
         // 更新 Cookie 设置图标
         findViewById<TextView>(R.id.icon_setting_cookie)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_SETTINGS)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_SETTINGS)
         }
 
         // 更新意见反馈图标
         findViewById<TextView>(R.id.icon_setting_feedback)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_EDIT)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_EDIT)
         }
 
         // 更新详细日志状态与图标
-        val detailedLog = NokiaLog.isDetailedLogEnabled(this)
+        val detailedLog = KeydroidxLog.isDetailedLogEnabled(this)
         findViewById<TextView>(R.id.tv_setting_log_title)?.text = if (detailedLog) "详细日志：已开启" else "详细日志：已关闭"
         findViewById<TextView>(R.id.tv_setting_log_sub)?.text = if (detailedLog) "记录 DEBUG/INFO 调试信息（按确定切换）" else "仅记录错误与崩溃日志（按确定切换）"
         findViewById<TextView>(R.id.icon_setting_log)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_SETTINGS)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_SETTINGS)
         }
 
         // 更新关于图标
         findViewById<TextView>(R.id.icon_setting_about)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_INFO)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_INFO)
         }
 
         // 更新退出图标
         findViewById<TextView>(R.id.icon_setting_exit)?.let {
-            NokiaIcons.setIcon(it, NokiaIcons.ICON_CLOSE)
+            KeydroidxIcons.setIcon(it, KeydroidxIcons.ICON_CLOSE)
         }
     }
 
@@ -1646,25 +1646,25 @@ class MainActivity : NokiaBaseActivity() {
             }
             2 -> {
                 // 3. 意见反馈
-                startActivity(Intent(this, NokiaFeedbackActivity::class.java))
+                startActivity(Intent(this, KeydroidxFeedbackActivity::class.java))
             }
             3 -> {
                 // 4. 详细日志切换
-                val next = !NokiaLog.isDetailedLogEnabled(this)
-                NokiaLog.setDetailedLogEnabled(this, next)
+                val next = !KeydroidxLog.isDetailedLogEnabled(this)
+                KeydroidxLog.setDetailedLogEnabled(this, next)
                 val tip = if (next) "已开启详细日志（记录调试信息）" else "已关闭详细日志（仅记录错误与崩溃）"
                 Toast.makeText(this, tip, Toast.LENGTH_SHORT).show()
                 updateSettingItemsUI()
             }
             4 -> {
                 // 5. 关于
-                val config = io.github.cctyl.nokia.common.ui.about.NokiaAboutConfig.createDefault(this)
+                val config = io.github.cctyl.nokia.common.ui.about.KeydroidxAboutConfig.createDefault(this)
                     .setAuthor("cctyl")
                     .setDescription("KeydroidX 音乐是一款专为物理九键 / 全键盘 Android 按键机量身定制的轻量级音乐播放器，基于 KeydroidX 按键机生态构建，纯物理按键驱动，开箱即用获得生态能力。")
                     .setRepoUrl("https://github.com/cctyl/keydroidx-music")
                     .setShowUpdateCheck(true)
                     .setShowDetailedLogToggle(true)
-                io.github.cctyl.nokia.keycore.ui.NokiaAboutActivity.start(this, config)
+                io.github.cctyl.nokia.keycore.ui.KeydroidxAboutActivity.start(this, config)
             }
             5 -> {
                 // 6. 退出应用：停止播放服务并结束任务

@@ -17,25 +17,25 @@ import io.github.cctyl.keydroidx.music.download.DownloadManager
 import io.github.cctyl.keydroidx.music.download.DownloadStatus
 import io.github.cctyl.keydroidx.music.download.DownloadTask
 import io.github.cctyl.keydroidx.music.player.PlaybackService
-import io.github.cctyl.nokia.keycore.model.NokiaKeyBinding
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
-import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
+import io.github.cctyl.nokia.keycore.model.KeydroidxKeyBinding
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxConfirmDialog
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
+import io.github.cctyl.nokia.common.ui.page.KeydroidxListFocusHelper
 import java.util.Locale
 import kotlinx.coroutines.launch
 
 /**
  * 下载管理页面（展示下载中与已完成任务）
  */
-class DownloadActivity : NokiaBaseActivity() {
+class DownloadActivity : KeydroidxBaseActivity() {
 
     private lateinit var scrollView: ScrollView
     private lateinit var taskContainer: LinearLayout
-    private lateinit var focusHelper: NokiaListFocusHelper
+    private lateinit var focusHelper: KeydroidxListFocusHelper
 
     private var displayedTasks: List<DownloadTask> = emptyList()
     private val taskViews = mutableListOf<View>()
@@ -51,13 +51,13 @@ class DownloadActivity : NokiaBaseActivity() {
 
     override fun onInitViews() {
         setPageTitle("下载管理")
-        setTitleIcon(NokiaIcons.ICON_DOWNLOAD)
+        setTitleIcon(KeydroidxIcons.ICON_DOWNLOAD)
         setStatusBarVisible(true)
         registerBatteryReceiver()
         scrollView = findViewById(R.id.scroll_view)
         taskContainer = findViewById(R.id.ll_task_container)
 
-        focusHelper = NokiaListFocusHelper(this, scrollView)
+        focusHelper = KeydroidxListFocusHelper(this, scrollView)
         focusHelper.setOnFocusChangedListener { oldIdx, newIdx, newView ->
             val oldV = taskViews.getOrNull(oldIdx)
             if (oldV != null) {
@@ -173,7 +173,7 @@ class DownloadActivity : NokiaBaseActivity() {
         }
 
         displayedTasks = newDisplayed
-        NokiaFontManager.applyToViewTree(taskContainer)
+        KeydroidxFontManager.applyToViewTree(taskContainer)
         focusHelper.setItems(taskViews)
 
         val restoreIdx = if (currentFocusSongId != null) {
@@ -193,12 +193,12 @@ class DownloadActivity : NokiaBaseActivity() {
 
         when (task.status) {
             DownloadStatus.PENDING -> {
-                NokiaIcons.setIcon(tvIcon, NokiaIcons.ICON_REFRESH)
+                KeydroidxIcons.setIcon(tvIcon, KeydroidxIcons.ICON_REFRESH)
                 tvSub.text = "${task.artist} · 等待中"
                 tvBadge.text = "排队"
             }
             DownloadStatus.DOWNLOADING -> {
-                NokiaIcons.setIcon(tvIcon, NokiaIcons.ICON_DOWNLOAD)
+                KeydroidxIcons.setIcon(tvIcon, KeydroidxIcons.ICON_DOWNLOAD)
                 val mbStr = if (task.totalBytes > 0) {
                     val curMb = task.downloadedBytes / 1024.0 / 1024.0
                     val totMb = task.totalBytes / 1024.0 / 1024.0
@@ -208,17 +208,17 @@ class DownloadActivity : NokiaBaseActivity() {
                 tvBadge.text = "${task.progress}%"
             }
             DownloadStatus.PAUSED -> {
-                NokiaIcons.setIcon(tvIcon, NokiaIcons.ICON_PAUSE)
+                KeydroidxIcons.setIcon(tvIcon, KeydroidxIcons.ICON_PAUSE)
                 tvSub.text = "${task.artist} · 已暂停"
                 tvBadge.text = "暂停"
             }
             DownloadStatus.FAILED -> {
-                NokiaIcons.setIcon(tvIcon, NokiaIcons.ICON_ERROR)
+                KeydroidxIcons.setIcon(tvIcon, KeydroidxIcons.ICON_ERROR)
                 tvSub.text = "${task.artist} · ${task.errorMessage ?: "下载失败"}"
                 tvBadge.text = "失败"
             }
             DownloadStatus.COMPLETED -> {
-                NokiaIcons.setIcon(tvIcon, NokiaIcons.ICON_CHECK)
+                KeydroidxIcons.setIcon(tvIcon, KeydroidxIcons.ICON_CHECK)
                 val mbStr = if (task.totalBytes > 0) String.format(Locale.getDefault(), "%.1f MB", task.totalBytes / 1024.0 / 1024.0) else "已下载"
                 val lrcStr = if (task.lyricPath != null) " · 含歌词" else ""
                 tvSub.text = "${task.artist} · $mbStr$lrcStr"
@@ -277,23 +277,23 @@ class DownloadActivity : NokiaBaseActivity() {
 
     override fun onAction(action: Int): Boolean {
         return when (action) {
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 onItemClick()
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 showOptionsMenu()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 finish()
                 true
             }
@@ -334,7 +334,7 @@ class DownloadActivity : NokiaBaseActivity() {
 
     private fun showOptionsMenu() {
         val task = getFocusedTask()
-        val dialog = NokiaOptionsDialog(this)
+        val dialog = KeydroidxOptionsDialog(this)
         val iconSize = dp(18)
         val iconColor = Color.parseColor("#38BDF8")
 
@@ -343,21 +343,21 @@ class DownloadActivity : NokiaBaseActivity() {
         if (task != null) {
             when (task.status) {
                 DownloadStatus.COMPLETED -> {
-                    dialog.addItem(1, "播放歌曲", NokiaIcons.createDrawable(this, NokiaIcons.ICON_PLAY, iconSize, iconColor))
+                    dialog.addItem(1, "播放歌曲", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PLAY, iconSize, iconColor))
                     actions.add { playTask(task) }
                 }
                 DownloadStatus.DOWNLOADING -> {
-                    dialog.addItem(2, "暂停下载", NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+                    dialog.addItem(2, "暂停下载", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PAUSE, iconSize, iconColor))
                     actions.add { DownloadManager.pauseDownload(task.songId) }
                 }
                 DownloadStatus.PAUSED, DownloadStatus.FAILED -> {
-                    dialog.addItem(3, "继续下载", NokiaIcons.createDrawable(this, NokiaIcons.ICON_REFRESH, iconSize, iconColor))
+                    dialog.addItem(3, "继续下载", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_REFRESH, iconSize, iconColor))
                     actions.add { DownloadManager.resumeDownload(task.songId) }
                 }
                 else -> {}
             }
 
-            dialog.addItem(4, "删除该任务", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+            dialog.addItem(4, "删除该任务", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
             actions.add { confirmDeleteTask(task) }
         }
 
@@ -365,19 +365,19 @@ class DownloadActivity : NokiaBaseActivity() {
         val hasPaused = displayedTasks.any { it.status == DownloadStatus.PAUSED || it.status == DownloadStatus.FAILED }
 
         if (hasDownloading) {
-            dialog.addItem(5, "全部暂停", NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+            dialog.addItem(5, "全部暂停", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PAUSE, iconSize, iconColor))
             actions.add { DownloadManager.pauseAll() }
         }
         if (hasPaused) {
-            dialog.addItem(6, "全部继续", NokiaIcons.createDrawable(this, NokiaIcons.ICON_REFRESH, iconSize, iconColor))
+            dialog.addItem(6, "全部继续", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_REFRESH, iconSize, iconColor))
             actions.add { DownloadManager.resumeAll() }
         }
 
         val hasCompleted = displayedTasks.any { it.status == DownloadStatus.COMPLETED }
         if (hasCompleted) {
-            dialog.addItem(7, "清空已完成", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+            dialog.addItem(7, "清空已完成", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
             actions.add {
-                val confirm = NokiaConfirmDialog(this, "清空已完成", "确定清空已完成的下载记录及物理文件吗？")
+                val confirm = KeydroidxConfirmDialog(this, "清空已完成", "确定清空已完成的下载记录及物理文件吗？")
                 confirm.setPositiveButton("清空") {
                     DownloadManager.clearCompleted(deleteFiles = true)
                     Toast.makeText(this, "已清空已完成任务", Toast.LENGTH_SHORT).show()
@@ -395,7 +395,7 @@ class DownloadActivity : NokiaBaseActivity() {
     }
 
     private fun confirmDeleteTask(task: DownloadTask) {
-        val dialog = NokiaConfirmDialog(this, "删除下载", "确定要删除「${task.title}」及其本地文件吗？")
+        val dialog = KeydroidxConfirmDialog(this, "删除下载", "确定要删除「${task.title}」及其本地文件吗？")
         dialog.setPositiveButton("删除") {
             DownloadManager.deleteDownload(task.songId)
             Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show()

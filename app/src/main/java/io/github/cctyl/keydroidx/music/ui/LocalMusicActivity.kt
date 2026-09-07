@@ -23,13 +23,13 @@ import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
-import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxConfirmDialog
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
+import io.github.cctyl.nokia.common.ui.page.KeydroidxListFocusHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,7 +42,7 @@ import kotlinx.coroutines.withContext
  * 本地歌曲通过 SongItem.localPath 直接走 ExoPlayer 文件播放，
  * 不经过网易云取链与 VIP/版权检查。
  */
-class LocalMusicActivity : NokiaBaseActivity() {
+class LocalMusicActivity : KeydroidxBaseActivity() {
 
     companion object {
         private const val TAG = "LocalMusic"
@@ -84,7 +84,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
 
     // ── 焦点 / 懒加载 ──
     private val songItemViews = mutableListOf<LinearLayout>()
-    private lateinit var focusHelper: NokiaListFocusHelper
+    private lateinit var focusHelper: KeydroidxListFocusHelper
     val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else 0
     private var renderedCount = 0
 
@@ -96,13 +96,13 @@ class LocalMusicActivity : NokiaBaseActivity() {
     private val colorDivider get() = MusicTheme.current(this).dashed
 
     // ══════════════════════════════════════════════════════════
-    //  NokiaBaseActivity 回调
+    //  KeydroidxBaseActivity 回调
     // ══════════════════════════════════════════════════════════
     override fun getContentLayoutRes(): Int = R.layout.activity_local_music
 
     override fun onInitViews() {
         setPageTitle("本地音乐")
-        setTitleIcon(NokiaIcons.ICON_SD_CARD)
+        setTitleIcon(KeydroidxIcons.ICON_SD_CARD)
         setStatusBarVisible(true)
         // XML 静态经典蓝配色 → 当前主题色
         findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
@@ -121,7 +121,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
 
         // 初始化焦点辅助器
         val scroll = findViewById<android.widget.ScrollView>(R.id.scroll_local_music)
-        focusHelper = NokiaListFocusHelper(this, scroll)
+        focusHelper = KeydroidxListFocusHelper(this, scroll)
         focusHelper.setOnFocusChangedListener { oldIdx, newIdx, newView ->
             if (newView is LinearLayout) {
                 setChildTextColors(newView, true)
@@ -135,8 +135,8 @@ class LocalMusicActivity : NokiaBaseActivity() {
             }
         }
 
-        NokiaIcons.setIcon(findViewById(R.id.icon_scan), NokiaIcons.ICON_REFRESH)
-        NokiaIcons.setIcon(findViewById(R.id.icon_pick_folder), NokiaIcons.ICON_FOLDER)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_scan), KeydroidxIcons.ICON_REFRESH)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_pick_folder), KeydroidxIcons.ICON_FOLDER)
         pickedFolder = loadPickedFolder()
         val loaded = loadScannedSongs()
         val downloaded = DownloadManager.getDownloadedLocalSongs().map {
@@ -317,7 +317,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
     }
 
     // ════════════════════════════════════════════════════════
-    //  文件夹选择器（NokiaOptionsDialog 目录浏览器）
+    //  文件夹选择器（KeydroidxOptionsDialog 目录浏览器）
     // ════════════════════════════════════════════════════════
 
     private fun prefs() = getSharedPreferences("local_music", MODE_PRIVATE)
@@ -471,7 +471,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
         songItemViews.clear()
         renderedCount = 0
         appendSongs(PAGE_SIZE)
-        NokiaFontManager.applyToViewTree(llSongContainer)
+        KeydroidxFontManager.applyToViewTree(llSongContainer)
         focusHelper.setItems(getFocusableViews())
     }
 
@@ -506,7 +506,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
             songItemViews.add(itemView)
         }
         renderedCount = to
-        NokiaFontManager.applyToViewTree(llSongContainer)
+        KeydroidxFontManager.applyToViewTree(llSongContainer)
     }
 
     private fun formatDuration(ms: Long): String {
@@ -547,7 +547,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
             val child = parent.getChildAt(i)
             when (child) {
                 is TextView -> {
-                    if (child.typeface == NokiaIcons.getTypeface(this)) {
+                    if (child.typeface == KeydroidxIcons.getTypeface(this)) {
                         child.setTextColor(iconColor)
                     } else {
                         child.setTextColor(mainColor)
@@ -557,7 +557,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
                     for (j in 0 until child.childCount) {
                         val grandChild = child.getChildAt(j)
                         if (grandChild is TextView) {
-                            if (grandChild.typeface == NokiaIcons.getTypeface(this)) {
+                            if (grandChild.typeface == KeydroidxIcons.getTypeface(this)) {
                                 grandChild.setTextColor(iconColor)
                             } else {
                                 grandChild.setTextColor(if (j == 0) mainColor else subColor)
@@ -575,11 +575,11 @@ class LocalMusicActivity : NokiaBaseActivity() {
     override fun onAction(action: Int): Boolean {
         Log.d(TAG, "onAction=$action focusIdx=$focusIdx songs=${localSongs.size}")
         return when (action) {
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 // 懒加载：焦点接近已渲染末尾时追加下一页
                 if (renderedCount < localSongs.size && focusHelper.focusIndex >= renderedCount + 1) {
                     appendSongs(PAGE_SIZE)
@@ -589,7 +589,7 @@ class LocalMusicActivity : NokiaBaseActivity() {
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 when (focusHelper.focusIndex) {
                     0 -> showFolderPicker()
                     1 -> beginScan()
@@ -600,11 +600,11 @@ class LocalMusicActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 showOptionsMenu()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> { finish(); true }
+            KeydroidxKeyAction.SOFT_RIGHT -> { finish(); true }
             else -> super.onAction(action)
         }
     }
@@ -641,24 +641,24 @@ class LocalMusicActivity : NokiaBaseActivity() {
     }
 
     private fun showOptionsMenu() {
-        val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
+        val dialog = KeydroidxOptionsDialog(this, getString(R.string.softkey_options))
         val actions = mutableListOf<() -> Unit>()
         val iconColor = Color.WHITE
         val iconSize = dp(18)
 
-        dialog.addItem(1, getString(R.string.local_menu_rescan), NokiaIcons.createDrawable(this, NokiaIcons.ICON_REFRESH, iconSize, iconColor))
+        dialog.addItem(1, getString(R.string.local_menu_rescan), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_REFRESH, iconSize, iconColor))
         actions.add { beginScan() }
 
-        dialog.addItem(2, getString(R.string.local_pick_folder), NokiaIcons.createDrawable(this, NokiaIcons.ICON_FOLDER, iconSize, iconColor))
+        dialog.addItem(2, getString(R.string.local_pick_folder), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_FOLDER, iconSize, iconColor))
         actions.add { showFolderPicker() }
 
         if (focusHelper.focusIndex >= 2) {
             val songIdx = focusHelper.focusIndex - 2
             if (songIdx in localSongs.indices) {
                 val song = localSongs[songIdx]
-                dialog.addItem(actions.size + 1, "删除歌曲文件", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                dialog.addItem(actions.size + 1, "删除歌曲文件", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
                 actions.add {
-                    val confirm = NokiaConfirmDialog(this, "删除本地歌曲", "确定要删除「${song.title}」及其本地文件吗？")
+                    val confirm = KeydroidxConfirmDialog(this, "删除本地歌曲", "确定要删除「${song.title}」及其本地文件吗？")
                     confirm.setPositiveButton("删除") {
                         val file = File(song.path)
                         if (file.exists()) {
@@ -686,12 +686,12 @@ class LocalMusicActivity : NokiaBaseActivity() {
         }
 
         if (localSongs.isNotEmpty()) {
-            dialog.addItem(actions.size + 1, "清空列表", NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+            dialog.addItem(actions.size + 1, "清空列表", KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
             actions.add { clearScannedSongs() }
         }
 
         if (pickedFolder != null) {
-            dialog.addItem(3, getString(R.string.local_menu_clear_folder), NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor))
+            dialog.addItem(3, getString(R.string.local_menu_clear_folder), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CLOSE, iconSize, iconColor))
             actions.add {
                 pickedFolder = null
                 savePickedFolder(null)

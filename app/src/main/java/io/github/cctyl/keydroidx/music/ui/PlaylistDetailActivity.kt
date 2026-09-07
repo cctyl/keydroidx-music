@@ -23,13 +23,13 @@ import io.github.cctyl.keydroidx.music.network.model.ArtistItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
-import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxConfirmDialog
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
+import io.github.cctyl.nokia.common.ui.page.KeydroidxListFocusHelper
 import java.io.Serializable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  * 支持物理按键导航：UP/DOWN 移动焦点，SELECT 播放，
  * SOFT_LEFT 呼出选项菜单，SOFT_RIGHT 返回列表。
  */
-class PlaylistDetailActivity : NokiaBaseActivity() {
+class PlaylistDetailActivity : KeydroidxBaseActivity() {
 
     companion object {
         private const val TAG_DETAIL = "PlaylistDetail"
@@ -103,7 +103,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         fun start(context: Context, keyword: String) {
             val intent = Intent(context, PlaylistDetailActivity::class.java).apply {
                 putExtra(EXTRA_PLAYLIST_NAME, "搜索：$keyword")
-                putExtra(EXTRA_PLAYLIST_ICON, NokiaIcons.ICON_SEARCH)
+                putExtra(EXTRA_PLAYLIST_ICON, KeydroidxIcons.ICON_SEARCH)
                 putExtra(EXTRA_SEARCH_KEYWORD, keyword)
             }
             context.startActivity(intent)
@@ -112,7 +112,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
     // ── 数据 ──
     private var playlistName: String = ""
-    private var playlistIcon: String = NokiaIcons.ICON_QUEUE_MUSIC
+    private var playlistIcon: String = KeydroidxIcons.ICON_QUEUE_MUSIC
     private var playlistId: Long = NO_ID
     /** 「我喜欢的音乐」等全收藏歌单：所有歌曲红心 */
     private var allFav = false
@@ -136,7 +136,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
     // ── 焦点状态 ──
     private val songItemViews = mutableListOf<LinearLayout>()
-    private lateinit var focusHelper: NokiaListFocusHelper
+    private lateinit var focusHelper: KeydroidxListFocusHelper
     val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else 0
 
     // ── 懒加载 ──
@@ -153,7 +153,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     private val colorDivider get() = MusicTheme.current(this).dashed
 
     // ══════════════════════════════════════════════════════════
-    //  NokiaBaseActivity 回调
+    //  KeydroidxBaseActivity 回调
     // ══════════════════════════════════════════════════════════
     override fun getContentLayoutRes(): Int = R.layout.activity_playlist_detail
 
@@ -162,7 +162,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         findViewById<View?>(android.R.id.content)?.let { MusicTheme.applyToViewTree(it) }
         // 读取 Intent 数据
         playlistName = intent.getStringExtra(EXTRA_PLAYLIST_NAME) ?: "歌单"
-        playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: NokiaIcons.ICON_QUEUE_MUSIC
+        playlistIcon = intent.getStringExtra(EXTRA_PLAYLIST_ICON) ?: KeydroidxIcons.ICON_QUEUE_MUSIC
         playlistId = intent.getLongExtra(EXTRA_PLAYLIST_ID, NO_ID)
         allFav = intent.getBooleanExtra(EXTRA_ALL_FAV, false)
         isHistory = intent.getBooleanExtra(EXTRA_IS_HISTORY, false)
@@ -189,7 +189,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
         // 初始化焦点辅助器
         val scroll = findViewById<android.widget.ScrollView>(R.id.scroll_playlist_detail)
-        focusHelper = NokiaListFocusHelper(this, scroll)
+        focusHelper = KeydroidxListFocusHelper(this, scroll)
         focusHelper.setOnFocusChangedListener { oldIdx, newIdx, newView ->
             if (newView is LinearLayout) {
                 setChildTextColors(newView, true)
@@ -204,7 +204,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         }
 
         // 设置播放全部行
-        NokiaIcons.setIcon(findViewById(R.id.icon_play_all), NokiaIcons.ICON_PLAY_CIRCLE)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_play_all), KeydroidxIcons.ICON_PLAY_CIRCLE)
         tvPlayAllSub.text = when {
             searchKeyword != null && songs.isEmpty() -> "搜索中…"
             playlistId != NO_ID && songs.isEmpty() -> "加载中…"
@@ -438,7 +438,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
 
             // 播放指示器（当前歌曲预留，后续由播放状态管理）
             iconPlaying.visibility = View.GONE
-            NokiaIcons.setIcon(iconPlaying, NokiaIcons.ICON_VOLUME_UP)
+            KeydroidxIcons.setIcon(iconPlaying, KeydroidxIcons.ICON_VOLUME_UP)
 
             tvArtist.text = song.artist
 
@@ -471,7 +471,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
         renderedCount = to
         // 动态创建的行错过了基类的字体初始化，主动补一次点阵字体+缩放，
         // 否则先显示系统默认大字，等异步 onFontChanged 才突然变小
-        NokiaFontManager.applyToViewTree(llSongContainer)
+        KeydroidxFontManager.applyToViewTree(llSongContainer)
     }
 
     /**
@@ -482,7 +482,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
      */
     private fun applyFavIcon(iconFav: TextView, songId: Long) {
         val isFav = allFav || FavoriteStore.isFavorite(songId)
-        NokiaIcons.setIcon(iconFav, if (isFav) NokiaIcons.ICON_FAVORITE else NokiaIcons.ICON_FAVORITE_BORDER)
+        KeydroidxIcons.setIcon(iconFav, if (isFav) KeydroidxIcons.ICON_FAVORITE else KeydroidxIcons.ICON_FAVORITE_BORDER)
         iconFav.setTextColor(if (isFav) colorFavRed else colorFavGray)
     }
 
@@ -556,11 +556,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             when (child) {
                 is TextView -> {
                     // 判断是否是图标 TextView
-                    val iconTf = NokiaIcons.getTypeface(this)
+                    val iconTf = KeydroidxIcons.getTypeface(this)
                     if (child.typeface == iconTf) {
                         // 特殊处理收藏心图标（保持红色）
                         val text = child.text.toString()
-                        if (text == NokiaIcons.ICON_FAVORITE || text == NokiaIcons.ICON_FAVORITE_BORDER) {
+                        if (text == KeydroidxIcons.ICON_FAVORITE || text == KeydroidxIcons.ICON_FAVORITE_BORDER) {
                             // 保持原色
                         } else {
                             child.setTextColor(iconColor)
@@ -573,7 +573,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     for (j in 0 until child.childCount) {
                         val grandChild = child.getChildAt(j)
                         if (grandChild is TextView) {
-                            val iconTf = NokiaIcons.getTypeface(this)
+                            val iconTf = KeydroidxIcons.getTypeface(this)
                             if (grandChild.typeface == iconTf) {
                                 grandChild.setTextColor(iconColor)
                             } else {
@@ -591,11 +591,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     // ══════════════════════════════════════════════════════════
     override fun onAction(action: Int): Boolean {
         return when (action) {
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 val hasMoreLocal = renderedCount < songs.size
                 val hasMoreSearch = searchKeyword != null && searchHasMore
 
@@ -633,7 +633,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 // 选中播放
                 val currentIdx = focusHelper.focusIndex
                 if (currentIdx == 0) {
@@ -649,11 +649,11 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 showOptionsMenu()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 finish()
                 true
             }
@@ -711,20 +711,20 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     private fun showOptionsMenu() {
-        val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
+        val dialog = KeydroidxOptionsDialog(this, getString(R.string.softkey_options))
         val actions = mutableListOf<() -> Unit>()
         val iconColor = android.graphics.Color.WHITE
         val iconSize = (18 * resources.displayMetrics.density).toInt()
 
         if (isHistory) {
-            dialog.addItem(1, getString(R.string.menu_clear_all_history), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+            dialog.addItem(1, getString(R.string.menu_clear_all_history), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
             actions.add { showClearHistoryConfirmDialog() }
 
             if (focusIdx > 0) {
                 val songIdx = focusIdx - 1
                 if (songIdx in songs.indices) {
                     val targetSong = songs[songIdx]
-                    dialog.addItem(2, getString(R.string.menu_remove_from_history), NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor))
+                    dialog.addItem(2, getString(R.string.menu_remove_from_history), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CLOSE, iconSize, iconColor))
                     actions.add {
                         LibraryManager.removeRecentSong(targetSong.id)
                         val updated = songs.toMutableList()
@@ -739,7 +739,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                     // 下载 / 删除下载
                     val dlTask = DownloadManager.getTask(targetSong.id)
                     if (dlTask == null || dlTask.status == DownloadStatus.FAILED) {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DOWNLOAD, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DOWNLOAD, iconSize, iconColor))
                         actions.add {
                             val songItem = SongItem(
                                 id = targetSong.id,
@@ -754,9 +754,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                             Toast.makeText(this, "已加入下载队列", Toast.LENGTH_SHORT).show()
                         }
                     } else if (dlTask.status == DownloadStatus.COMPLETED) {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
                         actions.add {
-                            val confirm = NokiaConfirmDialog(
+                            val confirm = KeydroidxConfirmDialog(
                                 this,
                                 getString(R.string.dialog_delete_download_title),
                                 getString(R.string.dialog_delete_download_msg)
@@ -768,7 +768,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                             confirm.show()
                         }
                     } else {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PAUSE, iconSize, iconColor))
                         actions.add {
                             DownloadManager.pauseDownload(targetSong.id)
                             Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
@@ -781,13 +781,13 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                 val songIdx = focusIdx - 1
                 if (songIdx in songs.indices) {
                     val targetSong = songs[songIdx]
-                    dialog.addItem(1, getString(R.string.menu_play_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PLAY, iconSize, iconColor))
+                    dialog.addItem(1, getString(R.string.menu_play_song), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PLAY, iconSize, iconColor))
                     actions.add { playSong(targetSong) }
 
                     // 下载 / 删除下载
                     val dlTask = DownloadManager.getTask(targetSong.id)
                     if (dlTask == null || dlTask.status == DownloadStatus.FAILED) {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DOWNLOAD, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_download_song), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DOWNLOAD, iconSize, iconColor))
                         actions.add {
                             val songItem = SongItem(
                                 id = targetSong.id,
@@ -802,9 +802,9 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                             Toast.makeText(this, "已加入下载队列", Toast.LENGTH_SHORT).show()
                         }
                     } else if (dlTask.status == DownloadStatus.COMPLETED) {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_delete_download), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor))
                         actions.add {
-                            val confirm = NokiaConfirmDialog(
+                            val confirm = KeydroidxConfirmDialog(
                                 this,
                                 getString(R.string.dialog_delete_download_title),
                                 getString(R.string.dialog_delete_download_msg)
@@ -816,7 +816,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
                             confirm.show()
                         }
                     } else {
-                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), NokiaIcons.createDrawable(this, NokiaIcons.ICON_PAUSE, iconSize, iconColor))
+                        dialog.addItem(actions.size + 1, getString(R.string.menu_pause_download), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_PAUSE, iconSize, iconColor))
                         actions.add {
                             DownloadManager.pauseDownload(targetSong.id)
                             Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
@@ -826,7 +826,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
             }
         }
 
-        dialog.addItem(actions.size + 1, getString(R.string.opt_refresh), NokiaIcons.createDrawable(this, NokiaIcons.ICON_REFRESH, iconSize, iconColor))
+        dialog.addItem(actions.size + 1, getString(R.string.opt_refresh), KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_REFRESH, iconSize, iconColor))
         actions.add {
             if (isHistory) {
                 songs = LibraryManager.recentSongs.value.map { song ->
@@ -857,7 +857,7 @@ class PlaylistDetailActivity : NokiaBaseActivity() {
     }
 
     private fun showClearHistoryConfirmDialog() {
-        NokiaConfirmDialog(this, getString(R.string.dialog_clear_history_title), getString(R.string.dialog_clear_history_msg))
+        KeydroidxConfirmDialog(this, getString(R.string.dialog_clear_history_title), getString(R.string.dialog_clear_history_msg))
             .setPositiveButton(getString(R.string.dialog_confirm)) {
                 LibraryManager.clearRecent()
                 songs = emptyList()

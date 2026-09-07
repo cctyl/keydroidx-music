@@ -4,7 +4,7 @@
     根 FrameLayout：
       · 第一层 = 播放详情（唱片/歌词/进度/按键指南）
       · 第二层 = 全屏歌词（默认隐藏，* 键弹出，盖住整块内容区）
-    标题栏与软键栏由 NokiaBaseActivity 提供，覆盖层只盖内容区。
+    标题栏与软键栏由 KeydroidxBaseActivity 提供，覆盖层只盖内容区。
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

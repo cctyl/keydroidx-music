@@ -9,10 +9,10 @@ import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.warmup.AppWarmup
-import io.github.cctyl.nokia.common.feedback.NokiaFeedback
-import io.github.cctyl.nokia.common.feedback.NokiaFeedbackConfig
-import io.github.cctyl.nokia.common.feedback.NokiaInstall
-import io.github.cctyl.nokia.common.log.NokiaLog
+import io.github.cctyl.nokia.common.feedback.KeydroidxFeedback
+import io.github.cctyl.nokia.common.feedback.KeydroidxFeedbackConfig
+import io.github.cctyl.nokia.common.feedback.KeydroidxInstall
+import io.github.cctyl.nokia.common.log.KeydroidxLog
 
 class MusicApplication : Application() {
     override fun attachBaseContext(base: android.content.Context) {
@@ -22,16 +22,16 @@ class MusicApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // 尽早初始化 NokiaClient（建立 Provider 同步与 ThemeProvider 注册）
-        io.github.cctyl.nokia.keycore.NokiaClient.get(this)
+        // 尽早初始化 KeydroidxClient（建立 Provider 同步与 ThemeProvider 注册）
+        io.github.cctyl.nokia.keycore.KeydroidxClient.get(this)
 
         // 统一日志：尽早初始化文件日志 + 崩溃捕获，覆盖冷启动阶段的崩溃。
-        // 日志落盘到 Android/data/<包名>/log/yyyyMMdd.log，与反馈模块读取目录一致。
+        // 日志落盘到 Android/data/<包名>/files/log/yyyyMMdd.log，与反馈模块读取目录一致。
         // 根据持久化设置自动决定等级（Debug 默认全量 DEBUG，Release 默认仅 ERROR）。
-        NokiaLog.setTag("KeydroidX-Music")
-        NokiaLog.init(this)
-        NokiaLog.installCrashHandler(this)
-        NokiaLog.i("App", "MusicApplication onCreate, initializing managers and warmup")
+        KeydroidxLog.setTag("KeydroidX-Music")
+        KeydroidxLog.init(this)
+        KeydroidxLog.installCrashHandler(this)
+        KeydroidxLog.i("App", "MusicApplication onCreate, initializing managers and warmup")
         LibraryManager.init(this)
         // 收藏唯一事实源：必须在 LibraryManager 之后（读得到旧 fav_songs 做迁移）、
         // AppWarmup 之前（预拉依赖已装载的 cookie）初始化
@@ -45,8 +45,8 @@ class MusicApplication : Application() {
         AppWarmup.startWarmup(this)
 
         // 初始化意见反馈 + 安装统计组件（共用同一份配置）
-        NokiaFeedback.init(
-            NokiaFeedbackConfig(
+        KeydroidxFeedback.init(
+            KeydroidxFeedbackConfig(
                 BuildConfig.FEEDBACK_UPLOAD_URL,
                 BuildConfig.FEEDBACK_INSTALL_URL,
                 BuildConfig.FEEDBACK_SECRET_KEY,
@@ -56,6 +56,6 @@ class MusicApplication : Application() {
             )
         )
         // 首次安装 / 版本升级时自动上报一次设备信息（后台、幂等、静默）
-        NokiaInstall.reportOnce(this)
+        KeydroidxInstall.reportOnce(this)
     }
 }

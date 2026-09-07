@@ -34,11 +34,11 @@ import io.github.cctyl.keydroidx.music.player.PlaybackMode
 import io.github.cctyl.keydroidx.music.player.PlaybackPrefs
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -51,16 +51,16 @@ import java.util.Locale
  *
  * UI 结构（自上而下）：
  * 1. 音量条浮层（默认隐藏，UP/DOWN 触发，淡入 200ms，2 秒无操作淡出）
- * 2. 标题栏（NokiaBaseActivity 注入）
+ * 2. 标题栏（KeydroidxBaseActivity 注入）
  * 3. 黑胶唱片（带右上角唱针，播放时匀速旋转 8s/圈）
  * 4. 歌曲标题 + 歌手 / 专辑
  * 5. 歌词预览框（高亮青色背景 + 当前单行歌词 + [按 * 全屏] 提示）
  * 6. 歌曲操作栏（红心[1] / 下载[2] / 评论+数量[3]，底部单行三等分，图标下方带按键说明）
  * 7. 进度条 + 时间（current_time / [OK 播放/暂停] / total_time）
  * 8. 5 列按键指南（← 上曲 | → 下曲 | * 歌词 | # 模式 | 左软:选项）
- * 9. 底部软键栏（NokiaBaseActivity 注入，选项 / 暂停 / 返回）
+ * 9. 底部软键栏（KeydroidxBaseActivity 注入，选项 / 暂停 / 返回）
  */
-class MusicPlayerActivity : NokiaBaseActivity() {
+class MusicPlayerActivity : KeydroidxBaseActivity() {
 
     // ── 视图引用 ─────────────────────────────────────────────
     private var vinylDisk: View? = null
@@ -136,21 +136,21 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         scrollLyricFull = findViewById(R.id.scroll_lyric_full)
         lyricFullContainer = findViewById(R.id.layout_lyric_full_list)
 
-        // ── 设置图标（使用 NokiaIcons 矢量字体）──────────────
+        // ── 设置图标（使用 KeydroidxIcons 矢量字体）──────────────
         // 唱片中心图标：始终显示 ♪ music_note
-        NokiaIcons.setIcon(ivPlayPause, NokiaIcons.ICON_MUSIC_NOTE)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_prev), NokiaIcons.ICON_SKIP_PREVIOUS)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_next), NokiaIcons.ICON_SKIP_NEXT)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_lyrics), NokiaIcons.ICON_SUBTITLES)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_mode), NokiaIcons.ICON_REPEAT)
-        NokiaIcons.setIcon(findViewById(R.id.icon_guide_playpause), NokiaIcons.ICON_PLAY)
+        KeydroidxIcons.setIcon(ivPlayPause, KeydroidxIcons.ICON_MUSIC_NOTE)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_prev), KeydroidxIcons.ICON_SKIP_PREVIOUS)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_next), KeydroidxIcons.ICON_SKIP_NEXT)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_lyrics), KeydroidxIcons.ICON_SUBTITLES)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_mode), KeydroidxIcons.ICON_REPEAT)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_playpause), KeydroidxIcons.ICON_PLAY)
 
         // ── 操作栏：红心 / 下载 / 评论 ─────────────────
         iconActionFavorite = findViewById(R.id.icon_action_favorite)
         iconActionDownload = findViewById(R.id.icon_action_download)
         iconActionComment = findViewById(R.id.icon_action_comment)
         tvCommentCount = findViewById(R.id.tv_comment_count)
-        NokiaIcons.setIcon(iconActionComment, MusicIcons.COMMENT)
+        KeydroidxIcons.setIcon(iconActionComment, MusicIcons.COMMENT)
         // 红心 / 下载图标按当前状态渲染（收藏态、下载态）
         updateFavoriteIcon()
         updateDownloadIcon()
@@ -172,7 +172,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         // ── 标题栏 & 软键栏 ─────────────────────────────────
         setPageTitle(getString(R.string.title_now_playing))
-        setTitleIcon(NokiaIcons.ICON_PLAY_CIRCLE_FILLED)
+        setTitleIcon(KeydroidxIcons.ICON_PLAY_CIRCLE_FILLED)
         setSoftKeys(
             getString(R.string.softkey_options),
             getString(R.string.softkey_play),
@@ -393,9 +393,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
                 // 联动黑胶唱片旋转 + 中间指南条播放/暂停图标
                 if (playing) startVinylRotation() else stopVinylRotation()
-                NokiaIcons.setIcon(
+                KeydroidxIcons.setIcon(
                     findViewById(R.id.icon_guide_playpause),
-                    if (playing) NokiaIcons.ICON_PAUSE else NokiaIcons.ICON_PLAY
+                    if (playing) KeydroidxIcons.ICON_PAUSE else KeydroidxIcons.ICON_PLAY
                 )
             }
         }
@@ -423,9 +423,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     private fun updateModeIcon(mode: PlaybackMode) {
         val iconView = findViewById<TextView>(R.id.icon_guide_mode)
         when (mode) {
-            PlaybackMode.LIST_LOOP -> NokiaIcons.setIcon(iconView, NokiaIcons.ICON_REPEAT)
-            PlaybackMode.SINGLE_LOOP -> NokiaIcons.setIcon(iconView, NokiaIcons.ICON_REPEAT_ONE)
-            PlaybackMode.RANDOM -> NokiaIcons.setIcon(iconView, NokiaIcons.ICON_SHUFFLE)
+            PlaybackMode.LIST_LOOP -> KeydroidxIcons.setIcon(iconView, KeydroidxIcons.ICON_REPEAT)
+            PlaybackMode.SINGLE_LOOP -> KeydroidxIcons.setIcon(iconView, KeydroidxIcons.ICON_REPEAT_ONE)
+            PlaybackMode.RANDOM -> KeydroidxIcons.setIcon(iconView, KeydroidxIcons.ICON_SHUFFLE)
         }
     }
 
@@ -445,25 +445,25 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         // ── 全屏歌词模式：独立按键语义 ──
         if (isLyricFull) {
             return when (action) {
-                NokiaKeyAction.UP -> {
+                KeydroidxKeyAction.UP -> {
                     moveFullscreenFocus(-1)
                     true
                 }
-                NokiaKeyAction.DOWN -> {
+                KeydroidxKeyAction.DOWN -> {
                     moveFullscreenFocus(1)
                     true
                 }
-                NokiaKeyAction.LEFT, NokiaKeyAction.RIGHT -> true   // 忽略左右
-                NokiaKeyAction.SELECT -> {
+                KeydroidxKeyAction.LEFT, KeydroidxKeyAction.RIGHT -> true   // 忽略左右
+                KeydroidxKeyAction.SELECT -> {
                     seekToFocusedLyric()
                     true
                 }
-                NokiaKeyAction.SOFT_LEFT -> {
+                KeydroidxKeyAction.SOFT_LEFT -> {
                     // 全屏歌词模式下的左软键 = 收藏，与数字键 1 行为一致
                     actionFavorite()
                     true
                 }
-                NokiaKeyAction.SOFT_RIGHT -> {
+                KeydroidxKeyAction.SOFT_RIGHT -> {
                     exitFullscreenLyric()
                     true
                 }
@@ -472,7 +472,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         }
 
         return when (action) {
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 if (DEMO_MODE) {
                     isPlaying = !isPlaying
                     PlaybackStateManager.updatePlayingState(isPlaying)
@@ -483,15 +483,15 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.LEFT -> {
+            KeydroidxKeyAction.LEFT -> {
                 sendServiceAction(PlaybackService.ACTION_PREV)
                 true
             }
-            NokiaKeyAction.RIGHT -> {
+            KeydroidxKeyAction.RIGHT -> {
                 sendServiceAction(PlaybackService.ACTION_NEXT)
                 true
             }
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 audioManager?.adjustStreamVolume(
                     AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_RAISE,
@@ -499,7 +499,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 )
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 audioManager?.adjustStreamVolume(
                     AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_LOWER,
@@ -507,11 +507,11 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 )
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 showPlaybackOptions()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 finish()
                 true
             }
@@ -552,9 +552,9 @@ class MusicPlayerActivity : NokiaBaseActivity() {
     /**
      * 数字键 1 / 2 / 3 —— 操作栏快捷键。
      *
-     * `NokiaKeyAction` 语义集合只覆盖方向、确定、左右软键、锁屏、拨号，
+     * `KeydroidxKeyAction` 语义集合只覆盖方向、确定、左右软键、锁屏、拨号，
      * 不含数字键，因此这里沿用本项目已有的 `*` / `#` 做法，在 `onKeyDown` 里直接拦截。
-     * 基类 `NokiaBaseActivity.dispatchKeyEvent` 对未映射的 keyCode 会放行到本方法。
+     * 基类 `KeydroidxBaseActivity.dispatchKeyEvent` 对未映射的 keyCode 会放行到本方法。
      *
      * 长按会连续触发 repeat，这里只认第一次按下，避免长按把收藏反复开关。
      */
@@ -617,26 +617,26 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         val currentSong = PlaybackStateManager.currentSong.value
         val isFav = currentSong != null && FavoriteStore.isFavorite(currentSong.id)
 
-        val dialog = NokiaOptionsDialog(this, getString(R.string.softkey_options))
+        val dialog = KeydroidxOptionsDialog(this, getString(R.string.softkey_options))
             .addItem(
                 1,
                 getString(R.string.option_play_queue),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_QUEUE_MUSIC, iconSize, iconColor)
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_QUEUE_MUSIC, iconSize, iconColor)
             )
             .addItem(
                 2,
                 if (isFav) "取消收藏" else getString(R.string.softkey_favorite),
-                NokiaIcons.createDrawable(this, if (isFav) NokiaIcons.ICON_FAVORITE_BORDER else NokiaIcons.ICON_FAVORITE, iconSize, iconColor)
+                KeydroidxIcons.createDrawable(this, if (isFav) KeydroidxIcons.ICON_FAVORITE_BORDER else KeydroidxIcons.ICON_FAVORITE, iconSize, iconColor)
             )
             .addItem(
                 3,
                 getString(R.string.option_quality),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_SETTINGS, iconSize, iconColor)
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_SETTINGS, iconSize, iconColor)
             )
             .addItem(
                 4,
                 getString(R.string.softkey_back),
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_ARROW_BACK, iconSize, iconColor)
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_ARROW_BACK, iconSize, iconColor)
             )
             .setOnOptionSelectedListener { index, _ ->
                 when (index) {
@@ -671,7 +671,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         PlaylistDetailActivity.start(
             this,
             getString(R.string.title_current_queue),
-            NokiaIcons.ICON_QUEUE_MUSIC,
+            KeydroidxIcons.ICON_QUEUE_MUSIC,
             displaySongs
         )
     }
@@ -756,7 +756,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         val iv = iconActionFavorite ?: return
         val song = PlaybackStateManager.currentSong.value
         val isFav = song != null && FavoriteStore.isFavorite(song.id)
-        NokiaIcons.setIcon(iv, if (isFav) NokiaIcons.ICON_FAVORITE else NokiaIcons.ICON_FAVORITE_BORDER)
+        KeydroidxIcons.setIcon(iv, if (isFav) KeydroidxIcons.ICON_FAVORITE else KeydroidxIcons.ICON_FAVORITE_BORDER)
         iv.setTextColor(if (isFav) COLOR_FAV_RED else MusicTheme.current(this).text)
     }
 
@@ -767,15 +767,15 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         val status = song?.let { DownloadManager.getTask(it.id)?.status }
         when {
             song != null && DownloadManager.isDownloaded(song.id) -> {
-                NokiaIcons.setIcon(iv, NokiaIcons.ICON_CHECK)
+                KeydroidxIcons.setIcon(iv, KeydroidxIcons.ICON_CHECK)
                 iv.setTextColor(MusicTheme.BRAND_ACCENT)
             }
             status == DownloadStatus.DOWNLOADING || status == DownloadStatus.PENDING -> {
-                NokiaIcons.setIcon(iv, NokiaIcons.ICON_HOURGLASS)
+                KeydroidxIcons.setIcon(iv, KeydroidxIcons.ICON_HOURGLASS)
                 iv.setTextColor(MusicTheme.BRAND_SOFTKEY_CENTER)
             }
             else -> {
-                NokiaIcons.setIcon(iv, NokiaIcons.ICON_DOWNLOAD)
+                KeydroidxIcons.setIcon(iv, KeydroidxIcons.ICON_DOWNLOAD)
                 iv.setTextColor(MusicTheme.current(this).text)
             }
         }
@@ -858,12 +858,12 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             "hires" to getString(R.string.quality_hires)
         )
 
-        val dialog = NokiaOptionsDialog(this, getString(R.string.title_quality))
+        val dialog = KeydroidxOptionsDialog(this, getString(R.string.title_quality))
         // 当前档位置顶
         dialog.addItem(
             0,
             "● ${labels[current]}",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CHECK, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CHECK, iconSize, iconColor)
         )
         var seq = 1
         for (level in PlaybackPrefs.QUALITY_LEVELS) {
@@ -871,7 +871,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             dialog.addItem(
                 seq++,
                 labels[level],
-                NokiaIcons.createDrawable(this, NokiaIcons.ICON_MUSIC_NOTE, iconSize, iconColor)
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_MUSIC_NOTE, iconSize, iconColor)
             )
         }
         dialog.setOnOptionSelectedListener { index, _ ->
@@ -906,7 +906,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         Log.d(TAG, "[lyric-debug] enter fullscreen: lines=${lrcLines.size} views=${lyricFullTextViews.size}")
         layoutLyricFullscreen?.visibility = View.VISIBLE
         setPageTitle(getString(R.string.title_lyric_browse))
-        setTitleIcon(NokiaIcons.ICON_LYRICS)
+        setTitleIcon(KeydroidxIcons.ICON_LYRICS)
         setSoftKeys(
             getString(R.string.softkey_favorite),
             getString(R.string.softkey_seek),
@@ -921,7 +921,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         focusLyricIndex = -1
         layoutLyricFullscreen?.visibility = View.GONE
         setPageTitle(getString(R.string.title_now_playing))
-        setTitleIcon(NokiaIcons.ICON_PLAY_CIRCLE_FILLED)
+        setTitleIcon(KeydroidxIcons.ICON_PLAY_CIRCLE_FILLED)
         setSoftCenter(if (isPlaying) getString(R.string.softkey_pause) else getString(R.string.softkey_play))
         setSoftLeft(getString(R.string.softkey_options))
         setSoftRight(getString(R.string.softkey_back))
@@ -953,7 +953,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
         }
         adjustFullscreenLyricPadding()
         // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
     }
 
     /**
@@ -969,7 +969,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                 bottomMargin = dp(4)
             }
             gravity = Gravity.CENTER
-            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
+            KeydroidxFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
             setTextColor(Color.parseColor("#E0FFFFFF"))
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
@@ -1032,28 +1032,28 @@ class MusicPlayerActivity : NokiaBaseActivity() {
                     tv.background = cyanBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
+                    KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 2. 用户方向键选中的光标行（但不是当前播放行）
                 isCursor && !isPlaying -> {
                     tv.background = focusBg
                     tv.setTextColor(white)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
+                    KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 3. 当前播放行（但用户光标移到了其他行）
                 !isCursor && isPlaying -> {
                     tv.background = cyanBg
                     tv.setTextColor(cyan)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
+                    KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
                 }
                 // 4. 普通歌词行
                 else -> {
                     tv.background = null
                     tv.setTextColor(normal)
                     tv.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
+                    KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
                 }
             }
         }
@@ -1174,7 +1174,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             lyricTextViews.add(tv)
         }
         // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
-        NokiaFontManager.applyToViewTree(container)
+        KeydroidxFontManager.applyToViewTree(container)
     }
 
     /**
@@ -1191,7 +1191,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             }
             gravity = Gravity.CENTER
             // 设计字号 9sp（caption 档位），实际大小 = 设计值 × 桌面缩放基准
-            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
+            KeydroidxFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
             setTextColor(MusicTheme.current(applicationContext).subtext)
             setLineSpacing(dp(2).toFloat(), 1f)
             includeFontPadding = false
@@ -1216,7 +1216,7 @@ class MusicPlayerActivity : NokiaBaseActivity() {
 
         val accent = MusicTheme.BRAND_ACCENT
         val normal = MusicTheme.current(applicationContext).subtext
-        val customTf = NokiaFontManager.getTypeface(this)
+        val customTf = KeydroidxFontManager.getTypeface(this)
 
         // 推送当前歌词行到 PlaybackStateManager（供 Provider/Widget 读取）
         val currentLineText = if (idx in lrcLines.indices) lrcLines[idx].text else null
@@ -1226,11 +1226,11 @@ class MusicPlayerActivity : NokiaBaseActivity() {
             if (i == idx) {
                 tv.setTextColor(accent)
                 tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
-                NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
+                KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
             } else {
                 tv.setTextColor(normal)
                 tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
-                NokiaFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
+                KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
             }
         }
 

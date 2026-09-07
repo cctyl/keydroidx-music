@@ -19,10 +19,10 @@ import io.github.cctyl.keydroidx.music.auth.UserProfileCache
 import io.github.cctyl.keydroidx.music.cache.PlaylistSongCache
 import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
 import android.graphics.Color
 
 /**
@@ -33,7 +33,7 @@ import android.graphics.Color
  * - 左软键：选项菜单（粘贴 / 清空 / 保存 / 退出）
  * - 中键(SELECT)：弹出输入法打字；触屏点击输入框同效
  */
-class CookieSettingsActivity : NokiaBaseActivity() {
+class CookieSettingsActivity : KeydroidxBaseActivity() {
 
     companion object {
         private const val TAG = "CookieSettings"
@@ -49,7 +49,7 @@ class CookieSettingsActivity : NokiaBaseActivity() {
 
     override fun onInitViews() {
         setPageTitle(getString(R.string.cookie_settings_title))
-        setTitleIcon(NokiaIcons.ICON_SETTINGS)
+        setTitleIcon(KeydroidxIcons.ICON_SETTINGS)
         setStatusBarVisible(true)
         registerBatteryReceiver()
         setSoftKeys(
@@ -113,15 +113,15 @@ class CookieSettingsActivity : NokiaBaseActivity() {
     override fun onAction(action: Int): Boolean {
         Log.d(TAG, "onAction=$action")
         return when (action) {
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 showOptionsMenu()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 deleteChar()
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 showIme()
                 true
             }
@@ -159,23 +159,23 @@ class CookieSettingsActivity : NokiaBaseActivity() {
     private fun showOptionsMenu() {
         val iconColor = Color.WHITE
         val iconSize = (18 * resources.displayMetrics.density).toInt()
-        val dialog = NokiaOptionsDialog(this, "Cookie 操作")
+        val dialog = KeydroidxOptionsDialog(this, "Cookie 操作")
 
         dialog.addItem(
             1, "粘贴",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_EDIT, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_EDIT, iconSize, iconColor)
         )
         dialog.addItem(
             2, "清空",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_DELETE, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_DELETE, iconSize, iconColor)
         )
         dialog.addItem(
             3, "保存并退出",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CHECK, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CHECK, iconSize, iconColor)
         )
         dialog.addItem(
             4, "退出",
-            NokiaIcons.createDrawable(this, NokiaIcons.ICON_CLOSE, iconSize, iconColor)
+            KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_CLOSE, iconSize, iconColor)
         )
 
         dialog.setOnOptionSelectedListener { index, _ ->

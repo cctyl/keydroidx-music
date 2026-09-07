@@ -5,7 +5,7 @@
       ① 评论列表层（ScrollView）：总数行 → 热门 → 最新 → 加载更多
       ② 评论编辑层（CommentEditorFragment）：由 CommentActivity 按需 add 进来，
          不透明背景完全遮住列表层；出栈后列表层自动显现。
-    标题栏与软键栏由 NokiaBaseActivity 注入。
+    标题栏与软键栏由 KeydroidxBaseActivity 注入。
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

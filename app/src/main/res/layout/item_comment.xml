@@ -3,7 +3,7 @@
     单条评论
     结构：
       [头像(24dp，图标兜底/网络头像二选一)] [昵称 + 时间 / 正文(3行截断) / 点赞数]
-    条目可聚焦：由 NokiaListFocusHelper 统一做循环导航与防出界滚动。
+    条目可聚焦：由 KeydroidxListFocusHelper 统一做循环导航与防出界滚动。
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

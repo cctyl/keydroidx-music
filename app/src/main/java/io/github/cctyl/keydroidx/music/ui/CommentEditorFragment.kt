@@ -9,19 +9,19 @@ import android.widget.EditText
 import android.widget.TextView
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.network.CommentApi
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaOptionsDialog
-import io.github.cctyl.nokia.keycore.ui.page.NokiaPageFragment
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxConfirmDialog
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
+import io.github.cctyl.nokia.common.ui.page.KeydroidxPageFragment
 
 /**
  * 歌曲评论「全屏编辑页」。
  *
- * 为什么不用 SDK 的 `NokiaTextInputFragment`：它左软键菜单是硬编码的
+ * 为什么不用 SDK 的 `KeydroidxTextInputFragment`：它左软键菜单是硬编码的
  * 「粘贴 / 复制全部 / 清空全部 / 保存并退出 / 退出（不保存内容）」，
  * `showOptionsMenu()` 为 private 无法覆写，而本页要求菜单只有「发送 / 退出」。
- * 因此这里继承同一个生态基类 [NokiaPageFragment] 自建页面 —— **不改动 SDK / common 组件**，
+ * 因此这里继承同一个生态基类 [KeydroidxPageFragment] 自建页面 —— **不改动 SDK / common 组件**，
  * 字体、主题、软键栏、返回栈等能力全部照旧由宿主骨架提供。
  *
  * 物理按键：
@@ -33,7 +33,7 @@ import io.github.cctyl.nokia.keycore.ui.page.NokiaPageFragment
  * 本页只负责「取到正文并交给宿主」，网络请求交给 [androidx.fragment.app.FragmentActivity]
  * 的作用域执行 —— 发送过程中本页就已出栈，协程挂在 Activity 上才不会被销毁中断。
  */
-class CommentEditorFragment : NokiaPageFragment() {
+class CommentEditorFragment : KeydroidxPageFragment() {
 
     companion object {
         private const val ARG_SONG_NAME = "song_name"
@@ -66,7 +66,7 @@ class CommentEditorFragment : NokiaPageFragment() {
         editInput = view.findViewById(R.id.edit_comment)
         tvCounter = view.findViewById(R.id.tv_editor_counter)
 
-        NokiaIcons.setIcon(view.findViewById(R.id.icon_editor_target), MusicIcons.COMMENT)
+        KeydroidxIcons.setIcon(view.findViewById(R.id.icon_editor_target), MusicIcons.COMMENT)
         view.findViewById<TextView>(R.id.tv_editor_song).text =
             getString(R.string.comment_editor_song, songName)
 
@@ -87,7 +87,7 @@ class CommentEditorFragment : NokiaPageFragment() {
 
         // 基类已整树应用过字体，这里再补一次 key-core 的点阵字体与缩放，
         // 保证与评论列表页（Activity 侧）视觉一致
-        NokiaFontManager.applyToViewTree(view)
+        KeydroidxFontManager.applyToViewTree(view)
     }
 
     override fun onResume() {
@@ -97,7 +97,7 @@ class CommentEditorFragment : NokiaPageFragment() {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  NokiaPage 契约
+    //  KeydroidxPage 契约
     // ══════════════════════════════════════════════════════════
 
     override fun getPageTitle(): CharSequence = getString(R.string.title_comment_editor)
@@ -137,7 +137,7 @@ class CommentEditorFragment : NokiaPageFragment() {
     // ══════════════════════════════════════════════════════════
 
     private fun showOptionsMenu() {
-        NokiaOptionsDialog(requireContext(), getString(R.string.comment_editor_options))
+        KeydroidxOptionsDialog(requireContext(), getString(R.string.comment_editor_options))
             .addItem(OPT_SEND, getString(R.string.opt_comment_send))
             .addItem(OPT_EXIT, getString(R.string.opt_comment_exit))
             .setOnOptionSelectedListener { _, item ->
@@ -152,7 +152,7 @@ class CommentEditorFragment : NokiaPageFragment() {
     private fun doSend() {
         val text = editInput?.text?.toString()?.trim().orEmpty()
         if (text.isEmpty()) {
-            NokiaConfirmDialog(
+            KeydroidxConfirmDialog(
                 requireContext(),
                 getString(R.string.title_comment_editor),
                 getString(R.string.comment_empty_content)

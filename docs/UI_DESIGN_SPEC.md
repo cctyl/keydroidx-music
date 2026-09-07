@@ -3,7 +3,7 @@
 > **版本**：v1.0 (验收通过版)  
 > **关联原型**：`nokia_music_ui_mockup.html`  
 > **基准屏幕**：240dp 标准像素网格（物理九键 / 全键盘按键机）  
-> **依赖核心库**：`keydroidx-core` (`nokia-key-core`)
+> **依赖核心库**：`keydroidx-core` (`keydroidx-key-core`)
 
 ---
 
@@ -16,7 +16,7 @@
    - [4.2 歌单与歌曲列表页 (PlaylistActivity / Detail)](#42-歌单与歌曲列表页-playlistactivity--detail)
    - [4.3 正在播放详情页 (MusicPlayerActivity)](#43-正在播放详情页-musicplayeractivity)
    - [4.4 全屏歌词滚屏页 (LyricFullView / LyricActivity)](#44-全屏歌词滚屏页-lyricfullview--lyricactivity)
-   - [4.5 标准选项菜单 (NokiaOptionsDialog)](#45-标准选项菜单-nokiaoptionsdialog)
+   - [4.5 标准选项菜单 (KeydroidxOptionsDialog)](#45-标准选项菜单-nokiaoptionsdialog)
 5. [主题、色彩与点阵字体规范](#五-主题色彩与点阵字体规范)
 6. [组件映射与代码实现指南](#六-组件映射与代码实现指南)
 
@@ -29,13 +29,14 @@
    - 严禁设计依赖触屏滑动、长按拖拽等仅限触屏的交互方式。
 
 2. **零二次配置与主题热换肤**：
-   - 继承 `NokiaBaseActivity`，通过 `NokiaKeyProvider` 自动同步 Launcher 端的物理按键映射、全局主题配色和像素点阵字体（ArkPixel / FusionPixel）。
-   - 颜色与背景必须使用 `NokiaTheme` 动态着色，严禁硬编码颜色值。
+   - 继承 `KeydroidxBaseActivity`，通过 `KeydroidxKeyProvider` 自动同步 Launcher 端的物理按键映射、全局主题配色和像素点阵字体（ArkPixel / FusionPixel）。
+   - 颜色与背景必须使用 `KeydroidxTheme` 动态着色，严禁硬编码颜色值。
 
-3. **三级平滑降级**：
-   - 第一级：KeydroidX Launcher 广播与 ContentProvider 统一键值。
-   - 第二级：音乐 App 本地 SharedPreferences 独立键位配置。
-   - 第三级：Android 官方标准键码回退兜底。
+3. **四级平滑降级**：
+   - 第一级：正式版桌面 Provider（`io.github.cctyl.nokia.keyprovider`）统一键值。
+   - 第二级：Debug 版桌面 Provider（`io.github.cctyl.nokia.debug.keyprovider`；HOME 包名含 `debug` 时探测顺序反转）。
+   - 第三级：音乐 App 本地 SharedPreferences 独立键位配置（`nokia_key_bindings`）。
+   - 第四级：Android 官方标准键码回退兜底。
 
 ---
 
@@ -89,7 +90,7 @@
 | **`SELECT` (确定 / OK)** | 列表条目 | 播放该歌曲 / 打开该歌单 | 即刻切歌 |
 | | 播放详情页 | **播放 / 暂停** 状态切换 | 黑胶旋转/静止联动 |
 | | 全屏歌词页 | **进度回正跳转** | 将歌曲进度跳至选中歌词时间 |
-| **`SOFT_LEFT` (左软键)** | 所有界面 | 呼出当前上下文的 **选项菜单 (NokiaOptionsDialog)** | 菜单项支持 1-9 数字直选 |
+| **`SOFT_LEFT` (左软键)** | 所有界面 | 呼出当前上下文的 **选项菜单 (KeydroidxOptionsDialog)** | 菜单项支持 1-9 数字直选 |
 | **`SOFT_RIGHT` (右软键)** | 子页面 / 详情页 | **返回上一级** | 正在播放页返回主页（保持后台播放） |
 | | 主界面顶层 | **退出应用** (弹出二次确认弹窗) | |
 | **`*` (星号键)** | 播放详情页 ↔ 歌词页 | **全屏歌词双向快速切换** | 核心专属快捷键 |
@@ -198,7 +199,7 @@
 
 ---
 
-### 4.5 标准选项菜单 (NokiaOptionsDialog)
+### 4.5 标准选项菜单 (KeydroidxOptionsDialog)
 
 当用户在任意界面按下 `SOFT_LEFT` (左软键) 时，自底部升起标准的诺基亚选项对话框：
 
@@ -226,8 +227,8 @@
 
 ### 2. 字体与图标标准
 - **排版字号**：统一使用 `keydroidx-core` 规范的 6 级 `@dimen/nokia_font_*` 语义 Token（`display:16sp`, `title:13sp`, `body:12sp`, `small_title:11sp`, `caption:9sp`, `micro:7sp`），禁止在 XML 中裸写字号数字。
-- **字体**：全部采用 `ArkPixel` (方舟像素点阵体) 或 `FusionPixel`，通过 `NokiaBaseActivity` 全局递归注入。
-- **图标**：一律使用 `keydroidx-core` 内置的 `NokiaIcons` (MaterialIcons 矢量字体编码)，禁止引入第三方位图 PNG 以确保极佳的 240dp 锐利度。
+- **字体**：全部采用 `ArkPixel` (方舟像素点阵体) 或 `FusionPixel`，通过 `KeydroidxBaseActivity` 全局递归注入。
+- **图标**：一律使用 `keydroidx-core` 内置的 `KeydroidxIcons` (MaterialIcons 矢量字体编码)，禁止引入第三方位图 PNG 以确保极佳的 240dp 锐利度。
 
 ---
 
@@ -238,7 +239,7 @@
 ```
 io.github.cctyl.keydroidx.music/
 ├── ui/
-│   ├── MainActivity.kt               # 继承 NokiaBaseActivity，管理 4 个 Tab Fragment / ViewPager
+│   ├── MainActivity.kt               # 继承 KeydroidxBaseActivity，管理 4 个 Tab Fragment / ViewPager
 │   ├── MusicPlayerActivity.kt        # 正在播放详情 Activity (黑胶动效 + 进度条 + 快捷提示)
 │   ├── LyricActivity.kt              # 全屏歌词浏览与 Seek 联动 Activity / View
 │   ├── PlaylistDetailActivity.kt     # 歌单详情歌曲列表页
@@ -254,6 +255,6 @@ io.github.cctyl.keydroidx.music/
 ```
 
 ### 关键代码规范约束：
-1. **按键监听**：重写 `onKeyDown` 时，统一调用 `NokiaKeyBinding.fromKeyEvent(event)` 解析为语义枚举（如 `NokiaAction.SELECT`、`NokiaAction.SOFT_LEFT`、`NokiaAction.STAR`、`NokiaAction.HASH`），杜绝硬编码数值。
-2. **弹窗统一**：所有选项与确认交互必须调用 `NokiaOptionsDialog.Builder(this)` 与 `NokiaConfirmDialog.Builder(this)` 构建。
+1. **按键监听**：重写 `onKeyDown` 时，统一调用 `KeydroidxKeyBinding.fromKeyEvent(event)` 解析为语义枚举（如 `NokiaAction.SELECT`、`NokiaAction.SOFT_LEFT`、`NokiaAction.STAR`、`NokiaAction.HASH`），杜绝硬编码数值。
+2. **弹窗统一**：所有选项与确认交互必须调用 `KeydroidxOptionsDialog.Builder(this)` 与 `KeydroidxConfirmDialog.Builder(this)` 构建。
 3. **焦点互斥**：列表或宫格必须维护单一 `focusIndex`，在按键移动时光标自动计算平滑居中滚动（`smoothScrollToPosition`）。

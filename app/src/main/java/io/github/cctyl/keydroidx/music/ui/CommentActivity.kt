@@ -17,12 +17,12 @@ import io.github.cctyl.keydroidx.music.network.CommentApi
 import io.github.cctyl.keydroidx.music.network.CommentApi.Comment
 import io.github.cctyl.keydroidx.music.util.AvatarLoader
 import io.github.cctyl.keydroidx.music.util.NLog as Log
-import io.github.cctyl.nokia.keycore.model.NokiaKeyAction
-import io.github.cctyl.nokia.keycore.ui.NokiaBaseActivity
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
-import io.github.cctyl.nokia.keycore.ui.NokiaIcons
-import io.github.cctyl.nokia.keycore.ui.dialog.NokiaConfirmDialog
-import io.github.cctyl.nokia.keycore.ui.page.NokiaListFocusHelper
+import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
+import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxIcons
+import io.github.cctyl.nokia.common.ui.dialog.KeydroidxConfirmDialog
+import io.github.cctyl.nokia.common.ui.page.KeydroidxListFocusHelper
 import kotlinx.coroutines.launch
 
 /**
@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
  * 数据来自 [CommentApi]（网易云 `/api/v1/resource/comments/R_SO_4_{id}`）：
  *  - 首页一次请求同时拿到「热门评论」与「最新评论」首页 + 评论总数；
  *  - 向下移动到「加载更多」行（或按中软键）按 [PAGE_SIZE] 分页追加；
- *  - 确定键用 `NokiaConfirmDialog` 查看全文（列表内正文截断为 3 行）。
+ *  - 确定键用 `KeydroidxConfirmDialog` 查看全文（列表内正文截断为 3 行）。
  *
  * 物理按键（列表层）：
  *  UP/DOWN 移动光标（**非循环**，到头即停）、SELECT 查看全文、
@@ -41,16 +41,16 @@ import kotlinx.coroutines.launch
  *  左软键菜单 = 发送评论 / 退出编辑，中软键 = 发送，右软键 = 返回列表。
  * 出栈后本页自动恢复列表的标题、软键与光标。
  *
- * 滚动策略（本页刻意与其它列表页不同，通过 [NokiaListFocusHelper.setCyclic] 关闭循环，
+ * 滚动策略（本页刻意与其它列表页不同，通过 [KeydroidxListFocusHelper.setCyclic] 关闭循环，
  * 不改动 SDK / common 组件）：
  *  - 顶部按上键停住，不跳到末尾；
  *  - 底部按下键停住，不回弹到顶部 —— 若还有评论则继续加载下一页；
  *  - 光标接近底部时静默预取下一页，走到底部时内容通常已就绪，滚动不中断。
  *
- * 焦点与滚动统一交给 [NokiaListFocusHelper]（防出界平滑滚动），
+ * 焦点与滚动统一交给 [KeydroidxListFocusHelper]（防出界平滑滚动），
  * 配色一律取自 [MusicTheme]，不硬编码颜色。
  */
-class CommentActivity : NokiaBaseActivity() {
+class CommentActivity : KeydroidxBaseActivity() {
 
     companion object {
         private const val TAG = "CommentActivity"
@@ -118,7 +118,7 @@ class CommentActivity : NokiaBaseActivity() {
     // ── 焦点 ─────────────────────────────────────────────────
     private val hotItemViews = mutableListOf<View>()
     private val commentItemViews = mutableListOf<View>()
-    private lateinit var focusHelper: NokiaListFocusHelper
+    private lateinit var focusHelper: KeydroidxListFocusHelper
     private val focusIdx: Int get() = if (::focusHelper.isInitialized) focusHelper.focusIndex else -1
 
     // ── 评论编辑层 ───────────────────────────────────────────
@@ -128,7 +128,7 @@ class CommentActivity : NokiaBaseActivity() {
     private var loadFailed = false
 
     // ══════════════════════════════════════════════════════════
-    //  NokiaBaseActivity 回调
+    //  KeydroidxBaseActivity 回调
     // ══════════════════════════════════════════════════════════
     override fun getContentLayoutRes(): Int = R.layout.activity_comment
 
@@ -152,7 +152,7 @@ class CommentActivity : NokiaBaseActivity() {
         )
 
         // 编辑页出栈后要恢复列表的标题/软键/光标：列表不是 Fragment，
-        // 骨架的 refreshPageBar() 只会跟随 NokiaPage，故需自行订阅返回栈变化
+        // 骨架的 refreshPageBar() 只会跟随 KeydroidxPage，故需自行订阅返回栈变化
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.backStackEntryCount == 0) {
                 editorFragment = null
@@ -169,9 +169,9 @@ class CommentActivity : NokiaBaseActivity() {
         llLoadMore = findViewById(R.id.ll_load_more)
         tvLoadMore = findViewById(R.id.tv_load_more)
 
-        NokiaIcons.setIcon(findViewById(R.id.icon_comment_total), MusicIcons.COMMENT)
+        KeydroidxIcons.setIcon(findViewById(R.id.icon_comment_total), MusicIcons.COMMENT)
 
-        focusHelper = NokiaListFocusHelper(this, scrollComment)
+        focusHelper = KeydroidxListFocusHelper(this, scrollComment)
         // 关闭首尾循环：本页是「无限追加」的长列表，循环滚动会把用户从底部弹回顶部、
         // 从顶部弹到底部，与分页浏览方向完全冲突。到底 / 到头一律停住。
         focusHelper.setCyclic(false)
@@ -295,8 +295,8 @@ class CommentActivity : NokiaBaseActivity() {
         }
 
         // 动态 inflate 的条目错过基类字体初始化，补一次点阵字体 + 缩放
-        NokiaFontManager.applyToViewTree(llHotContainer)
-        NokiaFontManager.applyToViewTree(llCommentContainer)
+        KeydroidxFontManager.applyToViewTree(llHotContainer)
+        KeydroidxFontManager.applyToViewTree(llCommentContainer)
 
         if (hotComments.isEmpty() && comments.isEmpty()) {
             tvLoadMore.text = getString(R.string.comment_empty)
@@ -314,7 +314,7 @@ class CommentActivity : NokiaBaseActivity() {
             commentItemViews.add(v)
         }
         llNewHeader.visibility = if (comments.isEmpty()) View.GONE else View.VISIBLE
-        NokiaFontManager.applyToViewTree(llCommentContainer)
+        KeydroidxFontManager.applyToViewTree(llCommentContainer)
     }
 
     private fun buildCommentView(c: Comment): View {
@@ -329,8 +329,8 @@ class CommentActivity : NokiaBaseActivity() {
         val iconLike = v.findViewById<TextView>(R.id.icon_comment_like)
         val tvLike = v.findViewById<TextView>(R.id.tv_comment_like)
 
-        NokiaIcons.setIcon(iconAvatar, NokiaIcons.ICON_PERSON)
-        NokiaIcons.setIcon(iconLike, MusicIcons.THUMB_UP)
+        KeydroidxIcons.setIcon(iconAvatar, KeydroidxIcons.ICON_PERSON)
+        KeydroidxIcons.setIcon(iconLike, MusicIcons.THUMB_UP)
 
         tvNickname.text = c.nickname
         tvTime.text = formatRelativeTime(c.timeMs)
@@ -436,12 +436,12 @@ class CommentActivity : NokiaBaseActivity() {
         }
 
         return when (action) {
-            NokiaKeyAction.UP -> {
+            KeydroidxKeyAction.UP -> {
                 // 非循环（setCyclic(false)）：已在首项时按上键停住，不会跳到末尾
                 focusHelper.onDirection(action)
                 true
             }
-            NokiaKeyAction.DOWN -> {
+            KeydroidxKeyAction.DOWN -> {
                 val count = focusHelper.itemCount
                 when {
                     count == 0 || focusIdx < 0 -> focusHelper.onDirection(action)
@@ -459,7 +459,7 @@ class CommentActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SELECT -> {
+            KeydroidxKeyAction.SELECT -> {
                 val c = commentAt(focusIdx)
                 when {
                     c != null -> showFullComment(c)
@@ -468,11 +468,11 @@ class CommentActivity : NokiaBaseActivity() {
                 }
                 true
             }
-            NokiaKeyAction.SOFT_LEFT -> {
+            KeydroidxKeyAction.SOFT_LEFT -> {
                 openCommentEditor()
                 true
             }
-            NokiaKeyAction.SOFT_RIGHT -> {
+            KeydroidxKeyAction.SOFT_RIGHT -> {
                 finish()
                 true
             }
@@ -482,7 +482,7 @@ class CommentActivity : NokiaBaseActivity() {
 
     /** 确定键：列表内正文截断为 3 行，全文在复古确认弹窗里看。 */
     private fun showFullComment(c: Comment) {
-        NokiaConfirmDialog(this, c.nickname, c.content)
+        KeydroidxConfirmDialog(this, c.nickname, c.content)
             .setPositiveButton(getString(R.string.dialog_confirm)) { }
             .show()
     }
@@ -497,7 +497,7 @@ class CommentActivity : NokiaBaseActivity() {
         if (songId <= 0L) return
 
         if (!CookieManager.hasCookie(this)) {
-            NokiaConfirmDialog(
+            KeydroidxConfirmDialog(
                 this,
                 getString(R.string.comment_need_login_title),
                 getString(R.string.comment_need_login_msg)
@@ -544,7 +544,7 @@ class CommentActivity : NokiaBaseActivity() {
             if (isDestroyed || isFinishing) return@launch
 
             if (!ok) {
-                NokiaConfirmDialog(
+                KeydroidxConfirmDialog(
                     this@CommentActivity,
                     getString(R.string.comment_send_failed_title),
                     serverReason?.let { getString(R.string.comment_send_rejected, it) }

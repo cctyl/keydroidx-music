@@ -6,7 +6,7 @@
       ② 输入区：占满剩余空间，左上角起排，可多行
       ③ 字数计数器（0/140）
     背景必须完全不透明：本页是叠加在评论列表之上的一层，透明会露出底层列表。
-    标题栏与软键栏由宿主 NokiaBaseActivity 注入。
+    标题栏与软键栏由宿主 KeydroidxBaseActivity 注入。
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

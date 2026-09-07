@@ -15,7 +15,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
 import io.github.cctyl.keydroidx.music.auth.CookieManager
-import io.github.cctyl.nokia.keycore.ui.NokiaFontManager
+import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 
 /**
@@ -28,7 +28,7 @@ import io.github.cctyl.keydroidx.music.network.RetrofitClient
  *  4. 存入 CookieManager + 同步 RetrofitClient + setResult(RESULT_OK) + finish()
  *
  * 按键机：BACK / 返回键直接 finish()（未登录可放弃）。
- * 这是个纯 WebView Activity，不走 NokiaBaseActivity，让网页占满整屏。
+ * 这是个纯 WebView Activity，不走 KeydroidxBaseActivity，让网页占满整屏。
  */
 class WebLoginActivity : Activity() {
 
@@ -111,7 +111,7 @@ class WebLoginActivity : Activity() {
         val closeBtn = TextView(this).apply {
             text = "✕"
             setTextColor(0xFFFFFFFF.toInt())
-            NokiaFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
+            KeydroidxFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
             setPadding(28, 18, 28, 18)
             setBackgroundColor(0x88000000.toInt())
             setOnClickListener { finish() }

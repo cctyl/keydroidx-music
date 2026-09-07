@@ -8,7 +8,7 @@
     ├─────────────────────┤
     │   内容区（各 Tab）   │  ← 可滚动
     └─────────────────────┘
-    顶部标题栏 / 底部软键由 NokiaBaseActivity 的骨架提供
+    顶部标题栏 / 底部软键由 KeydroidxBaseActivity 的骨架提供
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

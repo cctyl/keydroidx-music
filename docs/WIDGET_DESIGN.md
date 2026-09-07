@@ -6,14 +6,14 @@
 
 ## 架构决策：双轨制
 
-考虑到 Launcher 已有完善的**原生组件系统**（`NokiaWidgetItem` + `NokiaDesktopFragment` 焦点导航），且需适配 240×320 / 320×480 点阵屏，采用**双轨制**：
+考虑到 Launcher 已有完善的**原生组件系统**（`KeydroidxWidgetItem` + `KeydroidxDesktopFragment` 焦点导航），且需适配 240×320 / 320×480 点阵屏，采用**双轨制**：
 
 | 轨道 | 目的 | 实现方式 |
 |------|------|----------|
 | **系统 AppWidget** | 兼容第三方桌面、系统原生组件选择器 | `AppWidgetProvider` + `RemoteViews`，标准 Android 协议 |
 | **原生数据源** | 无缝融入 Launcher 现有组件区、复用焦点导航 | `ContentProvider` 暴露播放态，Launcher 新增 `TYPE_MUSIC_PLAYER` 原生组件类型 |
 
-> **核心原则**：Launcher 组件区只渲染**原生组件**（`NokiaWidgetItem` 行布局），不接入 `AppWidgetHost`。Music App 双轨并行，系统组件给第三方桌面用，原生数据源给 KeydroidX Launcher 用。
+> **核心原则**：Launcher 组件区只渲染**原生组件**（`KeydroidxWidgetItem` 行布局），不接入 `AppWidgetHost`。Music App 双轨并行，系统组件给第三方桌面用，原生数据源给 KeydroidX Launcher 用。
 
 ---
 
@@ -80,10 +80,10 @@ private const val EXTRA_LYRIC_LINE = "lyric_line"  // 当前歌词文本
 
 ## 2. Launcher 侧变更
 
-### 2.1 NokiaWidgetItem 新增类型常量
+### 2.1 KeydroidxWidgetItem 新增类型常量
 
 ```java
-// NokiaWidgetItem.java
+// KeydroidxWidgetItem.java
 public static final int TYPE_MUSIC_PLAYER = 11;  // 原 TYPE_COUNT=11，改为 12
 public static final int TYPE_COUNT = 12;
 public static final int MAX_COUNT = 15;  // 保持不变
@@ -96,23 +96,23 @@ public static final int MAX_COUNT = 15;  // 保持不变
 | `getTypeName(11)` | "正在播放" |
 | `getDefaultLabel(11)` | "正在播放" |
 | `getTypeTag(11)` | "[音乐]" |
-| `getTypeIconUnicode(11)` | `NokiaIcons.ICON_MUSIC_NOTE` |
+| `getTypeIconUnicode(11)` | `KeydroidxIcons.ICON_MUSIC_NOTE` |
 | `getTypeIcon(11)` | `R.drawable.ic_nokia_music` (新增) |
 | `isEditable()` | `false` |
 
-### 2.3 NokiaDesktopFragment 组件行渲染
+### 2.3 KeydroidxDesktopFragment 组件行渲染
 
-在 `createWidgetRow(NokiaWidgetItem)` 中新增分支：
+在 `createWidgetRow(KeydroidxWidgetItem)` 中新增分支：
 
 ```java
-case NokiaWidgetItem.TYPE_MUSIC_PLAYER:
+case KeydroidxWidgetItem.TYPE_MUSIC_PLAYER:
     return createMusicPlayerWidgetRow(item);
 ```
 
 #### `createMusicPlayerWidgetRow` 设计
 
 ```java
-private View createMusicPlayerWidgetRow(NokiaWidgetItem item) {
+private View createMusicPlayerWidgetRow(KeydroidxWidgetItem item) {
     // 返回一个 LinearLayout 行，包含：
     // 1. 图标 (MaterialIcons ICON_MUSIC_NOTE)
     // 2. 主标签：歌曲名 - 歌手（跑马灯或截断）
@@ -120,7 +120,7 @@ private View createMusicPlayerWidgetRow(NokiaWidgetItem item) {
     // 4. 进度条（可选，极简横条）
     // 数据来源：ContentResolver.query(PlaybackProvider.CONTENT_URI)
     // 点击/SELECT：启动 MusicPlayerActivity
-    // 焦点高亮：复用 bg_nokia_selected / NokiaTheme.createFocusDrawable
+    // 焦点高亮：复用 bg_nokia_selected / KeydroidxTheme.createFocusDrawable
 }
 ```
 
@@ -207,8 +207,8 @@ private View createMusicPlayerWidgetRow(NokiaWidgetItem item) {
 
 | 文件 | 变更类型 | 说明 |
 |------|----------|------|
-| `app/src/main/java/.../nokia/NokiaWidgetItem.java` | 修改 | 新增 TYPE_MUSIC_PLAYER 常量与元数据 |
-| `app/src/main/java/.../nokia/NokiaDesktopFragment.java` | 修改 | 新增 `createMusicPlayerWidgetRow`、ContentObserver、点击启动 |
+| `app/src/main/java/.../nokia/KeydroidxWidgetItem.java` | 修改 | 新增 TYPE_MUSIC_PLAYER 常量与元数据 |
+| `app/src/main/java/.../nokia/KeydroidxDesktopFragment.java` | 修改 | 新增 `createMusicPlayerWidgetRow`、ContentObserver、点击启动 |
 | `app/src/main/res/drawable/ic_nokia_music.xml` | 新建 | 音乐组件图标（矢量） |
 | `app/src/main/AndroidManifest.xml` | 修改 | `<queries>` 包可见性 |
 
@@ -254,7 +254,7 @@ override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.keydroidx.
 ### 5.2 Launcher 端 ContentObserver
 
 ```java
-// NokiaDesktopFragment.java
+// KeydroidxDesktopFragment.java
 private final ContentObserver playbackObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
     @Override
     public void onChange(boolean selfChange, Uri uri) {
@@ -287,7 +287,7 @@ private void refreshMusicWidgetRowOnly() {
 
     // 找到音乐组件行索引
     for (int i = 0; i < widgetItems.size(); i++) {
-        if (widgetItems.get(i).type == NokiaWidgetItem.TYPE_MUSIC_PLAYER) {
+        if (widgetItems.get(i).type == KeydroidxWidgetItem.TYPE_MUSIC_PLAYER) {
             // 仅替换该行 View
             View oldRow = notifArea.getChildAt(i);
             View newRow = createMusicPlayerWidgetRow(widgetItems.get(i));
@@ -347,7 +347,7 @@ private void refreshMusicWidgetRowOnly() {
 |------|------|------|
 | **M1: Music App 数据源** | PlaybackProvider + 广播 + SongItem Parcelable | `content://.../playback/state` 可查询，广播可接收 |
 | **M2: Music App 系统组件** | AppWidgetProvider + RemoteViews + 布局 | 系统桌面可添加、显示、点击跳转 |
-| **M3: Launcher 原生组件类型** | NokiaWidgetItem 新增 TYPE_MUSIC_PLAYER | 常量、图标、类型名、默认标签 |
+| **M3: Launcher 原生组件类型** | KeydroidxWidgetItem 新增 TYPE_MUSIC_PLAYER | 常量、图标、类型名、默认标签 |
 | **M4: Launcher 渲染与刷新** | createMusicPlayerWidgetRow + ContentObserver | 组件区显示播放态、实时刷新、焦点稳定 |
 | **M5: 交互联调** | SELECT 启动、返回焦点恢复、两机型验收 | 端到端可用 |
 
