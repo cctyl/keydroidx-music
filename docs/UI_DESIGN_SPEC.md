@@ -16,7 +16,7 @@
    - [4.2 歌单与歌曲列表页 (PlaylistActivity / Detail)](#42-歌单与歌曲列表页-playlistactivity--detail)
    - [4.3 正在播放详情页 (MusicPlayerActivity)](#43-正在播放详情页-musicplayeractivity)
    - [4.4 全屏歌词滚屏页 (LyricFullView / LyricActivity)](#44-全屏歌词滚屏页-lyricfullview--lyricactivity)
-   - [4.5 标准选项菜单 (KeydroidxOptionsDialog)](#45-标准选项菜单-nokiaoptionsdialog)
+   - [4.5 标准选项菜单 (KeydroidxOptionsDialog)](#45-标准选项菜单-KeydroidxOptionsDialog)
 5. [主题、色彩与点阵字体规范](#五-主题色彩与点阵字体规范)
 6. [组件映射与代码实现指南](#六-组件映射与代码实现指南)
 
