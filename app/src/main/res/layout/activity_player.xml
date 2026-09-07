@@ -212,7 +212,7 @@
                     android:id="@+id/icon_guide_lyrics"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#FDE047"
                     android:includeFontPadding="false" />
 
@@ -237,7 +237,7 @@
                     android:id="@+id/icon_guide_prev"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -262,7 +262,7 @@
                     android:id="@+id/icon_guide_playpause"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -287,7 +287,7 @@
                     android:id="@+id/icon_guide_next"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#CBD5E1"
                     android:includeFontPadding="false" />
 
@@ -312,7 +312,7 @@
                     android:id="@+id/icon_guide_mode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#FDE047"
                     android:includeFontPadding="false" />
 
@@ -357,7 +357,7 @@
                     android:id="@+id/icon_action_favorite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#FFFFFF"
                     android:includeFontPadding="false" />
 
@@ -383,7 +383,7 @@
                     android:id="@+id/icon_action_download"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/keydroidx_font_body"
                     android:textColor="#FFFFFF"
                     android:includeFontPadding="false" />
 
@@ -415,7 +415,7 @@
                         android:id="@+id/icon_action_comment"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/keydroidx_font_body"
                         android:textColor="#FFFFFF"
                         android:includeFontPadding="false" />
 

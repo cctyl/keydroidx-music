@@ -47,7 +47,7 @@
                     android:id="@+id/tab_icon_mine"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/keydroidx_font_small_title"
                     android:includeFontPadding="false"
                     android:layout_marginBottom="1dp" />
 
@@ -90,7 +90,7 @@
                     android:id="@+id/tab_icon_discover"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/keydroidx_font_small_title"
                     android:includeFontPadding="false"
                     android:layout_marginBottom="1dp" />
 
@@ -132,7 +132,7 @@
                     android:id="@+id/tab_icon_chart"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/keydroidx_font_small_title"
                     android:includeFontPadding="false"
                     android:layout_marginBottom="1dp" />
 
@@ -174,7 +174,7 @@
                     android:id="@+id/tab_icon_search"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/keydroidx_font_small_title"
                     android:includeFontPadding="false"
                     android:layout_marginBottom="1dp" />
 
@@ -216,7 +216,7 @@
                     android:id="@+id/tab_icon_setting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="10sp"
+                    android:textSize="@dimen/keydroidx_font_small_title"
                     android:includeFontPadding="false"
                     android:layout_marginBottom="1dp" />
 

@@ -105,7 +105,7 @@
                 android:id="@+id/icon_comment_like"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="9sp"
+                android:textSize="@dimen/keydroidx_font_caption"
                 android:textColor="@color/music_subtext"
                 android:includeFontPadding="false" />
 

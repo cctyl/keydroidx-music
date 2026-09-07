@@ -23,7 +23,7 @@
             android:id="@+id/icon_chart_thumb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="15sp"
+            android:textSize="@dimen/keydroidx_font_title"
             android:textColor="#FFFFFF"
             android:includeFontPadding="false" />
     </LinearLayout>
@@ -81,7 +81,7 @@
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:gravity="center"
-        android:textSize="12sp"
+        android:textSize="@dimen/keydroidx_font_body"
         android:textColor="@color/music_subtext"
         android:includeFontPadding="false" />
 </LinearLayout>

@@ -41,7 +41,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:gravity="center"
-                android:textSize="15sp"
+                android:textSize="@dimen/keydroidx_font_title"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 
@@ -100,7 +100,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:gravity="center"
-                android:textSize="15sp"
+                android:textSize="@dimen/keydroidx_font_title"
                 android:textColor="@color/music_accent"
                 android:includeFontPadding="false" />
 

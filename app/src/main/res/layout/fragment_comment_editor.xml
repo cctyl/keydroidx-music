@@ -33,7 +33,7 @@
             android:id="@+id/icon_editor_target"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="15sp"
+            android:textSize="@dimen/keydroidx_font_title"
             android:textColor="@color/music_accent"
             android:includeFontPadding="false" />
 

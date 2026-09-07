@@ -19,7 +19,7 @@
         android:layout_width="22dp"
         android:layout_height="22dp"
         android:gravity="center"
-        android:textSize="12sp"
+        android:textSize="@dimen/keydroidx_font_body"
         android:textColor="@color/music_accent"
         android:includeFontPadding="false" />
 
@@ -54,7 +54,7 @@
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:gravity="center"
-        android:textSize="12sp"
+        android:textSize="@dimen/keydroidx_font_body"
         android:textColor="@color/music_subtext"
         android:includeFontPadding="false" />
 </LinearLayout>
