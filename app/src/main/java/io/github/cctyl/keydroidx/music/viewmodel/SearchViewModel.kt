@@ -6,6 +6,7 @@ import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.AlbumSearchItem
 import io.github.cctyl.keydroidx.music.network.model.ArtistSearchItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,6 +89,7 @@ class SearchViewModel : ViewModel() {
                 }
             }
         } catch (e: Exception) {
+            Log.w("SearchViewModel", "search failed: ${e.message}", e)
             _error.value = e.message
             clearResults()
         } finally {

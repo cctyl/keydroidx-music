@@ -464,6 +464,12 @@ getSupportFragmentManager().beginTransaction()
    - 主界面/设置页选项菜单必须提供「详细日志：开/关」切换项（调用 `KeydroidxLog.setDetailedLogEnabled`）。
 4. **日志落盘约定**：
    - 统一输出至 `/sdcard/Android/data/<包名>/files/log/yyyyMMdd.log`，按天自动轮转，保留 7 天。
+5. **`catch` 块必须记一笔（强制）**：
+   - 任何 `try/catch` 的 `catch` 分支都**必须**用 `KeydroidxLog.e(...)` 或 `KeydroidxLog.w(...)`（带 `Throwable` 重载）记录异常，**禁止空 `catch`、禁止只写 `e.printStackTrace()`、禁止改用 `android.util.Log`**。
+   - 选级准则：**意外 / 不可恢复 / 影响功能** → `KeydroidxLog.e(tag, msg, tr)`（会同步落「待上传」标记，下次启动自动上报）；**预期内 / 可忽略 / 降级继续** → `KeydroidxLog.w(tag, msg, tr)`。**注意：`e` 只用于「程序自身缺陷」（不该发生的失败：资源缺失、自家数据解析/写入失败、状态机异常、自家逻辑 bug）；网络异常/超时、权限不足、包未安装、系统版本不支持、反射调用失败、资源清理失败、探测失败等一律 `w`。`w` 在 Release（未开详细日志）下只进 logcat、不落盘，`e` 才落盘并触发上报；`e` 计入服务端 `/upload` 每日 20 次配额（超额封 IP 30 分钟），故高频路径（网络重试、列表逐项遍历、按键分发、每次渲染）必须用 `w`，否则配额会被日常降级异常打满，真实崩溃反而传不出去。**
+   - 理由：`KeydroidxCrashReporter` 只能捕获「未捕获异常」与「走过 `KeydroidxLog.e` 的错误」；被 `catch` 且不打日志的异常**既不上报也不落盘**，用户反馈时现场彻底丢失。
+   - 不合格写法示例：`catch (Exception ignored) {}`、`catch (Exception e) { e.printStackTrace(); }`、`catch (IOException e) { return null; }`。
+   - **例外（不补日志，或只补 `w`）**：① `catch` 后**重新抛出**（块内有 `throw ...`），异常继续向上传播并由未捕获处理器上报，不算盲区；② 日志 / 上报链路自身的 `catch`（`KeydroidxLog`、`KeydroidxCrashReporter`、`FeedbackUploader`、`InstallUploader`、`DeviceInfoCollector`）只能 `w` 或保持静默——调 `e` 会经 `notifyErrorMarker` 再次落标记，存在递归风险；③ 资源清理路径（`close()` / `eglDestroy*` / `deleteQuietly`）用 `w` 或不补；④ `mini_shizuku` 服务端模块与 J2ME 移植代码（`javax.*` / `org.microemu.*`）不强制。
 
 ---
 

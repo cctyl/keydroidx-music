@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import io.github.cctyl.nokia.keycore.KeydroidxClient
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 
 /**
  * 音乐 App 专属主题色表。
@@ -96,6 +97,7 @@ object MusicTheme {
         val id = try {
             KeydroidxClient.get(context).currentThemeId
         } catch (e: Exception) {
+            Log.w("MusicTheme", "read theme from desktop failed, fallback to classic blue: ${e.message}", e)
             CLASSIC_BLUE.id
         }
         return THEMES[id] ?: CLASSIC_BLUE

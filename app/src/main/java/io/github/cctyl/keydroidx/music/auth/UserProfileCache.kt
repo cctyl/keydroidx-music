@@ -145,6 +145,7 @@ object UserProfileCache {
             val f = avatarFile(context)
             if (f.exists()) android.graphics.BitmapFactory.decodeFile(f.absolutePath) else null
         } catch (e: Exception) {
+            Log.w(TAG, "loadAvatar failed: ${e.message}", e)
             null
         }
     }

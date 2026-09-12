@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.SongDetail
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +39,7 @@ class SongViewModel : ViewModel() {
                 _lyric.value = lyricResponse.lrc?.lyric
                 _translatedLyric.value = lyricResponse.tlyric?.lyric
             } catch (e: Exception) {
-                // 静默处理或记录日志
+                Log.w("SongViewModel", "load song detail failed: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }

@@ -10,6 +10,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import java.io.File
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 
 @OptIn(UnstableApi::class)
 object AudioCacheManager {
@@ -82,6 +83,7 @@ object AudioCacheManager {
             val cached = cache.getCachedBytes(key, 0, contentLength)
             cached >= contentLength
         } catch (e: Exception) {
+            Log.w("AudioCacheManager", "isFullyCached failed: ${e.message}", e)
             false
         }
     }

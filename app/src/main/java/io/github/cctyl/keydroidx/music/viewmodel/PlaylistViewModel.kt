@@ -8,6 +8,7 @@ import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.AlbumDetailResponse
 import io.github.cctyl.keydroidx.music.network.model.ArtistDetailData
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +40,7 @@ class PlaylistViewModel : ViewModel() {
                 ContentCache.putPlaylistSongs(playlistId, songs)
                 _uiState.value = PlaylistUiState.SongsLoaded(name, songs)
             } catch (e: Exception) {
+                Log.w("PlaylistViewModel", "load playlist failed: ${e.message}", e)
                 if (_uiState.value !is PlaylistUiState.SongsLoaded) {
                     _uiState.value = PlaylistUiState.Error(e.message ?: "歌单加载失败")
                 }
@@ -59,6 +61,7 @@ class PlaylistViewModel : ViewModel() {
                 ContentCache.putAlbum(albumId, album)
                 _uiState.value = PlaylistUiState.AlbumLoaded(album)
             } catch (e: Exception) {
+                Log.w("PlaylistViewModel", "load album failed: ${e.message}", e)
                 if (_uiState.value !is PlaylistUiState.AlbumLoaded) {
                     _uiState.value = PlaylistUiState.Error(e.message ?: "专辑加载失败")
                 }
@@ -80,6 +83,7 @@ class PlaylistViewModel : ViewModel() {
                 ContentCache.putArtist(artistId, detailData)
                 _uiState.value = PlaylistUiState.ArtistLoaded(detailData)
             } catch (e: Exception) {
+                Log.w("PlaylistViewModel", "load artist failed: ${e.message}", e)
                 if (_uiState.value !is PlaylistUiState.ArtistLoaded) {
                     _uiState.value = PlaylistUiState.Error(e.message ?: "歌手信息加载失败")
                 }

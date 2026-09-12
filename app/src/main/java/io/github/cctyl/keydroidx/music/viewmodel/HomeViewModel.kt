@@ -7,6 +7,7 @@ import io.github.cctyl.keydroidx.music.network.PlaylistApi
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
 import io.github.cctyl.keydroidx.music.network.model.AlbumItem
 import io.github.cctyl.keydroidx.music.network.model.SongItem
+import io.github.cctyl.keydroidx.music.util.NLog as Log
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +66,7 @@ class HomeViewModel : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
+                Log.w("HomeViewModel", "load home data failed: ${e.message}", e)
                 if (_uiState.value !is HomeUiState.Success) {
                     _uiState.value = HomeUiState.Error(e.message ?: "加载失败")
                 }
