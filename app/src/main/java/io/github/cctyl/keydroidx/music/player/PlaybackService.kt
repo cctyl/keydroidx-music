@@ -17,6 +17,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -37,6 +38,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// media3 的 DefaultMediaSourceFactory / MediaItem.setCustomCacheKey /
+// MediaStyleNotificationHelper.MediaStyle.setShowActionsInCompactView 等标注了
+// @UnstableApi，按官方要求逐处 opt-in（opt-in 只作用于本类，不向调用方传播）。
+@androidx.annotation.OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
 
     private var player: ExoPlayer? = null

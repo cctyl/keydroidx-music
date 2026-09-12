@@ -37,8 +37,11 @@ keydroidx-music/
 # Debug 编译
 ./gradlew assembleDebug
 
-# Release 签名打包
-./gradlew assembleRelease
+# Lint（NewApi 不允许跳过：改完涉及 API 调用的代码后必跑）
+./gradlew :app:lintDebug
+
+# Release 签名打包（先跑全量 Lint，NewApi error 会中断构建；或直接跑 build_release.bat）
+./gradlew :app:lintRelease assembleRelease
 ```
 
 ---

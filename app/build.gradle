@@ -54,6 +54,17 @@ android {
         }
     }
 
+    lint {
+        // NewApi 必须开启：minSdk=19（Android 4.4）下，高于 minSdk 的 API 调用只会在旧设备上
+        // 「运行时」抛 NoSuchMethodError / NoClassDefFoundError，编译器按 compileSdk 编译永远
+        // 发现不了，Lint 的 NewApi 规则是唯一静态防线。
+        // ⚠ 禁止 disable 'NewApi'，也禁止用 `-x lint` 跳过 Lint；确属误报时在调用点逐处用
+        //   @RequiresApi / @TargetApi / @SuppressLint("NewApi") 豁免并写明理由。
+        // 改完涉及 API 调用的代码后请显式执行（assembleDebug 不触发 Lint，assembleRelease 只跑
+        // lintVital 的致命项，都拦不住 NewApi error）：gradlew.bat :app:lintDebug
+        abortOnError true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

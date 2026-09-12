@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import android.os.Build
 import android.os.Environment
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.download.DownloadManager
@@ -417,6 +418,9 @@ class LocalMusicActivity : KeydroidxBaseActivity() {
      * 仅支持主存储分区；SD 卡等二级存储返回 null。
      */
     private fun treeUriToFile(uri: android.net.Uri): File? {
+        // DocumentsContract.getTreeDocumentId 是 API 21+（minSdk=19）。ACTION_OPEN_DOCUMENT_TREE
+        // 在 Android 4.4 上无法解析、选择器起不来，这里再兜一层版本守卫，杜绝 NoSuchMethodError。
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
         return try {
             val docId = android.provider.DocumentsContract.getTreeDocumentId(uri) ?: return null
             val parts = docId.split(":")

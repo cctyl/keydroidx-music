@@ -1,5 +1,6 @@
 package io.github.cctyl.keydroidx.music.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -647,6 +648,10 @@ class MainActivity : KeydroidxBaseActivity() {
      * 监听网络从断开恢复为可用：若榜单 / 发现页推荐歌单尚未加载成功，
      * 自动触发后台刷新。解决「离线进应用空白/报错 → 联网后不刷新」的问题。
      */
+    // lint 的 NewApi 对 Kotlin 匿名对象（object : ConnectivityManager.NetworkCallback()）
+    // 的父类不做流分析，会把下方已在 SDK_INT>=21 分支内的匿名类误报为 NewApi；
+    // 方法首行已有版本守卫，此处逐处豁免（禁止全局 disable 'NewApi'）。
+    @SuppressLint("NewApi")
     private fun registerChartNetworkObserver() {
         // NetworkRequest / NetworkCallback / registerNetworkCallback 均为 API 21+，
         // Android 4.4 (API 19) 上这些类不存在，直接跳过即可（不影响核心播放功能）。

@@ -492,15 +492,28 @@ getSupportFragmentManager().beginTransaction()
   ```
 - **Release 构建**：
   ```bash
-  gradlew.bat assembleRelease -x lint
-  # 或运行 build_release.bat（Release 必须跳过 lint，否则构建失败）
+  gradlew.bat :app:lintRelease assembleRelease
+  # 或运行 build_release.bat（内部就是这两步，先 Lint 后打包）
   # 签名统一使用 app/test.jks（debug/release 共用，别名 key0）
+  ```
+  ⚠ **禁止 `-x lint`**（详见 §8.3）。
+- **Lint（改完涉及 API 调用的代码后必跑）**：
+  ```bash
+  gradlew.bat :app:lintDebug
   ```
 - **单元测试**：
   ```bash
   gradlew.bat testDebugUnitTest
   # 已配置 junit4 + org.json，PlaylistApi、LrcParser 等纯解析逻辑可写 JVM 单测
   ```
+
+### 8.3 Lint 与 API 兼容红线（`NewApi` 不允许跳过）
+
+- 本工程 `minSdk=19`（Android 4.4）：**高于 minSdk 的 API 调用只会在旧设备上「运行时」抛 `NoSuchMethodError` / `NoClassDefFoundError`**——编译器按 `compileSdk` 编译永远发现不了，Lint 的 `NewApi` 规则是唯一的静态防线。
+- **禁止**在 `app/build.gradle` 的 `lint {}` 里 `disable 'NewApi'`；**禁止**任何构建/打包命令（`build_release.bat`、CI、文档示例）带 `-x lint`。
+- `assembleDebug` 不触发 Lint，`assembleRelease` 只跑 `lintVital` 的致命项，**都拦不住 `NewApi` error**：`build_release.bat` 已显式执行 `:app:lintRelease`，日常改完涉及 API 调用的代码请手跑 `gradlew.bat :app:lintDebug`。
+- 确属误报时**逐处**用 `@SuppressLint("NewApi")` / `@RequiresApi` / `@TargetApi` 豁免并写明理由。守卫版本号必须查该方法/类的「Added in API level」，不能以「能编译过」为准（真实事故：`SDK_INT >= 22` 守卫内调用 API 24 才有的 `createForSubscriptionId`，Android 5.1 设备启动即闪退）。
+- 常用兼容替代：`Activity#checkSelfPermission`（23+）→ `ContextCompat.checkSelfPermission`；`Context#getColor`（23+）→ `ContextCompat.getColor`；无 flag 的 `Context#registerReceiver` → `ContextCompat.registerReceiver(..., RECEIVER_EXPORTED/NOT_EXPORTED)`（core 1.9.0+）；`DocumentsContract#getTreeDocumentId`（21+）/`ConnectivityManager.NetworkCallback`（21+）→ 先 `SDK_INT >= 21` 守卫。
 
 ### 9.3 测试设备说明
 - `4a24ecf`：240×320（Android 4.4，可直装）
@@ -523,6 +536,7 @@ getSupportFragmentManager().beginTransaction()
 - [ ] **首键防吞**：条目声明了 `focusableInTouchMode="true"`，外层 ScrollView 声明了 `focusable="false"`，页面进入后第 1 次按方向键立即响应。
 - [ ] **弹窗合规**：无原生 `AlertDialog` / `Toast`，全部使用 `KeydroidxOptionsDialog` / `KeydroidxConfirmDialog` / `KeydroidxTextInputFragment`。
 - [ ] **包可见性**：`AndroidManifest.xml` 中已包含 `<queries>` 桌面 Provider 声明。
+- [ ] **API 兼容（NewApi 不允许跳过）**：新增代码无未守卫的高版本 API；已跑过 `gradlew.bat :app:lintDebug` 且无 `NewApi` error（见 §8.3）。
 
 ---
 
