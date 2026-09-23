@@ -245,13 +245,11 @@ class PlaybackService : MediaSessionService() {
 
         Log.i(TAG, "[VIP-CHECK] [PLAY-FLOW] Start playing -> id: ${song.id}, name: ${song.name}, fee: ${song.fee}, isCached: $isCached, isFullyCached: $isFullyCached, hasNetwork: $hasNetwork, isUserVip: $isUserVip")
 
-        if (!hasNetwork && !isCached) {
-            Log.w(TAG, "[VIP-CHECK] [PLAY-FLOW] No network and song not cached: ${song.name}")
-            showNoNetworkToast()
-            player?.pause()
-            PlaybackStateManager.updatePlayingState(false)
-            return
-        }
+        // 刻意**不做**「无网就直接 return」的硬闸门：NetworkUtils 只能宽松判断
+        // 「链路可能存在」，像 rndis0 手工配 IP + 电脑 ICS 共享这类非标准联网形态
+        // 会被它误判为无网，而请求其实是通的。硬闸门会把本可播放的歌直接拦死，
+        // 表现为「搜索正常、播放却提示无网络」。改为照常发起取链请求，失败后再归因提示；
+        // 真离线时取链会快速失败（SongUrlFetcher 双主机不通即中止），不影响体验。
 
         // 只有「整首已缓存」或「离线（别无选择）」时才走占位 URL 的缓存分支。
         // 半截缓存 + 联网 → 落到下面重新取链，用真实 URL 播放并顺带把缓存补齐，
@@ -292,8 +290,8 @@ class PlaybackService : MediaSessionService() {
                 serviceScope.launch {
                     try {
                         val checkResult = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
-                        Log.i(TAG, "[VIP-CHECK] [ASYNC-CHECK] result -> isTrial: ${checkResult.isTrial}, trialEnd: ${checkResult.trialEnd}")
-                        if (checkResult.isTrial) {
+                        Log.i(TAG, "[VIP-CHECK] [ASYNC-CHECK] result -> isTrial: ${checkResult?.isTrial}, trialEnd: ${checkResult?.trialEnd}")
+                        if (checkResult != null && checkResult.isTrial) {
                             val updatedSong = song.copy(fee = 1)
                             LibraryManager.addRecentSong(updatedSong)
                             val durationTip = if (checkResult.trialEnd > 0) "${checkResult.trialEnd}秒" else ""
@@ -318,7 +316,7 @@ class PlaybackService : MediaSessionService() {
             try {
                 Log.d(TAG, "[VIP-CHECK] [NET-BRANCH] Fetching song url for id: ${song.id}")
                 val result = SongUrlFetcher.fetch(song.id, PlaybackPrefs.qualityLevel(this@PlaybackService))
-                val url = result.url
+                val url = result?.url
                 if (url.isNullOrEmpty()) {
                     Log.e(TAG, "[VIP-CHECK] [NET-BRANCH] Failed to get song url for: ${song.name}")
                     if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
@@ -381,7 +379,9 @@ class PlaybackService : MediaSessionService() {
         if (now - lastToastTime > 2500L) {
             lastToastTime = now
             handler.post {
-                Toast.makeText(applicationContext, "无网络连接，请开启Wi-Fi或移动数据", Toast.LENGTH_SHORT).show()
+                // 文案不再提「Wi-Fi 或移动数据」：USB/RNDIS 等非常规联网同样可能被判定失败，
+                // 引导用户去开 Wi-Fi 是错误指引。
+                Toast.makeText(applicationContext, "网络不可用，请检查网络连接后重试", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -465,7 +465,9 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-            Log.e(TAG, "onPlayerError: ${error.message}", error)
+            Log.e(TAG, "onPlayerError: code=${error.errorCode}, ${error.message}", error)
+            // 归因策略：判定离线 → 明确提示并停止（不跳歌，避免无网时把整个歌单刷一遍）；
+            // 判定在线 → 视为单曲音源不可用（404/风控/该 CDN 不可达），跳下一首继续。
             if (!NetworkUtils.isNetworkAvailable(this@PlaybackService)) {
                 showNoNetworkToast()
                 player?.pause()

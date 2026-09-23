@@ -343,9 +343,9 @@ object DownloadManager {
                 // 1. 获取真实播放链接
                 Log.d(TAG, "Fetching song url for songId=$songId...")
                 val songUrlResult = SongUrlFetcher.fetch(songId)
-                val songUrl = songUrlResult.url
+                val songUrl = songUrlResult?.url
                 if (songUrl.isNullOrEmpty() || songUrl == "null") {
-                    throw IllegalStateException("获取音频链接失败（可能受版权保护或需VIP）")
+                    throw IllegalStateException("获取音频链接失败（可能无网络、受版权保护或需VIP）")
                 }
                 Log.d(TAG, "Got url for songId=$songId: $songUrl")
 
