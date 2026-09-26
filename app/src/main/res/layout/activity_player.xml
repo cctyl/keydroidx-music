@@ -1,16 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     正在播放详情页 (Player) + 全屏歌词覆盖层
-    根 FrameLayout：
-      · 第一层 = 播放详情（唱片/歌词/进度/按键指南）
-      · 第二层 = 全屏歌词（默认隐藏，* 键弹出，盖住整块内容区）
+    根 FrameLayout（自下而上）：
+      · 第 0 层 = 当前歌曲封面铺满整屏。代码里先把位图降到几十像素再交给 ImageView
+                  双线性放大，观感即网易云那种「模糊封面底」，不需要 RenderScript。
+      · 第 1 层 = 渐变压暗遮罩（bg_player_scrim），顶部轻、底部重，保证文字可读
+      · 第 2 层 = 播放详情：歌名/歌手 → 大圆盘（居中）→ 进度条 → 按键指南 → 操作栏
+      · 第 3 层 = 全屏歌词（默认隐藏，* 键弹出，盖住整块内容区）
     标题栏与软键栏由 KeydroidxBaseActivity 提供，覆盖层只盖内容区。
+
+    本页已不再显示常驻歌词列表：视觉主体就是「背景封面 + 居中大圆盘（中心是封面）」，
+    歌词只在 * 键唤起的全屏歌词层里出现。
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/music_dark_bg">
+
+    <!-- ⓪ 背景：当前歌曲封面（模糊铺满）
+         注意：不要写 android:filterBitmap——该属性在 XML 里不存在（只有 setFilterBitmap 方法），
+         ImageView 默认就开启双线性过滤，正是放大低分辨率位图得到平滑模糊底所必需的。 -->
+    <ImageView
+        android:id="@+id/iv_player_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
+
+    <!-- ⓪ 背景遮罩：渐变压暗 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_player_scrim" />
 
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- 第一层：播放详情                                    -->
@@ -23,23 +45,62 @@
         android:focusable="true"
         android:focusableInTouchMode="true">
 
-        <!-- ① 上部固定区（* 键可整体隐藏） -->
+        <!-- ① 歌曲标题 + 歌手（置于顶部，把整块中部让给圆盘，对齐网易云版式） -->
         <LinearLayout
-            android:id="@+id/layout_upper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center_horizontal"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
             android:paddingTop="8dp"
-            android:paddingBottom="4dp">
+            android:paddingBottom="2dp">
+
+            <TextView
+                android:id="@+id/tv_song_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textSize="@dimen/keydroidx_font_title"
+                android:textColor="#FFFFFF"
+                android:shadowColor="#B3000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_song_artist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:textSize="@dimen/keydroidx_font_caption"
+                android:textColor="#D9FFFFFF"
+                android:shadowColor="#B3000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- ② 圆盘区：weight 占满剩余空间并居中；圆盘实际尺寸在代码里按可用空间自适应，
+             以同时适配 240×320 与 320×480 两种按键机 -->
+        <LinearLayout
+            android:id="@+id/layout_upper"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
 
             <FrameLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp">
+                android:layout_height="wrap_content">
 
                 <FrameLayout
                     android:id="@+id/vinyl_disk"
@@ -47,12 +108,20 @@
                     android:layout_height="108dp"
                     android:background="@drawable/bg_vinyl_disk">
 
+                    <!-- 唱盘中心：圆形专辑封面；无封面时露出红色中心盖 + ♪ 兜底图标 -->
                     <FrameLayout
                         android:id="@+id/vinyl_center"
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_gravity="center"
                         android:background="@drawable/bg_vinyl_center">
+
+                        <ImageView
+                            android:id="@+id/iv_vinyl_cover"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="fitCenter"
+                            android:contentDescription="@null" />
 
                         <TextView
                             android:id="@+id/iv_play_pause"
@@ -65,69 +134,7 @@
                     </FrameLayout>
                 </FrameLayout>
             </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:id="@+id/tv_song_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textSize="@dimen/keydroidx_font_title"
-                    android:textColor="#FFFFFF"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false" />
-
-                <TextView
-                    android:id="@+id/tv_song_artist"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:gravity="center"
-                    android:textSize="@dimen/keydroidx_font_caption"
-                    android:textColor="@color/music_subtext"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false" />
-            </LinearLayout>
         </LinearLayout>
-
-        <!-- ② 歌词列表区（weight=1 填充剩余空间） -->
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
-
-            <ScrollView
-                android:id="@+id/scroll_lyric"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:fillViewport="true"
-                android:scrollbars="none"
-                android:overScrollMode="never"
-                android:focusable="false"
-                android:focusableInTouchMode="false">
-
-                <LinearLayout
-                    android:id="@+id/layout_lyric_list"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_vertical"
-                    android:paddingLeft="10dp"
-                    android:paddingRight="10dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp">
-                </LinearLayout>
-            </ScrollView>
-
-        </FrameLayout>
 
         <!-- ③ 进度条 + 时间行 -->
         <LinearLayout
@@ -452,6 +459,22 @@
         android:layout_height="match_parent"
         android:background="@color/music_dark_bg"
         android:visibility="gone">
+
+        <!-- 背景：与播放页同一张虚化封面。
+             复用同一个 Bitmap 对象，两个 ImageView 共享，不额外占内存；
+             无封面时保持透明，露出本层自己的主题深色底。 -->
+        <ImageView
+            android:id="@+id/iv_lyric_bg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <!-- 压暗遮罩：歌词是密集小字，比播放页压得更重，保证任何封面上都读得清 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_lyric_fullscreen_scrim" />
 
         <ScrollView
             android:id="@+id/scroll_lyric_full"

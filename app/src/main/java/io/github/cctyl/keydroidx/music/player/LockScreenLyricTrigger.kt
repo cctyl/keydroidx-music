@@ -89,7 +89,6 @@ object LockScreenLyricTrigger {
 
     private fun maybeShow(context: Context?) {
         val ctx = context ?: return
-        if (!PlaybackPrefs.lockScreenLyricEnabled(ctx)) return
         if (!PlaybackStateManager.isPlaying.value) return
         if (PlaybackStateManager.currentSong.value == null) return
         val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return

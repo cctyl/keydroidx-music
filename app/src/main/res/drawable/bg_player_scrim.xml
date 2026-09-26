@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    播放页背景遮罩（叠在封面背景之上）。
+
+    网易云的「模糊封面底」之所以还看得清字，靠的就是这层渐变压暗：
+      · 顶部 40% —— 压得轻，露出封面色彩，但足以让白色歌名立住
+      · 中部 60% —— 圆盘所在区域，压得更深，让黑胶圆盘与背景拉开层次
+      · 底部 92% —— 进度条 / 按键指南 / 操作栏是全屏最密的文字区，必须压到接近纯黑
+
+    角度 270° = 自上而下（0° 为自左至右）。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#8C000000"
+        android:centerColor="#A6000000"
+        android:endColor="#EB000000" />
+</shape>

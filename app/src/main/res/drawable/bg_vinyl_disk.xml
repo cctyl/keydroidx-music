@@ -21,9 +21,11 @@
     <!-- 主体：径向渐变 + 边框 -->
     <item>
         <shape android:shape="oval">
+            <!-- gradientRadius = 圆盘半径：播放页圆盘放大到最大 220dp（半径 110dp），
+                 半径写小了渐变会在中途被裁成硬边，写大了内圈亮带又会缩成一团 -->
             <gradient
                 android:type="radial"
-                android:gradientRadius="54dp"
+                android:gradientRadius="110dp"
                 android:centerX="0.5"
                 android:centerY="0.5"
                 android:startColor="#FF2D3748"

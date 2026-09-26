@@ -211,18 +211,13 @@
 · Cookie 失效后请重新获取；
 · 清空输入框保存即可退出登录。]]></string>
 
-    <!-- ── 锁屏歌词页 ── -->
-    <string name="option_lock_screen">锁屏歌词</string>
+    <!-- ── 锁屏歌词页 ──
+         本页没有开关、也没有菜单入口：只要在播放中锁屏，点亮屏幕时就会自动全屏显示，
+         见 LockScreenLyricTrigger。 -->
     <!-- 底部软键栏已取消，退出方式靠这行提示传达；按键顺序与锁屏页实际键位一致 -->
     <string name="lock_hint">右软键退出 · ←→ 切歌 · OK 暂停</string>
     <string name="lock_no_song">暂无播放</string>
     <string name="lock_no_lyric">纯音乐，请欣赏</string>
     <string name="lock_status_playing">正在播放</string>
     <string name="lock_status_paused">已暂停</string>
-    <!-- 锁屏页自身已无菜单，「锁屏自动显示」开关移到了播放页左软键菜单里 -->
-    <string name="lock_menu_auto">锁屏自动显示</string>
-    <string name="lock_switch_on">开</string>
-    <string name="lock_switch_off">关</string>
-    <string name="lock_toast_auto_on">锁屏后将自动显示歌词</string>
-    <string name="lock_toast_auto_off">已关闭锁屏自动显示歌词</string>
 </resources>

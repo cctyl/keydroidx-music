@@ -3,6 +3,7 @@ package io.github.cctyl.keydroidx.music.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.media.AudioManager
 import android.os.Handler
@@ -15,10 +16,12 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import androidx.lifecycle.lifecycleScope
 import io.github.cctyl.keydroidx.music.R
 import io.github.cctyl.keydroidx.music.cache.CommentCache
@@ -34,11 +37,13 @@ import io.github.cctyl.keydroidx.music.player.PlaybackMode
 import io.github.cctyl.keydroidx.music.player.PlaybackPrefs
 import io.github.cctyl.keydroidx.music.player.PlaybackService
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
+import io.github.cctyl.keydroidx.music.util.CoverLoader
 import io.github.cctyl.nokia.common.model.KeydroidxKeyAction
 import io.github.cctyl.nokia.keycore.ui.KeydroidxBaseActivity
 import io.github.cctyl.nokia.common.ui.KeydroidxFontManager
 import io.github.cctyl.nokia.common.ui.KeydroidxIcons
 import io.github.cctyl.nokia.common.ui.dialog.KeydroidxOptionsDialog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -49,16 +54,20 @@ import java.util.Locale
 /**
  * 正在播放详情页（黑胶唱机风格）
  *
- * UI 结构（自上而下）：
- * 1. 音量条浮层（默认隐藏，UP/DOWN 触发，淡入 200ms，2 秒无操作淡出）
- * 2. 标题栏（KeydroidxBaseActivity 注入）
- * 3. 黑胶唱片（带右上角唱针，播放时匀速旋转 8s/圈）
- * 4. 歌曲标题 + 歌手 / 专辑
- * 5. 歌词预览框（高亮青色背景 + 当前单行歌词 + [按 * 全屏] 提示）
- * 6. 歌曲操作栏（红心[1] / 下载[2] / 评论+数量[3]，底部单行三等分，图标下方带按键说明）
- * 7. 进度条 + 时间（current_time / [OK 播放/暂停] / total_time）
- * 8. 5 列按键指南（← 上曲 | → 下曲 | * 歌词 | # 模式 | 左软:选项）
- * 9. 底部软键栏（KeydroidxBaseActivity 注入，选项 / 暂停 / 返回）
+ * UI 结构（自下而上，参考网易云播放页）：
+ * 1. 背景层：当前歌曲封面铺满整屏，压一层自上而下加深的遮罩
+ *    （封面先降采样再交给 ImageView 放大 = 低成本「模糊封面底」）
+ * 2. 歌曲标题 + 歌手（顶部，白色带投影）
+ * 3. 黑胶圆盘：居中且尽量大（尺寸按可用空间自适应），**盘心是圆形专辑封面**，
+ *    播放时匀速旋转 8s/圈；无封面回落红色中心盖 + ♪ 图标
+ * 4. 进度条 + 时间（current_time / [OK 播放/暂停] / total_time）
+ * 5. 5 列按键指南（* 歌词 | ← 上曲 | OK 播放 | → 下曲 | # 模式）
+ * 6. 歌曲操作栏（红心[1] / 下载[2] / 评论+数量[3]，单行三等分）
+ * 7. 标题栏 + 底部软键栏（KeydroidxBaseActivity 注入，选项 / 暂停 / 返回）
+ *
+ * 本页**不再显示常驻歌词列表**：歌词只出现在 `*` 键唤起的全屏歌词层；
+ * 但「当前歌词行」仍会随进度计算并推给 PlaybackStateManager，
+ * 锁屏歌词页 / 桌面组件 / 通知栏都依赖这个值。
  */
 class MusicPlayerActivity : KeydroidxBaseActivity() {
 
@@ -73,8 +82,13 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
     private var progressTrack: View? = null
     private var progressFill: View? = null
     private var layoutUpper: View? = null
-    private var scrollLyric: ScrollView? = null
-    private var lyricListContainer: LinearLayout? = null
+    private var vinylCenter: View? = null
+    /** 铺满整屏的封面背景（降采样后交给 ImageView 放大，等效模糊底） */
+    private var ivPlayerBg: ImageView? = null
+    /** 全屏歌词层的虚化封面背景：与 [ivPlayerBg] 共用同一个 Bitmap，不额外占内存 */
+    private var ivLyricBg: ImageView? = null
+    /** 圆盘中心的圆形专辑封面 */
+    private var ivVinylCover: ImageView? = null
 
     // ── 歌曲操作栏（红心 / 下载 / 评论+数量）──────────
     private var iconActionFavorite: TextView? = null
@@ -85,6 +99,13 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
     private var currentCommentTotal: Int? = null
     /** 评论数拉取协程：切歌时取消上一个，防止慢响应覆盖新歌的数字 */
     private var commentCountJob: Job? = null
+
+    // ── 封面（背景 + 盘心）──────────────────────────────────
+    /** 已加载的封面 URL：切歌去重，同一首反复回调不重复下载/解码 */
+    private var loadedCoverUrl: String? = null
+    private var coverJob: Job? = null
+    /** 圆盘尺寸是否已按可用空间自适应过：改尺寸会再次触发 layout 回调，需要刹车 */
+    private var vinylSizeApplied = false
 
     // ── 全屏歌词 ─────────────────────────────────────────────
     private var layoutLyricFullscreen: View? = null
@@ -105,7 +126,6 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
     // ── 歌词数据 ─────────────────────────────────────────────
     private var lrcLines: List<LrcLine> = emptyList()
     private var currentLyricIndex = -1
-    private val lyricTextViews = mutableListOf<TextView>()
 
     // ── 工具 ─────────────────────────────────────────────────
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -119,7 +139,11 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
 
         // ── 查找 View ───────────────────────────────────────
         vinylDisk = findViewById(R.id.vinyl_disk)
+        vinylCenter = findViewById(R.id.vinyl_center)
         ivPlayPause = findViewById(R.id.iv_play_pause)
+        ivVinylCover = findViewById(R.id.iv_vinyl_cover)
+        ivPlayerBg = findViewById(R.id.iv_player_bg)
+        ivLyricBg = findViewById(R.id.iv_lyric_bg)
         tvTitle = findViewById(R.id.tv_song_title)
         tvArtist = findViewById(R.id.tv_song_artist)
         tvCurrentTime = findViewById(R.id.tv_current_time)
@@ -128,8 +152,8 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         progressTrack = findViewById(R.id.progress_track)
         progressFill = findViewById(R.id.progress_fill)
         layoutUpper = findViewById(R.id.layout_upper)
-        scrollLyric = findViewById(R.id.scroll_lyric)
-        lyricListContainer = findViewById(R.id.layout_lyric_list)
+        // 圆盘尺寸按可用空间自适应（240×320 与 320×480 都要吃饱又不溢出）
+        setupVinylSize()
 
         // 全屏歌词视图
         layoutLyricFullscreen = findViewById(R.id.layout_lyric_fullscreen)
@@ -137,7 +161,8 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         lyricFullContainer = findViewById(R.id.layout_lyric_full_list)
 
         // ── 设置图标（使用 KeydroidxIcons 矢量字体）──────────────
-        // 唱片中心图标：始终显示 ♪ music_note
+        // 盘心兜底图标 ♪ music_note：只在无封面（或加载失败）时可见，
+        // 有封面时被圆形封面盖住并置 GONE（见 loadCover）
         KeydroidxIcons.setIcon(ivPlayPause, KeydroidxIcons.ICON_MUSIC_NOTE)
         KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_prev), KeydroidxIcons.ICON_SKIP_PREVIOUS)
         KeydroidxIcons.setIcon(findViewById(R.id.icon_guide_next), KeydroidxIcons.ICON_SKIP_NEXT)
@@ -166,9 +191,6 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         tvCurrentTime?.text = getString(R.string.unknown_time)
         tvTotalTime?.text = getString(R.string.unknown_time)
         tvPlayStatus?.text = getString(R.string.play_status_pause)
-
-        // ── 歌词区占位 ───────────────────────────────────────
-        showLyricPlaceholder()
 
         // ── 标题栏 & 软键栏 ─────────────────────────────────
         setPageTitle(getString(R.string.title_now_playing))
@@ -252,8 +274,8 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
     private fun loadDemoLyrics() {
         lrcLines = LrcParser.parse(DEMO_LRC)
         currentLyricIndex = -1
-        populateLyricLines()
         populateFullscreenLyrics()
+        updateCurrentLyricLine(PlaybackStateManager.currentPositionMs.value)
         Log.d(TAG, "[DEMO] loaded ${lrcLines.size} lyric lines")
     }
 
@@ -345,14 +367,17 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
                 if (song != null) {
                     tvTitle?.text = song.name
                     tvArtist?.text = song.artists?.joinToString("/") { it.name } ?: "未知艺术家"
-                    // 切歌时加载歌词：演示模式用本地 LRC，真实模式走网络
+                    // 封面：背景铺满 + 盘心圆形，随切歌同步换
+                    loadCover(song)
+                    // 歌词仍要加载：主界面不显示，但 * 键的全屏歌词层要用
                     if (DEMO_MODE) loadDemoLyrics() else loadLyrics(song.id)
                 } else {
                     tvTitle?.text = "暂无曲目"
                     tvArtist?.text = "未知艺术家"
+                    loadCover(null)
                     lrcLines = emptyList()
                     currentLyricIndex = -1
-                    showLyricPlaceholder()
+                    PlaybackStateManager.updateCurrentLyricLine(null)
                 }
                 // 操作栏随切歌刷新：评论数重新拉取，红心/下载态按新歌 id 重算
                 loadCommentCount(song)
@@ -413,8 +438,10 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
                 tvCurrentTime?.text = formatTime(pos)
                 tvTotalTime?.text = formatTime(dur)
                 updateProgressFill(pos, dur)
-                // 同步歌词高亮（普通 + 全屏）
-                updateLyricHighlight(pos)
+                // 主界面已无歌词列表，但仍要推进「当前歌词行」并外推给 PlaybackStateManager
+                //（锁屏歌词页 / 桌面组件 / 通知栏都读这个值）
+                updateCurrentLyricLine(pos)
+                // 全屏歌词层（* 键唤起）的高亮
                 updateFullscreenLyricHighlight(pos)
             }
         }
@@ -472,11 +499,17 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         }
 
         return when (action) {
-            // 锁屏键（挂机键）：进入沉浸式歌词锁屏
-            KeydroidxKeyAction.LOCK_SCREEN -> {
-                LyricLockScreenActivity.start(this)
-                true
-            }
+            // ⚠ 这里**绝对不能**处理 KeydroidxKeyAction.LOCK_SCREEN。
+            //
+            // 基类 dispatchKeyEvent 的分发顺序是：
+            //   按键码 → resolveAction() 得到语义动作 → onAction(action)
+            //   → 返回 true：事件就此终止，**不再下传给 onKeyDown**
+            //   → 返回 false：继续 super.dispatchKeyEvent()，最终走到 onKeyDown
+            //
+            // 而部分机型（本机型实测如此）的 `*` 键会被解析层命成 LOCK_SCREEN 动作。
+            // 一旦在这里消费它并 return true，原本能走到 onKeyDown(KEYCODE_STAR)
+            // → 全屏歌词 的事件就被截走了，表现为「按 `*` 弹出锁屏歌词页而不是全屏歌词」。
+            // 因此锁屏歌词改由 onKeyDown 精确匹配真实挂机键码（见 KEYCODE_ENDCALL 分支）。
             KeydroidxKeyAction.SELECT -> {
                 if (DEMO_MODE) {
                     isPlaying = !isPlaying
@@ -630,61 +663,28 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
             )
             .addItem(
                 2,
-                getString(R.string.option_lock_screen),
-                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_LOCK, iconSize, iconColor)
-            )
-            .addItem(
-                3,
-                "${getString(R.string.lock_menu_auto)}：${
-                    getString(
-                        if (PlaybackPrefs.lockScreenLyricEnabled(this)) R.string.lock_switch_on
-                        else R.string.lock_switch_off
-                    )
-                }",
-                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_SHIELD, iconSize, iconColor)
-            )
-            .addItem(
-                4,
                 if (isFav) "取消收藏" else getString(R.string.softkey_favorite),
                 KeydroidxIcons.createDrawable(this, if (isFav) KeydroidxIcons.ICON_FAVORITE_BORDER else KeydroidxIcons.ICON_FAVORITE, iconSize, iconColor)
             )
             .addItem(
-                5,
+                3,
                 getString(R.string.option_quality),
                 KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_SETTINGS, iconSize, iconColor)
             )
             .addItem(
-                6,
+                4,
                 getString(R.string.softkey_back),
                 KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_ARROW_BACK, iconSize, iconColor)
             )
             .setOnOptionSelectedListener { index, _ ->
                 when (index) {
-                    0 -> openCurrentQueue()                      // 1. 播放列表
-                    1 -> LyricLockScreenActivity.start(this)     // 2. 锁屏歌词
-                    2 -> toggleLockScreenAuto()                  // 3. 锁屏自动显示
-                    3 -> toggleFavorite()                        // 4. 收藏 / 取消收藏
-                    4 -> showQualityPicker()                     // 5. 音质设置
-                    5 -> finish()                                // 6. 返回
+                    0 -> openCurrentQueue()     // 1. 播放列表
+                    1 -> toggleFavorite()       // 2. 收藏 / 取消收藏
+                    2 -> showQualityPicker()    // 3. 音质设置
+                    3 -> finish()               // 4. 返回
                 }
             }
         dialog.show()
-    }
-
-    /**
-     * 锁屏歌词「自动显示」开关。
-     *
-     * 锁屏歌词页为了极简已经取消了自身菜单，这里是该开关的唯一入口：
-     * 开启后屏幕点亮且处于锁屏态时自动弹出歌词页（见 LockScreenLyricTrigger）。
-     */
-    private fun toggleLockScreenAuto() {
-        val enabled = !PlaybackPrefs.lockScreenLyricEnabled(this)
-        PlaybackPrefs.setLockScreenLyricEnabled(this, enabled)
-        Toast.makeText(
-            this,
-            getString(if (enabled) R.string.lock_toast_auto_on else R.string.lock_toast_auto_off),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     /**
@@ -1128,8 +1128,11 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
     // ─────────────────────────────────────────────────────────
 
     /**
-     * 异步拉取 LRC 文本并解析为 LrcLine 列表，然后填充到歌词区。
+     * 异步拉取 LRC 文本并解析为 LrcLine 列表。
      * 优先读取本地已下载的歌词文件；若无本地歌词则联网请求。
+     *
+     * 解析结果只服务于 `*` 键的全屏歌词层（主界面已不显示常驻歌词），
+     * 顺带把「当前行」推给 PlaybackStateManager 供锁屏歌词页等读取。
      */
     private fun loadLyrics(songId: Long) {
         lifecycleScope.launch {
@@ -1145,8 +1148,8 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
                         if (!raw.isNullOrBlank()) {
                             lrcLines = LrcParser.parse(raw)
                             currentLyricIndex = -1
-                            populateLyricLines()
                             populateFullscreenLyrics()
+                            updateCurrentLyricLine(PlaybackStateManager.currentPositionMs.value)
                             Log.d(TAG, "Loaded ${lrcLines.size} downloaded lyric lines for song $songId")
                             return@launch
                         }
@@ -1161,139 +1164,201 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
                 if (raw.isNullOrEmpty()) {
                     lrcLines = emptyList()
                     currentLyricIndex = -1
-                    showLyricPlaceholder()
+                    populateFullscreenLyrics()
+                    updateCurrentLyricLine(PlaybackStateManager.currentPositionMs.value)
                     return@launch
                 }
                 lrcLines = LrcParser.parse(raw)
                 currentLyricIndex = -1
-                populateLyricLines()
                 populateFullscreenLyrics()
+                updateCurrentLyricLine(PlaybackStateManager.currentPositionMs.value)
                 Log.d(TAG, "Loaded ${lrcLines.size} lyric lines for song $songId")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load lyrics for song $songId: ${e.message}", e)
                 lrcLines = emptyList()
                 currentLyricIndex = -1
-                showLyricPlaceholder()
+                populateFullscreenLyrics()
+                updateCurrentLyricLine(PlaybackStateManager.currentPositionMs.value)
             }
         }
     }
 
     /**
-     * 无歌词时的占位行。
+     * 推进「当前歌词行」并外推给 PlaybackStateManager，**不渲染**。
+     *
+     * 主界面已不再有歌词列表（视觉主体是背景封面 + 居中大圆盘），但当前行仍是公开数据：
+     * 锁屏歌词页 [LyricLockScreenActivity]、桌面组件、通知栏都从
+     * [PlaybackStateManager.updateCurrentLyricLine] 取它。因此保留纯计算部分，
+     * 渲染与滚动部分随歌词列表一起删除。
      */
-    private fun showLyricPlaceholder() {
-        val container = lyricListContainer ?: return
-        container.removeAllViews()
-        lyricTextViews.clear()
-        val tv = buildLyricTextView().apply {
-            text = getString(R.string.no_lyric)
-            setTextColor(Color.parseColor("#64748B"))
-        }
-        container.addView(tv)
-    }
-
-    /**
-     * 将 lrcLines 全部渲染为 TextView 加入容器。
-     */
-    private fun populateLyricLines() {
-        val container = lyricListContainer ?: return
-        container.removeAllViews()
-        lyricTextViews.clear()
+    private fun updateCurrentLyricLine(posMs: Long) {
         if (lrcLines.isEmpty()) {
-            showLyricPlaceholder()
+            if (currentLyricIndex != -1) {
+                currentLyricIndex = -1
+                PlaybackStateManager.updateCurrentLyricLine(null)
+            }
             return
         }
-        for (line in lrcLines) {
-            val tv = buildLyricTextView().apply {
-                text = line.text
-                setTextColor(MusicTheme.current(applicationContext).subtext)
-            }
-            container.addView(tv)
-            lyricTextViews.add(tv)
-        }
-        // 动态创建的行补一次点阵字体+缩放（同 PlaylistDetailActivity）
-        KeydroidxFontManager.applyToViewTree(container)
-    }
-
-    /**
-     * 构造单个歌词 TextView（居中、单行、点阵风）。
-     */
-    private fun buildLyricTextView(): TextView {
-        return TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dp(3)
-                bottomMargin = dp(3)
-            }
-            gravity = Gravity.CENTER
-            // 设计字号 9sp（caption 档位），实际大小 = 设计值 × 桌面缩放基准
-            KeydroidxFontManager.setTextSize(this, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
-            setTextColor(MusicTheme.current(applicationContext).subtext)
-            setLineSpacing(dp(2).toFloat(), 1f)
-            includeFontPadding = false
-            setSingleLine(false)
-            maxLines = 2
-        }
-    }
-
-    /**
-     * 根据当前播放进度高亮对应歌词行，并滚动使其居中。
-     */
-    private fun updateLyricHighlight(posMs: Long) {
-        if (lrcLines.isEmpty() || lyricTextViews.isEmpty()) return
-
         // 二分查找当前行：最后一行 timeMs <= posMs
         var idx = -1
         for (i in lrcLines.indices) {
             if (lrcLines[i].timeMs <= posMs) idx = i else break
         }
-        if (idx == currentLyricIndex) return   // 未变化则不重绘
+        if (idx == currentLyricIndex) return   // 未变化则不重发
         currentLyricIndex = idx
+        PlaybackStateManager.updateCurrentLyricLine(lrcLines.getOrNull(idx)?.text)
+    }
 
-        val accent = MusicTheme.BRAND_ACCENT
-        val normal = MusicTheme.current(applicationContext).subtext
-        val customTf = KeydroidxFontManager.getTypeface(this)
+    // ─────────────────────────────────────────────────────────
+    //  封面（整屏模糊底 + 盘心圆形封面）
+    // ─────────────────────────────────────────────────────────
 
-        // 推送当前歌词行到 PlaybackStateManager（供 Provider/Widget 读取）
-        val currentLineText = if (idx in lrcLines.indices) lrcLines[idx].text else null
-        PlaybackStateManager.updateCurrentLyricLine(currentLineText)
-
-        lyricTextViews.forEachIndexed { i, tv ->
-            if (i == idx) {
-                tv.setTextColor(accent)
-                tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
-                KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
-            } else {
-                tv.setTextColor(normal)
-                tv.setTypeface(customTf, android.graphics.Typeface.NORMAL)
-                KeydroidxFontManager.setTextSize(tv, android.util.TypedValue.COMPLEX_UNIT_SP, 9f)
-            }
+    /**
+     * 取当前歌曲的封面地址。
+     *
+     * 播放队列里的 `album.picUrl` 经常是空的——歌单详情页构造队列时写死了
+     * `AlbumItem(picUrl = null)`，从云端歌单/榜单一路播下来封面全丢。所以补一层兜底：
+     * 地址缺失且是云端歌曲（id > 0）时按 id 拉一次歌曲详情取 `al.picUrl`。
+     * 本地歌曲（id < 0）没有云端封面，直接返回 null，由调用方回落主题深色底。
+     *
+     * 与锁屏歌词页里的同名逻辑一致：各自维护是为了不让播放页反向依赖锁屏页，
+     * 若出现第三处调用再抽到 util。
+     */
+    private suspend fun resolveCoverUrl(song: SongItem?): String? {
+        song ?: return null
+        song.album?.picUrl?.takeIf { it.isNotBlank() }?.let { return it }
+        if (song.id <= 0) return null
+        return try {
+            RetrofitClient.api.getSongDetail("""[{"id":${song.id}}]""")
+                .songs.firstOrNull()?.album?.picUrl?.takeIf { it.isNotBlank() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "resolve cover url failed songId=${song.id}: ${e.message}")
+            null
         }
+    }
 
-        // 滚动使当前行尽量居中
-        if (idx in lyricTextViews.indices) {
-            val sv = scrollLyric ?: return
-            val target = lyricTextViews[idx]
-            sv.post {
-                // 必须用 target.top（getTop()，含 marginTop/容器 paddingTop，
-                // 是布局后真实位置），不能用累加 getHeight() 的方式——
-                // getHeight() 不含 margin，每行漏算 topMargin+bottomMargin，
-                // 末尾行会偏小，导致滚动定位在中间而非末尾（手动滚到底会被下一行 tick 拉回中间）。
-                val targetTop = target.top
-                val targetCenter = targetTop + target.height / 2
-                val containerH = lyricListContainer?.height ?: 0
-                val maxScroll = (containerH - sv.height).coerceAtLeast(0)
-                val scrollTarget = (targetCenter - sv.height / 2)
-                    .coerceIn(0, maxScroll)
-                Log.d(TAG, "[lyric-scroll-plain] idx=$idx top=$targetTop center=$targetCenter svH=${sv.height} cH=$containerH dest=$scrollTarget before=${sv.scrollY}")
-                sv.smoothScrollTo(0, scrollTarget)
-                sv.postDelayed({
-                    Log.d(TAG, "[lyric-scroll-plain] after idx=$idx scrollY=${scrollLyric?.scrollY}")
-                }, 600)
-            }
+    /**
+     * 按当前歌曲换封面：整屏背景 + 盘心圆形封面。
+     *
+     * 无封面 / 加载失败时把两张图都清掉：背景露出主题深色底（叠上遮罩即纯色），
+     * 盘心回到红色中心盖 + ♪ 图标，绝不残留上一首的封面。
+     */
+    private fun loadCover(song: SongItem?) {
+        coverJob?.cancel()
+        coverJob = lifecycleScope.launch {
+            val url = resolveCoverUrl(song)
+            // 切歌去重：同一首反复回调不重复下载/解码
+            if (url == loadedCoverUrl) return@launch
+            loadedCoverUrl = url
+            ivPlayerBg?.setImageDrawable(null)
+            ivLyricBg?.setImageDrawable(null)
+            clearVinylCover()
+            if (url == null) return@launch
+
+            val bitmap = CoverLoader.load(url) ?: return@launch
+            if (isDestroyed || isFinishing) return@launch
+            // 切歌竞态：只接受仍属于当前 URL 的结果
+            if (loadedCoverUrl != url) return@launch
+
+            val blurred = toBlurredBackground(bitmap)
+            ivPlayerBg?.setImageBitmap(blurred)
+            // 全屏歌词层沿用同一张虚化封面，保证两页视觉连贯（共享 Bitmap，无额外内存）
+            ivLyricBg?.setImageBitmap(blurred)
+            ivVinylCover?.setImageDrawable(toCircularCover(bitmap))
+            ivPlayPause?.visibility = View.GONE
         }
+    }
+
+    /** 盘心恢复「红色中心盖 + ♪ 兜底图标」。 */
+    private fun clearVinylCover() {
+        ivVinylCover?.setImageDrawable(null)
+        ivPlayPause?.visibility = View.VISIBLE
+    }
+
+    /**
+     * 背景「模糊」：先把封面降到极低分辨率，再交给 ImageView 双线性放大。
+     *
+     * 为什么不用 RenderScript / StackBlur：minSdk=19 而 RenderScript 在 API 31 已废弃、
+     * 部分 ROM 不带运行时；纯算法模糊又要额外几十毫秒 CPU 与一份大 Bitmap。
+     * 降采样后由 ImageView 双线性插值放大本质上就是一次低成本低通滤波，
+     * 配上遮罩后的观感与网易云的模糊封面底一致。
+     */
+    private fun toBlurredBackground(bitmap: Bitmap): Bitmap {
+        val w = bitmap.width
+        val h = bitmap.height
+        if (w <= 0 || h <= 0) return bitmap
+        val targetW: Int
+        val targetH: Int
+        if (w >= h) {
+            targetW = BG_BLUR_SIZE
+            targetH = (h * BG_BLUR_SIZE / w).coerceAtLeast(1)
+        } else {
+            targetH = BG_BLUR_SIZE
+            targetW = (w * BG_BLUR_SIZE / h).coerceAtLeast(1)
+        }
+        return try {
+            Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+        } catch (e: Exception) {
+            Log.w(TAG, "blur background failed: ${e.message}")
+            bitmap
+        }
+    }
+
+    /**
+     * 盘心圆形封面。
+     *
+     * 必须先裁出位图中心正方形再套圆形：[RoundedBitmapDrawableFactory] 自己不做
+     * centerCrop，直接喂非正方形位图会被拉成椭圆。
+     */
+    private fun toCircularCover(bitmap: Bitmap): android.graphics.drawable.Drawable {
+        val side = minOf(bitmap.width, bitmap.height)
+        val left = (bitmap.width - side) / 2
+        val top = (bitmap.height - side) / 2
+        val square = Bitmap.createBitmap(bitmap, left, top, side, side)
+        return RoundedBitmapDrawableFactory.create(resources, square).apply {
+            isCircular = true
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  圆盘尺寸自适应
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * 圆盘尺寸自适应。
+     *
+     * 生态机型跨度大（240×320 与 320×480 都在跑），写死尺寸要么小屏溢出、要么大屏浪费。
+     * 圆盘所在的中间区是 weight=1，测量完成后按「可用宽高较小值 × 比例」定尺寸，
+     * 保证两种屏上圆盘都尽量大且完整可见；盘心封面同步按比例缩放。
+     *
+     * [vinylSizeApplied] 是刹车：改子视图尺寸会再次触发本回调，不刹车会无限循环。
+     */
+    private fun setupVinylSize() {
+        val container = layoutUpper ?: return
+        container.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+            if (vinylSizeApplied) return@addOnLayoutChangeListener
+            val w = right - left
+            val h = bottom - top
+            if (w <= 0 || h <= 0) return@addOnLayoutChangeListener
+            val density = resources.displayMetrics.density
+            val size = (minOf(w, h) * VINYL_RATIO).toInt()
+                .coerceIn((MIN_VINYL_DP * density).toInt(), (MAX_VINYL_DP * density).toInt())
+            applySquareSize(vinylDisk, size)
+            applySquareSize(vinylCenter, (size * VINYL_CENTER_RATIO).toInt())
+            vinylSizeApplied = true
+            Log.d(TAG, "vinyl size = $size px (available ${w}x$h)")
+        }
+    }
+
+    private fun applySquareSize(view: View?, size: Int) {
+        view ?: return
+        val lp = view.layoutParams ?: return
+        if (lp.width == size && lp.height == size) return
+        lp.width = size
+        lp.height = size
+        view.layoutParams = lp
     }
 
     private fun dp(value: Int): Int {
@@ -1313,6 +1378,7 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         mainHandler.removeCallbacks(demoRunnable)
         vinylRotateAnim?.cancel()
         commentCountJob?.cancel()
+        coverJob?.cancel()
     }
 
     /**
@@ -1334,6 +1400,21 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
 
         /** 收藏态红心色（与 PlaylistDetailActivity 的红心保持一致） */
         private const val COLOR_FAV_RED = 0xFFEF4444.toInt()
+
+        /** 圆盘占「可用宽高较小值」的比例 */
+        private const val VINYL_RATIO = 0.9f
+
+        /** 圆盘尺寸下限：240×320 小屏的下限，再小撑不起画面主体 */
+        private const val MIN_VINYL_DP = 96f
+
+        /** 圆盘尺寸上限：再大在 320×480 上会把进度条与操作栏挤出屏幕 */
+        private const val MAX_VINYL_DP = 220f
+
+        /** 盘心封面（红盖）占圆盘直径的比例：对齐网易云「封面大、黑胶环窄」的观感 */
+        private const val VINYL_CENTER_RATIO = 0.52f
+
+        /** 背景封面降采样后的最长边（px）：越小越"糊"，64 已足够平滑且几乎不占内存 */
+        private const val BG_BLUR_SIZE = 64
 
         /**
          * 统一入口：复用任务栈中已有的播放页，并清空其上方压着的页面。
