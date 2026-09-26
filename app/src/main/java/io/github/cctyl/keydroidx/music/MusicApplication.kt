@@ -7,6 +7,7 @@ import io.github.cctyl.keydroidx.music.library.FavoriteStore
 import io.github.cctyl.keydroidx.music.library.LibraryManager
 import io.github.cctyl.keydroidx.music.library.SearchHistoryManager
 import io.github.cctyl.keydroidx.music.network.RetrofitClient
+import io.github.cctyl.keydroidx.music.player.LockScreenLyricTrigger
 import io.github.cctyl.keydroidx.music.player.PlaybackStateManager
 import io.github.cctyl.keydroidx.music.warmup.AppWarmup
 import io.github.cctyl.nokia.common.feedback.KeydroidxFeedback
@@ -43,6 +44,8 @@ class MusicApplication : Application() {
         // 把持久化的 cookie 装载进运行时 RetrofitClient
         RetrofitClient.init(this)
         AppWarmup.startWarmup(this)
+        // 锁屏歌词：屏幕点亮时若正在播放且处于锁屏态，自动把歌词页顶到锁屏之上
+        LockScreenLyricTrigger.register(this)
 
         // 初始化意见反馈 + 安装统计组件（共用同一份配置）
         // 只传一个根地址 baseUrl，SDK 内部自动拼接 /upload、/install 路径

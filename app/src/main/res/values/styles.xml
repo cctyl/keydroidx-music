@@ -10,4 +10,24 @@
         <item name="android:windowDisablePreview">true</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
+
+    <!--
+        锁屏歌词单行样式：
+        字号/颜色由 LyricLockScreenActivity 按「当前行 / 邻近行 / 远端行」三态在代码里覆盖，
+        这里只固化影响行高与排版的属性，避免每次刷新重建 LayoutParams 造成跳动。
+    -->
+    <style name="LockLyricLine">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:textSize">@dimen/keydroidx_font_body</item>
+        <item name="android:textColor">@color/music_subtext</item>
+    </style>
 </resources>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    锁屏歌词页 (LyricLockScreenActivity)
+
+    三层结构（自下而上）：
+      ① 封面层  歌曲封面铺满整屏（centerCrop），并延伸到系统状态栏后方 → 沉浸式壁纸
+      ② 遮罩层  自上而下加深的黑色渐变，保证封面之上的文字始终可读
+      ③ 内容层  大时钟 + 日期 / 5 行歌词窗口 / 歌曲信息 / 进度 / 退出提示
+
+    与基类骨架的关系：
+      本页不要「标题 + 信号电量」的自定义顶栏，也不要三段式软键栏，两者在代码里置 GONE；
+      顶部改用系统原生状态栏（透明），内容层靠 paddingTop 避开它，封面则照常铺到它后方。
+
+    设计约束：
+      · 颜色一律走 @color/music_*（由 MusicTheme 在运行期重映射为当前生态主题色），无裸写色值；
+      · 字号走生态 @dimen/keydroidx_font_*；大时钟/日期属于本页主视觉，在代码里用
+        KeydroidxFontManager 按设计字号放大（锁屏是全屏页，不受列表页字号阶梯约束）；
+      · 歌词区用固定 5 个 TextView（slot 0..4 对应「当前行-2 .. 当前行+2」），越界槽位置空占位，
+        保证高亮行永远垂直居中、切行不跳动。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_lock_frame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/music_dark_bg">
+
+    <!-- ① 封面背景：锁屏的主视觉，铺满整屏（含状态栏后方） -->
+    <ImageView
+        android:id="@+id/iv_lock_cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
+
+    <!-- ② 压暗遮罩 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_lock_cover_scrim" />
+
+    <!-- ③ 内容层 -->
+    <LinearLayout
+        android:id="@+id/layout_lock_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:orientation="vertical"
+        android:paddingLeft="10dp"
+        android:paddingTop="6dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="6dp">
+
+        <!-- 大时钟（字号在代码里放大到锁屏主视觉规格） -->
+        <TextView
+            android:id="@+id/tv_lock_clock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="@dimen/keydroidx_font_display" />
+
+        <TextView
+            android:id="@+id/tv_lock_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/music_subtext"
+            android:textSize="@dimen/keydroidx_font_caption" />
+
+        <View
+            android:id="@+id/lock_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="5dp"
+            android:background="@color/music_divider" />
+
+        <!-- 歌词区：5 行定长滚动窗口，吃掉剩余高度 -->
+        <LinearLayout
+            android:id="@+id/layout_lock_lyric"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/lock_lyric_0"
+                style="@style/LockLyricLine" />
+
+            <TextView
+                android:id="@+id/lock_lyric_1"
+                style="@style/LockLyricLine" />
+
+            <TextView
+                android:id="@+id/lock_lyric_2"
+                style="@style/LockLyricLine" />
+
+            <TextView
+                android:id="@+id/lock_lyric_3"
+                style="@style/LockLyricLine" />
+
+            <TextView
+                android:id="@+id/lock_lyric_4"
+                style="@style/LockLyricLine" />
+        </LinearLayout>
+
+        <!-- 歌曲信息 -->
+        <TextView
+            android:id="@+id/tv_lock_song_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/music_item_normal_text"
+            android:textSize="@dimen/keydroidx_font_body" />
+
+        <TextView
+            android:id="@+id/tv_lock_song_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/music_subtext"
+            android:textSize="@dimen/keydroidx_font_caption" />
+
+        <!-- 进度条 + 时间 -->
+        <FrameLayout
+            android:id="@+id/lock_progress_track"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/bg_progress_bar">
+
+            <View
+                android:id="@+id/lock_progress_fill"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_progress_fill" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_lock_current_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:textColor="@color/music_subtext"
+                android:textSize="@dimen/keydroidx_font_caption" />
+
+            <TextView
+                android:id="@+id/tv_lock_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textColor="@color/music_subtext"
+                android:textSize="@dimen/keydroidx_font_caption" />
+
+            <TextView
+                android:id="@+id/tv_lock_total_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:textColor="@color/music_subtext"
+                android:textSize="@dimen/keydroidx_font_caption" />
+        </LinearLayout>
+
+        <!-- 退出提示：底部软键栏已取消，这里承担「怎么退出」的唯一说明 -->
+        <TextView
+            android:id="@+id/tv_lock_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/music_subtext"
+            android:textSize="@dimen/keydroidx_font_caption" />
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    锁屏歌词页的封面压暗遮罩。
+
+    封面是整屏背景，亮度不可控（可能是白底专辑图），歌词/时钟压在上面极易糊掉。
+    这里用「自上而下逐渐加深」的黑色渐变：
+      · 顶部（大时钟）最深，避免细笔画被亮背景吃掉；
+      · 中部（歌词）稍浅，保留一些封面观感；
+      · 底部（歌名/进度/提示）最深，信息密度最高。
+    透明度取 70%~90%，实测足以覆盖高亮封面，又不至于把封面压成纯色。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <gradient
+        android:angle="270"
+        android:centerColor="#B3000000"
+        android:endColor="#E6000000"
+        android:startColor="#CC000000"
+        android:type="linear" />
+</shape>

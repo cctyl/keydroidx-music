@@ -13,6 +13,13 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Android 13+ 媒体通知需要通知权限 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        锁屏歌词：Android 10+ 后台启动 Activity 被系统禁止，只能用「全屏意图通知」
+        在锁屏上全屏拉起歌词页，而使用 fullScreenIntent 必须声明本权限（否则通知被降级）。
+        Android 14+ 起非通话/闹钟类应用默认不再自动授予，代码里会用
+        NotificationManager.canUseFullScreenIntent() 判断并按降级路径处理。
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- ���� Android 11+ �������ɼ��� -->
     <queries tools:node="merge" />
@@ -74,6 +81,20 @@
             android:name="io.github.cctyl.keydroidx.music.ui.LocalMusicActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
+
+        <!--
+            锁屏歌词页：沉浸式全屏歌词，叠加显示在系统锁屏之上。
+            系统锁屏（Keyguard）无法自绘，故由音乐 App 自己提供全屏页：
+              · showWhenLocked / turnScreenOn（API 27+ 的 manifest 等价写法，方法侧另有版本分支）
+              · singleTop：重复进入（播放页锁屏键 / 选项菜单）复用同一实例
+        -->
+        <activity
+            android:name="io.github.cctyl.keydroidx.music.ui.LyricLockScreenActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
 
         <!-- 下载管理页 -->
         <activity

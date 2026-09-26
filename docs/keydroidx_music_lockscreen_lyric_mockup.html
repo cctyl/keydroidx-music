@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<!--
+  锁屏歌词页 UI 设计原型（评审阶段初稿，仅作设计留档）。
+
+  注意：本稿与最终实现已有差异，交互与样式以代码为准
+  （app/src/main/java/io/github/cctyl/keydroidx/music/ui/LyricLockScreenActivity.kt）：
+    · 最终版取消了底部软键栏与「封面模式」（# 键切换），封面直接整屏做背景；
+    · 顶部不再自绘标题/电量栏，改用系统原生状态栏并做透明沉浸；
+    · 时钟与日期字号已放大；方向键上下不再用于浏览歌词。
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KeydroidX Music - 锁屏歌词 UI 设计原型</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --theme-primary: #1a3a6b;
+      --theme-dark: #0d1b3e;
+      --theme-accent: #38bdf8;
+      --theme-focus: #0055aa;
+      --theme-text: #ffffff;
+      --theme-subtext: #b0b0b0;
+      --theme-cardbg: #141824;
+      --theme-bodybg: #090c13;
+      --theme-border: #233454;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: #080b12;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 22px 16px 60px 16px;
+    }
+
+    header.preview-header {
+      max-width: 1000px;
+      width: 100%;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    header.preview-header h1 {
+      font-size: 23px;
+      color: #60a5fa;
+      margin-bottom: 8px;
+      letter-spacing: .5px;
+    }
+    header.preview-header p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+    header.preview-header .tag {
+      display: inline-block;
+      margin: 0 3px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #7dd3fc;
+    }
+
+    /* ================= 机身 ================= */
+    .devices-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 26px;
+      justify-content: center;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 26px;
+    }
+
+    .device-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .device-caption {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 280px;
+    }
+    .device-caption b {
+      color: #7dd3fc;
+      font-size: 13px;
+    }
+    .device-caption .kbd {
+      display: inline-block;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 10px;
+      color: #38bdf8;
+      font-family: monospace;
+    }
+
+    .nokia-phone-frame {
+      width: 288px;
+      background: linear-gradient(145deg, #2b3240, #181d28);
+      border: 3px solid #475569;
+      border-radius: 26px;
+      padding: 14px 13px 16px 13px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, .7), inset 0 2px 4px rgba(255, 255, 255, .14);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .nokia-phone-frame.interactive {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, .35), 0 20px 45px rgba(0, 0, 0, .7);
+    }
+
+    .phone-speaker {
+      width: 46px;
+      height: 4px;
+      background: #0f172a;
+      border-radius: 3px;
+      margin-bottom: 9px;
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    /* 240x320 基准屏幕 -> 缩放为 254x338 */
+    .nokia-screen {
+      width: 254px;
+      height: 338px;
+      border: 3px solid #000;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, .85);
+      font-family: 'DotGothic16', 'Courier New', monospace, sans-serif;
+      background: var(--theme-bodybg);
+    }
+
+    /* 封面氛围光晕（模拟高斯模糊专辑色晕） */
+    .lock-aura {
+      position: absolute;
+      inset: -25%;
+      background: radial-gradient(circle at 50% 26%, var(--theme-accent) 0%, transparent 56%);
+      opacity: .22;
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .lock-body {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 8px 0 8px;
+    }
+    .lock-body.dimmed {
+      opacity: .35;
+      filter: grayscale(.4);
+    }
+
+    /* 顶部状态行 */
+    .lock-topbar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #cbd5e1;
+      opacity: .9;
+      flex-shrink: 0;
+    }
+    .lock-topbar .left,
+    .lock-topbar .right {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .lock-topbar .material-icons {
+      font-size: 11px;
+    }
+    .lock-topbar .lock-tag {
+      color: #7dd3fc;
+      letter-spacing: 1px;
+    }
+
+    /* 时间与日期 */
+    .lock-clock {
+      font-size: 24px;
+      line-height: 1.05;
+      color: #fff;
+      letter-spacing: 2px;
+      margin-top: 8px;
+      text-shadow: 0 0 10px rgba(125, 211, 252, .35);
+      flex-shrink: 0;
+    }
+    .lock-date {
+      font-size: 9px;
+      color: var(--theme-subtext);
+      margin-top: 3px;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    /* 分割点线 */
+    .lock-divider {
+      width: 78%;
+      height: 1px;
+      margin: 7px 0 5px 0;
+      background-image: linear-gradient(90deg, var(--theme-accent) 45%, transparent 45%);
+      background-size: 5px 1px;
+      opacity: .5;
+      flex-shrink: 0;
+    }
+
+    /* ---------- 歌词舞台 ---------- */
+    .lock-lyric-stage {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 7px;
+      padding: 0 2px;
+      overflow: hidden;
+      text-align: center;
+    }
+    .lock-lyric-line {
+      font-size: 10px;
+      line-height: 1.35;
+      color: var(--theme-subtext);
+      opacity: .45;
+      transition: all .35s ease;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .lock-lyric-line.near {
+      opacity: .7;
+      font-size: 11px;
+    }
+    .lock-lyric-line.current {
+      opacity: 1;
+      font-size: 13px;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, .18), transparent);
+      border-left: 2px solid var(--theme-accent);
+      border-right: 2px solid var(--theme-accent);
+      text-shadow: 0 0 7px var(--theme-accent);
+    }
+    .lock-lyric-line.ghost {
+      opacity: .1;
+      font-size: 10px;
+    }
+    .lock-lyric-empty {
+      font-size: 11px;
+      color: var(--theme-subtext);
+      opacity: .7;
+      letter-spacing: 1px;
+    }
+
+    /* ---------- 封面模式 ---------- */
+    .lock-cover-stage {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .lock-vinyl {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2d3748 18%, #111827 24%, #1e293b 42%, #030712 72%);
+      border: 3px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, .65);
+      animation: spin 9s linear infinite;
+      position: relative;
+    }
+    .lock-vinyl.paused {
+      animation-play-state: paused;
+    }
+    .lock-vinyl-cover {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--theme-accent), var(--theme-dark));
+      border: 2px solid rgba(255, 255, 255, .85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .lock-vinyl-cover .material-icons {
+      font-size: 18px;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .lock-single-lyric {
+      font-size: 11px;
+      color: #7dd3fc;
+      text-align: center;
+      max-width: 100%;
+      line-height: 1.4;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, .35);
+      border: 1px dashed rgba(125, 211, 252, .5);
+    }
+
+    /* ---------- 歌曲信息与进度 ---------- */
+    .lock-songinfo {
+      width: 100%;
+      text-align: center;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .lock-song-title {
+      font-size: 12px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lock-song-title .material-icons {
+      font-size: 11px;
+      vertical-align: -1px;
+      color: var(--theme-accent);
+    }
+    .lock-song-artist {
+      font-size: 9px;
+      color: var(--theme-subtext);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lock-progress {
+      width: 100%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .lock-progress-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, .14);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .lock-progress-fill {
+      height: 100%;
+      background: var(--theme-accent);
+      box-shadow: 0 0 6px var(--theme-accent);
+      transition: width .8s linear;
+    }
+    .lock-progress-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--theme-subtext);
+      margin-top: 2px;
+    }
+
+    .lock-hint {
+      width: 100%;
+      text-align: center;
+      font-size: 9px;
+      color: var(--theme-subtext);
+      opacity: .8;
+      margin: 6px 0 4px 0;
+      flex-shrink: 0;
+      letter-spacing: .5px;
+    }
+    .lock-hint .material-icons {
+      font-size: 10px;
+      vertical-align: -1px;
+      color: #7dd3fc;
+    }
+
+    /* ---------- 软键栏（三段等宽） ---------- */
+    .nokia-softkeybar {
+      height: 25px;
+      background: linear-gradient(to bottom, var(--theme-primary), var(--theme-dark));
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      font-size: 10px;
+      color: var(--theme-text);
+      flex-shrink: 0;
+      z-index: 6;
+      position: relative;
+    }
+    .softkey-btn {
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .softkey-btn.left { text-align: left; }
+    .softkey-btn.center { text-align: center; color: #fde047; }
+    .softkey-btn.right { text-align: right; }
+    .softkey-btn.hidden { visibility: hidden; }
+
+    /* ---------- 选项弹窗 ---------- */
+    .nokia-dialog-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .68);
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 20;
+    }
+    .nokia-dialog-overlay.show {
+      display: flex;
+    }
+    .nokia-dialog-card {
+      background: var(--theme-cardbg);
+      border-top: 2px solid var(--theme-accent);
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+      box-shadow: 0 -8px 20px rgba(0, 0, 0, .85);
+    }
+    .dialog-header {
+      height: 23px;
+      background: linear-gradient(to bottom, var(--theme-primary), var(--theme-dark));
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px;
+      font-size: 11px;
+      color: #fff;
+    }
+    .dialog-header .material-icons {
+      font-size: 12px;
+    }
+    .dialog-body {
+      padding: 4px 0;
+    }
+    .dialog-option-item {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+      font-size: 11px;
+      color: #fff;
+    }
+    .dialog-option-item .idx {
+      width: 9px;
+      font-size: 9px;
+      color: var(--theme-subtext);
+    }
+    .dialog-option-item .material-icons {
+      font-size: 13px;
+      color: var(--theme-accent);
+    }
+    .dialog-option-item.focused {
+      background: var(--theme-focus);
+    }
+    .dialog-option-item.focused .idx,
+    .dialog-option-item.focused .material-icons {
+      color: #fff;
+    }
+    .dialog-option-item .val {
+      margin-left: auto;
+      font-size: 9px;
+      color: #7dd3fc;
+    }
+    .dialog-footer {
+      height: 21px;
+      background: var(--theme-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 10px;
+      color: #cbd5e1;
+    }
+
+    /* Toast */
+    .status-toast {
+      position: absolute;
+      top: 40px;
+      left: 12px;
+      right: 12px;
+      background: rgba(9, 12, 19, .95);
+      border: 1px solid var(--theme-accent);
+      color: #fff;
+      font-size: 10px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      text-align: center;
+      z-index: 40;
+      display: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .6);
+    }
+
+    /* ================= 说明面板 ================= */
+    .docs-panel {
+      width: 100%;
+      max-width: 1000px;
+      background: #131a26;
+      border: 1px solid #2a3646;
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+    .docs-panel h2 {
+      font-size: 16px;
+      color: #38bdf8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .docs-panel h2 .material-icons { font-size: 18px; }
+    .docs-panel h3 {
+      font-size: 13px;
+      color: #f1f5f9;
+      margin: 16px 0 8px 0;
+      padding-left: 8px;
+      border-left: 3px solid #38bdf8;
+    }
+    .docs-panel p, .docs-panel li {
+      font-size: 12.5px;
+      color: #cbd5e1;
+      line-height: 1.75;
+    }
+    .docs-panel ul { padding-left: 20px; }
+    .docs-panel code {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 0 5px;
+      font-size: 11.5px;
+      color: #7dd3fc;
+    }
+    .docs-panel b.hl { color: #fde047; }
+
+    .theme-selector-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 4px 0;
+    }
+    .theme-chip {
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 11px;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, .25);
+      color: #fff;
+      transition: transform .1s;
+    }
+    .theme-chip:hover { transform: scale(1.06); }
+    .theme-chip.active { outline: 2px solid #38bdf8; outline-offset: 1px; }
+
+    table.keymap {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    table.keymap th, table.keymap td {
+      border: 1px solid #2a3646;
+      padding: 6px 9px;
+      text-align: left;
+      color: #cbd5e1;
+    }
+    table.keymap th {
+      background: #0f172a;
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+    table.keymap td .kk {
+      display: inline-block;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 0 6px;
+      font-family: monospace;
+      color: #38bdf8;
+      font-size: 11px;
+    }
+    table.keymap tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+
+    .plan-card {
+      border: 1px solid #2a3646;
+      border-radius: 8px;
+      padding: 11px 14px;
+      margin: 9px 0;
+      background: #0f172a;
+    }
+    .plan-card.primary { border-color: #38bdf8; background: rgba(56,189,248,.07); }
+    .plan-card .plan-title {
+      font-size: 13px;
+      color: #f1f5f9;
+      margin-bottom: 5px;
+    }
+    .plan-card.primary .plan-title { color: #7dd3fc; }
+    .plan-card .plan-title .badge {
+      font-size: 10px;
+      background: #38bdf8;
+      color: #04121f;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      vertical-align: 1px;
+    }
+    .plan-card p { font-size: 12px; }
+
+    .open-question {
+      background: rgba(253, 224, 71, .08);
+      border: 1px dashed rgba(253, 224, 71, .5);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 10px;
+    }
+    .open-question p { color: #fde047; }
+    .open-question ol { padding-left: 20px; }
+    .open-question li { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+  <header class="preview-header">
+    <h1>KeydroidX Music（原键音乐）· 锁屏歌词 UI 设计原型</h1>
+    <p>
+      播放中一键进入全屏歌词锁屏页，不用解锁即可看歌词 / 切歌 / 调音量
+      <br />
+      <span class="tag">240×320 基准</span>
+      <span class="tag">KeydroidxBaseActivity 骨架</span>
+      <span class="tag">点阵字体 · 生态主题热跟随</span>
+      <span class="tag">物理按键驱动</span>
+    </p>
+  </header>
+
+  <div class="devices-row">
+
+    <!-- ========== ① 沉浸歌词模式（可交互） ========== -->
+    <div class="device-col">
+      <div class="nokia-phone-frame interactive">
+        <div class="phone-speaker"></div>
+        <div class="nokia-screen" id="screen1">
+          <div class="lock-aura"></div>
+          <div class="status-toast" id="toast1">提示</div>
+          <div class="lock-body" id="body1"></div>
+          <div class="nokia-softkeybar" id="soft1"></div>
+          <div class="nokia-dialog-overlay" id="dialog1">
+            <div class="nokia-dialog-card">
+              <div class="dialog-header">
+                <span class="material-icons">tune</span>
+                <span>锁屏歌词选项</span>
+              </div>
+              <div class="dialog-body" id="dialogList1"></div>
+              <div class="dialog-footer">
+                <span>[OK] 确定</span>
+                <span>[返回] 关闭</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="device-caption">
+        <b>① 沉浸歌词模式（默认）</b><br />
+        大时钟 + 滚动歌词 + 进度，右软键退出<br />
+        <span class="kbd">↑↓</span> 手动浏览歌词 ·
+        <span class="kbd">←→</span> 切歌 ·
+        <span class="kbd">OK</span> 播放暂停<br />
+        <span class="kbd">#</span> 切换封面模式 ·
+        <span class="kbd">左软键</span> 选项
+      </div>
+    </div>
+
+    <!-- ========== ② 封面模式 ========== -->
+    <div class="device-col">
+      <div class="nokia-phone-frame">
+        <div class="phone-speaker"></div>
+        <div class="nokia-screen" id="screen2">
+          <div class="lock-aura"></div>
+          <div class="lock-body" id="body2"></div>
+          <div class="nokia-softkeybar" id="soft2"></div>
+        </div>
+      </div>
+      <div class="device-caption">
+        <b>② 封面模式（按 <span class="kbd">#</span>）</b><br />
+        黑胶封面旋转 + 单行歌词，沉浸感更强<br />
+        播放状态实时联动，左右键切歌不断锁
+      </div>
+    </div>
+
+    <!-- ========== ③ 选项菜单 ========== -->
+    <div class="device-col">
+      <div class="nokia-phone-frame">
+        <div class="phone-speaker"></div>
+        <div class="nokia-screen" id="screen3">
+          <div class="lock-aura"></div>
+          <div class="lock-body dimmed" id="body3"></div>
+          <div class="nokia-softkeybar" id="soft3"></div>
+          <div class="nokia-dialog-overlay show" style="position:absolute;">
+            <div class="nokia-dialog-card">
+              <div class="dialog-header">
+                <span class="material-icons">tune</span>
+                <span>锁屏歌词选项</span>
+              </div>
+              <div class="dialog-body" id="dialogList3"></div>
+              <div class="dialog-footer">
+                <span>[OK] 确定</span>
+                <span>[返回] 关闭</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="device-caption">
+        <b>③ 左软键 · 选项菜单</b><br />
+        歌词偏移微调、字号、锁屏样式、退出锁屏<br />
+        ① 号机的左软键可实时唤起同一弹窗
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= 设计说明 ================= -->
+  <div class="docs-panel">
+    <h2><span class="material-icons">palette</span> 生态主题热跟随（与 Launcher 实时同步）</h2>
+    <p>全部配色取自 <code>KeydroidxTheme.ThemeDef</code>，无任何硬编码色值。点击切换可同步预览三台机器：</p>
+    <div class="theme-selector-bar" id="themeBar"></div>
+
+    <h3><span class="material-icons" style="font-size:15px;vertical-align:-2px;">nightlight</span> 设计定位：为什么「锁屏歌词」要由音乐 App 自己做？</h3>
+    <ul>
+      <li>生态中 Launcher 的「锁屏」只是 <code>DevicePolicyManager.lockNow()</code> 调起的 <b class="hl">系统 Keyguard</b>，<b>无法自绘</b>界面，因此歌词锁屏必须由音乐 App 提供一个全屏页叠加在系统锁屏之上。</li>
+      <li>实现方式：<code>LyricLockScreenActivity : KeydroidxBaseActivity</code>，开启 <code>setShowWhenLocked(true)</code> + <code>setTurnScreenOn(true)</code>，全屏沉浸、复用生态顶栏/软键/点阵字体与主题。</li>
+      <li>数据零成本：歌词行直接取 <code>PlaybackStateManager.getCurrentLyricLineSync()</code>（<code>LrcParser</code> 解析），桌面侧也已有 <code>content://io.github.cctyl.keydroidx.music.playback/state</code> 的 <code>lyric_text</code> 列可复用。</li>
+    </ul>
+
+    <h3><span class="material-icons" style="font-size:15px;vertical-align:-2px;">tune</span> 按键映射表（锁屏歌词页）</h3>
+    <table class="keymap">
+      <thead>
+        <tr><th style="width:150px;">物理按键</th><th>语义动作（KeydroidxKeyAction）</th><th>行为</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="kk">左软键</span></td><td><code>SOFT_LEFT</code></td><td>唤起 <code>KeydroidxOptionsDialog</code> 锁屏歌词选项</td></tr>
+        <tr><td><span class="kk">中键 / OK</span></td><td><code>SELECT</code></td><td>播放 / 暂停（封面同步旋转或静止）</td></tr>
+        <tr><td><span class="kk">右软键</span></td><td><code>SOFT_RIGHT</code></td><td>退出歌词锁屏，回到播放详情页（后台持续播放）</td></tr>
+        <tr><td><span class="kk">← / →</span></td><td><code>LEFT</code> / <code>RIGHT</code></td><td>上一曲 / 下一曲，歌词与封面同步刷新</td></tr>
+        <tr><td><span class="kk">↑ / ↓</span></td><td><code>UP</code> / <code>DOWN</code></td><td>手动上下浏览歌词（暂时脱离自动跟随，3 秒后回正）</td></tr>
+        <tr><td><span class="kk">#</span></td><td>数字键</td><td>切换锁屏样式：沉浸歌词 ↔ 封面模式</td></tr>
+        <tr><td><span class="kk">*</span></td><td>数字键</td><td>快捷退出歌词锁屏（与右软键等价）</td></tr>
+        <tr><td><span class="kk">锁屏键 / 挂机键</span></td><td><code>LOCK_SCREEN</code></td><td>进入 / 退出歌词锁屏（复用生态已有语义动作常量）</td></tr>
+      </tbody>
+    </table>
+
+    <h3><span class="material-icons" style="font-size:15px;vertical-align:-2px;">route</span> 三种落地路径（建议 A）</h3>
+    <div class="plan-card primary">
+      <div class="plan-title"><span class="material-icons" style="font-size:14px;vertical-align:-2px;">check_circle</span> 方案 A · 音乐 App 自绘锁屏页<span class="badge">推荐</span></div>
+      <p>新建 <code>ui/LyricLockScreenActivity.kt</code>，继承 <code>KeydroidxBaseActivity</code>。沉浸全屏 + 大时钟 + 大字歌词，<code>setShowWhenLocked/setTurnScreenOn</code> 叠加系统锁屏。改动最小、样式最可控、主题字体自动跟随。</p>
+    </div>
+    <div class="plan-card">
+      <div class="plan-title">方案 B · Launcher 侧新增「歌词锁屏」组件 / 页面</div>
+      <p>复用现成数据通道 <code>content://io.github.cctyl.keydroidx.music.playback/state</code>（<code>lyric_text</code> 列已实现）与 <code>KeydroidxMusicSessionReader</code> 三级取数策略。好处是待机屏直出歌词、无需启动音乐进程；代价是要改 Launcher，且仍无法覆盖系统 Keyguard。</p>
+    </div>
+    <div class="plan-card">
+      <div class="plan-title">方案 C · 系统媒体通知承载歌词行</div>
+      <p>借 <code>MediaSession</code> 通知的副标题显示当前歌词行。零新增界面，但受系统通知样式/权限限制（锁屏通知可被关闭），仅适合做兜底，不满足本案诉求。</p>
+    </div>
+
+    <h3><span class="material-icons" style="font-size:15px;vertical-align:-2px;">warning</span> 视觉与规范自查</h3>
+    <ul>
+      <li>字号全部落在 <code>@dimen/keydroidx_font_*</code> 语义区间（大时钟 display 档、歌词 body/title 档、副信息 caption 档），无裸写字号。</li>
+      <li>高亮当前歌词<b>不用 bold</b>（避免 ≤13sp 点阵字加粗像素粘连），改用「加大字号 + 主题色 + 发光 + 左右竖线」表达。</li>
+      <li>软键栏三段等宽，空位用 <code>INVISIBLE</code> 占位（HTML 中用 <code>visibility:hidden</code> 等价模拟），绝不用 <code>GONE</code>。</li>
+      <li>歌词区上下留 2 行「幽灵行」占位，保证高亮行始终垂直居中、切行时不跳动。</li>
+      <li>封面旋转仅在播放态运行，暂停时停在原位（<code>animation-play-state: paused</code>）。</li>
+    </ul>
+
+    <div class="open-question">
+      <p><b>需要你拍板的 4 个点：</b></p>
+      <ol>
+        <li>归属：这套锁屏歌词放 <b>音乐 App</b>（方案 A）还是 <b>Launcher</b>（方案 B）？</li>
+        <li>是否需要「点亮屏幕」——即熄屏时按键自动亮屏并弹出歌词锁屏？</li>
+        <li>是否需要「歌词偏移 ±0.5s」微调（各平台歌词常有偏移，按键机调起来费劲）？</li>
+        <li>锁屏页是否要接管音量键（UP/DOWN 当前设计为浏览歌词，音量改到长按）？</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 主题 ====================
+    const themes = {
+      classic_blue: { primary:'#1a3a6b', dark:'#0d1b3e', accent:'#38bdf8', focus:'#0055aa', text:'#FFFFFF', subtext:'#b0b0b0', cardbg:'#141824', bodybg:'#090c13', label:'经典深蓝' },
+      obsidian_black:{ primary:'#2D2D2D', dark:'#141414', accent:'#a1a1aa', focus:'#383838', text:'#FFFFFF', subtext:'#a0a0a0', cardbg:'#181818', bodybg:'#0c0c0c', label:'曜石纯黑' },
+      cyan_sea:      { primary:'#005A70', dark:'#002A35', accent:'#2dd4bf', focus:'#00838F', text:'#FFFFFF', subtext:'#80DEEA', cardbg:'#0c1d24', bodybg:'#041117', label:'青海浩渺' },
+      emerald_green: { primary:'#1B4D2E', dark:'#0C2616', accent:'#4ade80', focus:'#2E7D32', text:'#FFFFFF', subtext:'#A5D6A7', cardbg:'#112217', bodybg:'#07130b', label:'翡翠幽绿' },
+      wine_purple:   { primary:'#4A154B', dark:'#250826', accent:'#f87171', focus:'#6A1B9A', text:'#FFFFFF', subtext:'#CE93D8', cardbg:'#221124', bodybg:'#120613', label:'典雅酒红' },
+      amber_gold:    { primary:'#5C4300', dark:'#2E2000', accent:'#fbbf24', focus:'#D97706', text:'#FFFFFF', subtext:'#FFE082', cardbg:'#241d0f', bodybg:'#140f06', label:'琥珀暖金' }
+    };
+
+    // ==================== 数据 ====================
+    const songs = [
+      {
+        title: '顺风顺水', artist: '邹念慈 / 泰顺繁星童声合唱团', durationSec: 185,
+        lyrics: [
+          '作词 : 邹念慈', '作曲 : 邹念慈', '编曲 : 徐轶凡',
+          '我在 云层之上 随风而舞', '追着远山日升到日落', '不回头',
+          '我在 山海之间 造一个梦', '向着旷野向着明天走', '不停留',
+          '翻过青山一座座'
+        ]
+      },
+      {
+        title: '唤晚风', artist: 'Night Trigger', durationSec: 252,
+        lyrics: [
+          '晚风轻轻 吹过旧窗台', '把没说完的话 都散开',
+          '谁在灯下 数着夏夜白', '一颗两颗 星子落进怀',
+          '我唤晚风 带我去未来', '别让心事 停在旧站台',
+          '走吧走吧 不必再徘徊'
+        ]
+      },
+      {
+        title: '折柳记', artist: '银临 / 施夏明', durationSec: 228,
+        lyrics: [
+          '折一枝柳 送你过长亭', '此去山高水远 各自珍重',
+          '记得那年 春衫薄少年', '笑说功名不过 一场大梦',
+          '而今秋深 马蹄踏霜重', '回首长安 已隔万重云',
+          '许一场重逢 在来年春风'
+        ]
+      }
+    ];
+
+    const options = [
+      { icon: 'compare_arrows', title: '歌词偏移 -0.5s', val: '当前 0.0s' },
+      { icon: 'compare_arrows', title: '歌词偏移 +0.5s', val: '' },
+      { icon: 'format_size', title: '歌词字号', val: '中' },
+      { icon: 'image', title: '锁屏样式', val: '沉浸歌词' },
+      { icon: 'screen_lock_portrait', title: '显示大时钟', val: '开' },
+      { icon: 'exit_to_app', title: '退出歌词锁屏', val: '' }
+    ];
+
+    const state = {
+      theme: 'classic_blue',
+      songIndex: 0,
+      lyricIndex: 3,
+      isPlaying: true,
+      progress: 36,
+      browseLockUntil: 0,
+      dialogOpen: false,
+      dialogFocus: 0
+    };
+
+    // ==================== 工具 ====================
+    function fmt(sec) {
+      sec = Math.max(0, Math.floor(sec));
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return m + ':' + s;
+    }
+    function clockText() {
+      const d = new Date();
+      return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    function dateText() {
+      const d = new Date();
+      const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + week;
+    }
+    function curSong() { return songs[state.songIndex]; }
+    function curTimeSec() { return curSong().durationSec * state.progress / 100; }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast1');
+      el.innerText = msg;
+      el.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.style.display = 'none'; }, 1800);
+    }
+
+    // ==================== 渲染片段 ====================
+    function topbarHtml() {
+      return `
+        <div class="lock-topbar">
+          <div class="left">
+            <span class="material-icons">lock</span>
+            <span class="lock-tag">歌词锁屏</span>
+          </div>
+          <div class="right">
+            <span class="material-icons">signal_cellular_4_bar</span>
+            <span>84%</span>
+            <span class="material-icons">battery_full</span>
+          </div>
+        </div>`;
+    }
+
+    function clockHtml() {
+      return `
+        <div class="lock-clock">${clockText()}</div>
+        <div class="lock-date">${dateText()}</div>
+        <div class="lock-divider"></div>`;
+    }
+
+    function lyricStageHtml() {
+      const lines = curSong().lyrics;
+      const cur = state.lyricIndex;
+      let html = '<div class="lock-lyric-stage">';
+      for (let i = cur - 2; i <= cur + 2; i++) {
+        if (i < 0 || i >= lines.length) {
+          html += '<div class="lock-lyric-line ghost">·</div>';
+          continue;
+        }
+        let cls = 'lock-lyric-line';
+        if (i === cur) cls += ' current';
+        else if (Math.abs(i - cur) === 1) cls += ' near';
+        html += `<div class="${cls}">${lines[i]}</div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function coverStageHtml() {
+      const s = curSong();
+      const line = s.lyrics[state.lyricIndex] || '纯音乐，请欣赏';
+      return `
+        <div class="lock-cover-stage">
+          <div class="lock-vinyl ${state.isPlaying ? '' : 'paused'}">
+            <div class="lock-vinyl-cover">
+              <span class="material-icons">${state.isPlaying ? 'music_note' : 'pause'}</span>
+            </div>
+          </div>
+          <div class="lock-single-lyric">${line}</div>
+        </div>`;
+    }
+
+    function songInfoHtml() {
+      const s = curSong();
+      return `
+        <div class="lock-songinfo">
+          <div class="lock-song-title">
+            <span class="material-icons">${state.isPlaying ? 'graphic_eq' : 'pause_circle'}</span>
+            ${s.title}
+          </div>
+          <div class="lock-song-artist">${s.artist}</div>
+        </div>
+        <div class="lock-progress">
+          <div class="lock-progress-bg"><div class="lock-progress-fill" style="width:${state.progress}%"></div></div>
+          <div class="lock-progress-time"><span>${fmt(curTimeSec())}</span><span>${fmt(s.durationSec)}</span></div>
+        </div>`;
+    }
+
+    function hintHtml() {
+      return `<div class="lock-hint"><span class="material-icons">lock</span> 已锁定 · 右软键退出歌词锁屏</div>`;
+    }
+
+    // 沉浸歌词
+    function lyricBodyHtml() {
+      return topbarHtml() + clockHtml() + lyricStageHtml() + songInfoHtml() + hintHtml();
+    }
+    // 封面模式
+    function coverBodyHtml() {
+      return topbarHtml() + clockHtml() + coverStageHtml() + songInfoHtml() + hintHtml();
+    }
+
+    function softkeyHtml(l, c, r) {
+      const L = l ? l : '<span style="visibility:hidden">占位</span>';
+      const C = c ? c : '<span style="visibility:hidden">占位</span>';
+      const R = r ? r : '<span style="visibility:hidden">占位</span>';
+      return `
+        <div class="softkey-btn left">${L}</div>
+        <div class="softkey-btn center">${C}</div>
+        <div class="softkey-btn right">${R}</div>`;
+    }
+
+    function dialogListHtml(focus) {
+      return options.map((o, i) => `
+        <div class="dialog-option-item ${i === focus ? 'focused' : ''}">
+          <span class="idx">${i + 1}</span>
+          <span class="material-icons">${o.icon}</span>
+          <span>${o.title}</span>
+          ${o.val ? `<span class="val">${o.val}</span>` : ''}
+        </div>`).join('');
+    }
+
+    // ==================== 渲染 ====================
+    function renderTheme() {
+      const t = themes[state.theme];
+      const root = document.documentElement.style;
+      root.setProperty('--theme-primary', t.primary);
+      root.setProperty('--theme-dark', t.dark);
+      root.setProperty('--theme-accent', t.accent);
+      root.setProperty('--theme-focus', t.focus);
+      root.setProperty('--theme-text', t.text);
+      root.setProperty('--theme-subtext', t.subtext);
+      root.setProperty('--theme-cardbg', t.cardbg);
+      root.setProperty('--theme-bodybg', t.bodybg);
+
+      document.querySelectorAll('.theme-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.key === state.theme);
+      });
+    }
+
+    function renderAll() {
+      renderTheme();
+
+      // ① 沉浸歌词
+      document.getElementById('body1').innerHTML = lyricBodyHtml();
+      document.getElementById('soft1').innerHTML = softkeyHtml('选项', state.isPlaying ? '暂停' : '播放', '退出锁屏');
+      // ① 弹窗
+      const dlg1 = document.getElementById('dialog1');
+      dlg1.classList.toggle('show', state.dialogOpen);
+      document.getElementById('dialogList1').innerHTML = dialogListHtml(state.dialogFocus);
+
+      // ② 封面模式
+      document.getElementById('body2').innerHTML = coverBodyHtml();
+      document.getElementById('soft2').innerHTML = softkeyHtml('选项', state.isPlaying ? '暂停' : '播放', '退出锁屏');
+
+      // ③ 选项菜单背景
+      document.getElementById('body3').innerHTML = lyricBodyHtml();
+      document.getElementById('soft3').innerHTML = softkeyHtml('', '', '');
+      document.getElementById('dialogList3').innerHTML = dialogListHtml(state.dialogFocus);
+    }
+
+    // ==================== 按键 ====================
+    function applyDialog() {
+      const o = options[state.dialogFocus];
+      showToast('已执行：' + o.title);
+      state.dialogOpen = false;
+      renderAll();
+    }
+
+    function handleAction(action) {
+      // 弹窗优先接管
+      if (state.dialogOpen) {
+        if (action === 'UP') {
+          state.dialogFocus = (state.dialogFocus - 1 + options.length) % options.length;
+        } else if (action === 'DOWN') {
+          state.dialogFocus = (state.dialogFocus + 1) % options.length;
+        } else if (action === 'SELECT') {
+          applyDialog();
+          return;
+        } else if (action === 'SOFT_LEFT' || action === 'SOFT_RIGHT') {
+          state.dialogOpen = false;
+        }
+        renderAll();
+        return;
+      }
+
+      const lines = curSong().lyrics;
+
+      if (action === 'UP') {
+        state.lyricIndex = Math.max(0, state.lyricIndex - 1);
+        state.browseLockUntil = Date.now() + 3000;
+        showToast('手动浏览歌词 · 3 秒后自动回正');
+      } else if (action === 'DOWN') {
+        state.lyricIndex = Math.min(lines.length - 1, state.lyricIndex + 1);
+        state.browseLockUntil = Date.now() + 3000;
+        showToast('手动浏览歌词 · 3 秒后自动回正');
+      } else if (action === 'LEFT') {
+        state.songIndex = (state.songIndex - 1 + songs.length) % songs.length;
+        state.lyricIndex = 0;
+        state.progress = 0;
+        showToast('上一曲：' + curSong().title);
+      } else if (action === 'RIGHT') {
+        state.songIndex = (state.songIndex + 1) % songs.length;
+        state.lyricIndex = 0;
+        state.progress = 0;
+        showToast('下一曲：' + curSong().title);
+      } else if (action === 'SELECT') {
+        state.isPlaying = !state.isPlaying;
+        showToast(state.isPlaying ? '继续播放' : '已暂停');
+      } else if (action === 'SOFT_LEFT') {
+        state.dialogOpen = true;
+        state.dialogFocus = 0;
+      } else if (action === 'SOFT_RIGHT' || action === 'STAR') {
+        showToast('退出歌词锁屏 · 返回播放详情页');
+      } else if (action === 'HASH') {
+        showToast('切换锁屏样式：封面模式（见 ② 号机）');
+      } else if (action === 'LOCK_SCREEN') {
+        showToast(state.isPlaying ? '锁屏键：开启歌词锁屏' : '当前无播放');
+      }
+
+      renderAll();
+    }
+
+    // ==================== 主循环 ====================
+    let tick = 0;
+    setInterval(() => {
+      tick++;
+      if (!state.isPlaying) return;
+      // 歌词每 3 秒跟进一行（手动浏览期间暂停跟随）
+      if (tick % 3 === 0 && Date.now() > state.browseLockUntil) {
+        const lines = curSong().lyrics;
+        state.lyricIndex = (state.lyricIndex + 1) % lines.length;
+      }
+      state.progress = Math.min(100, state.progress + 1.2);
+      if (state.progress >= 100) {
+        state.progress = 0;
+        state.songIndex = (state.songIndex + 1) % songs.length;
+        state.lyricIndex = 0;
+      }
+      renderAll();
+    }, 1000);
+
+    // 时钟刷新
+    setInterval(() => {
+      document.querySelectorAll('.lock-clock').forEach(el => { el.innerText = clockText(); });
+      document.querySelectorAll('.lock-date').forEach(el => { el.innerText = dateText(); });
+    }, 10000);
+
+    // ==================== 键盘 ====================
+    window.addEventListener('keydown', (e) => {
+      const keys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape','F1','F2','Backspace'];
+      if (keys.includes(e.key)) e.preventDefault();
+
+      if (e.key === 'ArrowUp') handleAction('UP');
+      else if (e.key === 'ArrowDown') handleAction('DOWN');
+      else if (e.key === 'ArrowLeft') handleAction('LEFT');
+      else if (e.key === 'ArrowRight') handleAction('RIGHT');
+      else if (e.key === 'Enter' || e.key === ' ') handleAction('SELECT');
+      else if (e.key === 'F1' || e.key === 'q' || e.key === 'Q') handleAction('SOFT_LEFT');
+      else if (e.key === 'F2' || e.key === 'Escape' || e.key === 'Backspace') handleAction('SOFT_RIGHT');
+      else if (e.key === '#') handleAction('HASH');
+      else if (e.key === '*') handleAction('STAR');
+      else if (e.key === 'l' || e.key === 'L') handleAction('LOCK_SCREEN');
+    });
+
+    // ==================== 初始化 ====================
+    (function init() {
+      // 主题按钮
+      const bar = document.getElementById('themeBar');
+      bar.innerHTML = Object.keys(themes).map(k =>
+        `<div class="theme-chip" data-key="${k}" style="background:${themes[k].primary};"
+              onclick="setTheme('${k}')">${themes[k].label}</div>`).join('');
+      renderAll();
+    })();
+
+    function setTheme(key) {
+      state.theme = key;
+      renderAll();
+      showToast('已应用主题：' + themes[key].label);
+    }
+  </script>
+</body>
+</html>

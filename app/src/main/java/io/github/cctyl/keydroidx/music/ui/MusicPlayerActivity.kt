@@ -472,6 +472,11 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
         }
 
         return when (action) {
+            // 锁屏键（挂机键）：进入沉浸式歌词锁屏
+            KeydroidxKeyAction.LOCK_SCREEN -> {
+                LyricLockScreenActivity.start(this)
+                true
+            }
             KeydroidxKeyAction.SELECT -> {
                 if (DEMO_MODE) {
                     isPlaying = !isPlaying
@@ -625,28 +630,61 @@ class MusicPlayerActivity : KeydroidxBaseActivity() {
             )
             .addItem(
                 2,
+                getString(R.string.option_lock_screen),
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_LOCK, iconSize, iconColor)
+            )
+            .addItem(
+                3,
+                "${getString(R.string.lock_menu_auto)}：${
+                    getString(
+                        if (PlaybackPrefs.lockScreenLyricEnabled(this)) R.string.lock_switch_on
+                        else R.string.lock_switch_off
+                    )
+                }",
+                KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_SHIELD, iconSize, iconColor)
+            )
+            .addItem(
+                4,
                 if (isFav) "取消收藏" else getString(R.string.softkey_favorite),
                 KeydroidxIcons.createDrawable(this, if (isFav) KeydroidxIcons.ICON_FAVORITE_BORDER else KeydroidxIcons.ICON_FAVORITE, iconSize, iconColor)
             )
             .addItem(
-                3,
+                5,
                 getString(R.string.option_quality),
                 KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_SETTINGS, iconSize, iconColor)
             )
             .addItem(
-                4,
+                6,
                 getString(R.string.softkey_back),
                 KeydroidxIcons.createDrawable(this, KeydroidxIcons.ICON_ARROW_BACK, iconSize, iconColor)
             )
             .setOnOptionSelectedListener { index, _ ->
                 when (index) {
                     0 -> openCurrentQueue()                      // 1. 播放列表
-                    1 -> toggleFavorite()                        // 2. 收藏 / 取消收藏
-                    2 -> showQualityPicker()                     // 3. 音质设置
-                    3 -> finish()                                // 4. 返回
+                    1 -> LyricLockScreenActivity.start(this)     // 2. 锁屏歌词
+                    2 -> toggleLockScreenAuto()                  // 3. 锁屏自动显示
+                    3 -> toggleFavorite()                        // 4. 收藏 / 取消收藏
+                    4 -> showQualityPicker()                     // 5. 音质设置
+                    5 -> finish()                                // 6. 返回
                 }
             }
         dialog.show()
+    }
+
+    /**
+     * 锁屏歌词「自动显示」开关。
+     *
+     * 锁屏歌词页为了极简已经取消了自身菜单，这里是该开关的唯一入口：
+     * 开启后屏幕点亮且处于锁屏态时自动弹出歌词页（见 LockScreenLyricTrigger）。
+     */
+    private fun toggleLockScreenAuto() {
+        val enabled = !PlaybackPrefs.lockScreenLyricEnabled(this)
+        PlaybackPrefs.setLockScreenLyricEnabled(this, enabled)
+        Toast.makeText(
+            this,
+            getString(if (enabled) R.string.lock_toast_auto_on else R.string.lock_toast_auto_off),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     /**
